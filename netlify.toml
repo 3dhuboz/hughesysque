@@ -7,8 +7,9 @@
   NODE_VERSION = "18"
 
 [functions]
-  node_bundler = "esbuild"
+  node_bundler = "nft"
   included_files = ["server/**", "package.json"]
+  external_node_modules = ["mongoose", "bcryptjs"]
 
 # API routes → serverless function
 [[redirects]]
