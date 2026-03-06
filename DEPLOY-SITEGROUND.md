@@ -61,18 +61,39 @@ nano .env
 Paste your production environment variables:
 
 ```
-PORT=5000
 NODE_ENV=production
-MONGODB_URI=mongodb+srv://admin:YOUR_PASSWORD@cluster0.l8yvsld.mongodb.net/pennywise-it?retryWrites=true&w=majority&appName=Cluster0
-JWT_SECRET=CHANGE_THIS_TO_A_STRONG_SECRET
+PORT=5000
+
+# Client mode
+CLIENT_MODE=true
+ENABLED_APPS=foodtruck,socialai
+BRAND_NAME="Hughesys Que"
+BRAND_TAGLINE="Quality Street Food"
+PRIMARY_COLOR=#f59e0b
+
+# MongoDB (replace with your real Atlas connection string)
+MONGODB_URI=mongodb+srv://YOUR_USER:YOUR_PASSWORD@cluster.mongodb.net/hughesys-que?retryWrites=true&w=majority
+
+# Auth
+JWT_SECRET=GENERATE_A_64_CHAR_RANDOM_STRING
+ADMIN_EMAIL=hugheseysbbq2021@gmail.com
+ADMIN_PASSWORD=CHANGE_THIS_TO_A_STRONG_PASSWORD
+
+# Square Payments
+SQUARE_ACCESS_TOKEN=your-production-access-token
+SQUARE_LOCATION_ID=your-production-location-id
+SQUARE_ENVIRONMENT=production
+
+# AI
+GEMINI_API_KEY=your-gemini-api-key
+
+# Email (optional — needed for confirmation emails)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-SITEGROUND_API_URL=https://api.siteground.com
-SITEGROUND_API_TOKEN=your-token
-ADMIN_EMAIL=admin@pennywiseit.com.au
-ADMIN_PASSWORD=CHANGE_THIS
+SMTP_USER=hugheseysbbq2021@gmail.com
+SMTP_PASS=your-gmail-app-password
+
+# Google OAuth (optional)
 GOOGLE_CLIENT_ID=your-google-client-id
 ```
 
