@@ -18,7 +18,7 @@ const app = express();
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://pennywiseit.com.au', 'https://www.pennywiseit.com.au', /\.vercel\.app$/]
+    ? ['https://hugheseysque.au', 'https://www.hugheseysque.au', 'https://pennywiseit.com.au', 'https://www.pennywiseit.com.au', /\.vercel\.app$/]
     : 'http://localhost:3000',
   credentials: true
 }));
