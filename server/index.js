@@ -76,7 +76,6 @@ async function connectDB() {
 
   try {
     await mongoose.connect(MONGODB_URI, {
-      bufferCommands: false,
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000
     });
@@ -328,7 +327,7 @@ app.use((err, req, res, next) => {
 // Vercel: export only, no listen(). Passenger: use passenger socket. Otherwise: normal listen.
 if (process.env.VERCEL) {
   // Vercel serverless — do not call listen()
-} else if (typeof(PhusionPassenger) !== 'undefined') {
+} else if (typeof (PhusionPassenger) !== 'undefined') {
   app.listen('passenger');
   console.log('Penny Wise I.T running via Phusion Passenger');
 } else {
