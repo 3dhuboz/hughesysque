@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ClientConfigProvider, useClientConfig } from './context/ClientConfigContext';
@@ -42,6 +42,7 @@ import AdminTemplates from './pages/AdminTemplates';
 import Hosting from './pages/Hosting';
 import FoodTruck from './pages/FoodTruck';
 import SimpleWebsite from './pages/SimpleWebsite';
+import Storefront from './pages/Storefront';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -94,6 +95,9 @@ const AppRoutes = () => {
 
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
+        {/* Public storefront — customer-facing menu & ordering */}
+        <Route path="/order" element={<Storefront />} />
+        <Route path="/storefront" element={<Storefront />} />
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
     );
@@ -148,24 +152,55 @@ const AppRoutes = () => {
   );
 };
 
+const AppShell = () => {
+  const { clientMode, brandName } = useClientConfig();
+  const location = useLocation();
+  const isStorefront = ['/storefront', '/order'].includes(location.pathname);
+
+  useEffect(() => {
+    if (clientMode && brandName) {
+      document.title = brandName;
+    }
+  }, [clientMode, brandName]);
+
+  // Storefront has its own header/nav/footer — render without shell chrome
+  if (isStorefront) {
+    return (
+      <>
+        <AppRoutes />
+        <Toaster position="top-right" toastOptions={{
+          duration: 4000,
+          style: { background: '#1e293b', color: '#f8fafc', borderRadius: '8px' }
+        }} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="app">
+        <Navbar />
+        <main className="main-content">
+            <AppRoutes />
+        </main>
+        <Footer />
+        {!clientMode && <PennyAgent />}
+      </div>
+      <Toaster position="top-right" toastOptions={{
+        duration: 4000,
+        style: { background: '#1e293b', color: '#f8fafc', borderRadius: '8px' }
+      }} />
+    </>
+  );
+};
+
 function App() {
   return (
     <ErrorBoundary>
     <ClientConfigProvider>
     <AuthProvider>
       <Router>
-        <div className="app">
-          <Navbar />
-          <main className="main-content">
-              <AppRoutes />
-          </main>
-          <Footer />
-          <PennyAgent />
-        </div>
-        <Toaster position="top-right" toastOptions={{
-          duration: 4000,
-          style: { background: '#1e293b', color: '#f8fafc', borderRadius: '8px' }
-        }} />
+        <AppShell />
       </Router>
     </AuthProvider>
     </ClientConfigProvider>

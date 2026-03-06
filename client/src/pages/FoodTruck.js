@@ -4,7 +4,7 @@ import {
   Plus, Edit, Trash2, ChevronDown, ChevronUp, DollarSign, Clock,
   CheckCircle, XCircle, Package, MapPin, Search, Filter,
   TrendingUp, AlertCircle, Eye, ChefHat, Settings, Save, Loader2,
-  Palette, Globe, Image, Layers
+  Palette, Globe, Image, Layers, ExternalLink
 } from 'lucide-react';
 import api from '../api';
 import toast from 'react-hot-toast';
@@ -264,6 +264,19 @@ const FoodTruck = () => {
   return (
     <div className="admin-page">
       <div className="container" style={{ padding: '1.5rem' }}>
+        {/* Header with Preview Button */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f3f4f6', margin: 0 }}>Food Truck Manager</h1>
+          <a href="/order" target="_blank" rel="noopener noreferrer" style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1.25rem',
+            borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 700,
+            background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#fff', textDecoration: 'none',
+            boxShadow: '0 2px 8px rgba(245,158,11,0.3)'
+          }}>
+            <ExternalLink size={15} /> Preview Live App
+          </a>
+        </div>
+
         {/* Tab Bar */}
         <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '0.5rem' }}>
           {visibleTabs.map(t => {

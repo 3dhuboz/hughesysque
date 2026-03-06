@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useClientConfig } from '../context/ClientConfigContext';
 import { UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GoogleSignIn from '../components/GoogleSignIn';
@@ -10,6 +11,7 @@ const Register = () => {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '', company: '', phone: '' });
   const [loading, setLoading] = useState(false);
   const { register, googleLogin } = useAuth();
+  const { clientMode, brandName, primaryColor } = useClientConfig();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -49,9 +51,13 @@ const Register = () => {
     <div className="auth-page">
       <div className="auth-card card" style={{ maxWidth: '480px' }}>
         <div className="auth-header">
-          <div className="auth-logo"><img src="/logo.png" alt="Penny Wise I.T" className="auth-logo-img" /></div>
+          {clientMode && brandName ? (
+            <div className="auth-logo" style={{ fontSize: '1.75rem', fontWeight: 800, color: primaryColor || '#7c3aed' }}>{brandName}</div>
+          ) : (
+            <div className="auth-logo"><img src="/logo.png" alt="Penny Wise I.T" className="auth-logo-img" /></div>
+          )}
           <h1>Get Started</h1>
-          <p>Create your Penny Wise I.T account</p>
+          <p>Create your {clientMode && brandName ? brandName : 'Penny Wise I.T'} account</p>
         </div>
 
         <GoogleSignIn onSuccess={handleGoogle} text="signup_with" />

@@ -86,8 +86,8 @@ router.post('/test-square', auth, adminOnly, async (req, res) => {
     const locationId = await getLocationId();
 
     // Try listing locations to verify the token works
-    const locationsRes = await client.locationsApi.listLocations();
-    const locations = locationsRes.result.locations || [];
+    const locationsRes = await client.locations.list();
+    const locations = locationsRes.locations || [];
     const matchedLocation = locationId ? locations.find(l => l.id === locationId) : null;
 
     res.json({

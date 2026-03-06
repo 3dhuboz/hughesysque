@@ -49,10 +49,31 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Database connection — cached for serverless (Vercel cold starts)
 let dbConnected = false;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pennywise-it';
+let MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pennywise-it';
+
+// Detect placeholder/unconfigured MongoDB URIs
+const isPlaceholderURI = !process.env.MONGODB_URI
+  || process.env.MONGODB_URI.includes('user:pass@')
+  || process.env.MONGODB_URI.includes('<password>');
 
 async function connectDB() {
   if (dbConnected && mongoose.connection.readyState === 1) return;
+
+  // Auto-start in-memory MongoDB for dev/preview when no real DB is configured
+  if (isPlaceholderURI && process.env.NODE_ENV !== 'production' && !connectDB._memStarted) {
+    connectDB._memStarted = true;
+    try {
+      const { MongoMemoryServer } = require('mongodb-memory-server');
+      const mongod = await MongoMemoryServer.create();
+      MONGODB_URI = mongod.getUri();
+      console.log('[Dev] Started in-memory MongoDB for preview (no external DB needed)');
+    } catch (err) {
+      connectDB._memStarted = false;
+      console.error('[Dev] Failed to start in-memory MongoDB:', err.message);
+      throw err;
+    }
+  }
+
   try {
     await mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
@@ -176,18 +197,49 @@ async function connectDB() {
       // First-time only: hash password and insert directly (bypass Mongoose pre-save)
       const salt = await bcrypt.genSalt(10);
       const hashedPw = await bcrypt.hash(adminPassword, salt);
-      await User.collection.insertOne({
+      const brandName = process.env.BRAND_NAME || 'Penny Wise I.T';
+      const adminDoc = await User.collection.insertOne({
         firstName: 'Admin',
-        lastName: 'PennyWise',
+        lastName: brandName.split(' ')[0] || 'Admin',
         email: adminEmail,
         password: hashedPw,
         role: 'admin',
-        company: 'Penny Wise I.T',
+        company: brandName,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date()
       });
       console.log('[Admin Sync] Admin CREATED:', adminEmail);
+
+      // Auto-seed food truck menu for the admin if this is a food truck client
+      const enabledApps = process.env.ENABLED_APPS || '';
+      if (enabledApps.includes('foodtruck')) {
+        try {
+          const MenuItem = require('./models/MenuItem');
+          const ownerId = adminDoc.insertedId;
+          const existing = await MenuItem.countDocuments({ owner: ownerId });
+          if (existing === 0) {
+            const sampleItems = [
+              { category: 'Mains', name: 'Classic Smoked Brisket', description: 'Low & slow smoked beef brisket, 14-hour cook. Served sliced with house BBQ sauce.', price: 18.00, image: 'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=400', available: true, preparationTime: 10, tags: ['popular', 'signature'], sortOrder: 1 },
+              { category: 'Mains', name: 'Pulled Pork Roll', description: 'Hickory smoked pulled pork on a brioche bun with slaw and pickles.', price: 14.00, image: 'https://images.unsplash.com/photo-1586816001966-79b736744398?w=400', available: true, preparationTime: 8, tags: ['popular'], sortOrder: 2 },
+              { category: 'Mains', name: 'Smoked Chicken Burger', description: 'Whole smoked chicken thigh, lettuce, tomato, and chipotle mayo on a toasted bun.', price: 15.00, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400', available: true, preparationTime: 10, tags: [], sortOrder: 3 },
+              { category: 'Mains', name: 'BBQ Ribs (Half Rack)', description: 'St. Louis style pork ribs glazed with smoky bourbon sauce.', price: 22.00, image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400', available: true, preparationTime: 12, tags: ['signature'], sortOrder: 4 },
+              { category: 'Mains', name: 'Loaded Brisket Fries', description: 'Seasoned fries topped with chopped brisket, cheese sauce, jalapeños, and sour cream.', price: 16.00, image: 'https://images.unsplash.com/photo-1585109649139-366815a0d713?w=400', available: true, preparationTime: 10, tags: ['popular'], sortOrder: 5 },
+              { category: 'Sides', name: 'Classic Coleslaw', description: 'Creamy house-made coleslaw with a tangy vinegar kick.', price: 5.00, image: 'https://images.unsplash.com/photo-1625938145744-e380515399bf?w=400', available: true, preparationTime: 2, tags: [], sortOrder: 1 },
+              { category: 'Sides', name: 'Mac & Cheese', description: 'Creamy three-cheese mac baked until golden.', price: 7.00, image: 'https://images.unsplash.com/photo-1543339494-b4cd4f7ba686?w=400', available: true, preparationTime: 3, tags: ['vegetarian'], sortOrder: 2 },
+              { category: 'Sides', name: 'Seasoned Chips', description: 'Thick-cut chips with our secret seasoning blend.', price: 6.00, image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400', available: true, preparationTime: 5, tags: ['vegan'], sortOrder: 3 },
+              { category: 'Drinks', name: 'House Lemonade', description: 'Fresh-squeezed lemonade with mint.', price: 5.00, image: 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=400', available: true, preparationTime: 2, tags: [], sortOrder: 1 },
+              { category: 'Drinks', name: 'Soft Drink (Can)', description: 'Coke, Sprite, or Fanta.', price: 3.50, image: 'https://images.unsplash.com/photo-1581636625402-29b2a704ef13?w=400', available: true, preparationTime: 1, tags: [], sortOrder: 2 },
+              { category: 'Desserts', name: 'Smoked Brownie', description: 'Rich chocolate brownie lightly smoked over cherry wood. Served warm.', price: 6.00, image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400', available: true, preparationTime: 3, tags: ['vegetarian'], sortOrder: 1 },
+              { category: 'Catering', name: 'Brisket Platter (per head)', description: 'Sliced brisket, two sides, bread roll, sauce. Minimum 10 guests.', price: 25.00, image: 'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=400', available: true, preparationTime: 0, tags: [], sortOrder: 1, isCatering: true, cateringMinQty: 10, cateringPricePerHead: 25 },
+            ];
+            await MenuItem.insertMany(sampleItems.map(item => ({ ...item, owner: ownerId })));
+            console.log('[Auto-Seed] Food truck menu seeded (' + sampleItems.length + ' items)');
+          }
+        } catch (seedErr) {
+          console.error('[Auto-Seed] Food truck seed error:', seedErr.message);
+        }
+      }
     } else {
       // Existing admin: only ensure role + active status, do NOT touch password
       await User.updateOne(
@@ -202,6 +254,17 @@ async function connectDB() {
     throw err;
   }
 }
+
+// Public config endpoint — exposes client-mode settings for the React app (no DB needed)
+app.get('/api/config', (req, res) => {
+  res.json({
+    clientMode: process.env.CLIENT_MODE === 'true',
+    enabledApps: process.env.ENABLED_APPS ? process.env.ENABLED_APPS.split(',').map(s => s.trim()) : [],
+    brandName: process.env.BRAND_NAME || '',
+    brandTagline: process.env.BRAND_TAGLINE || '',
+    primaryColor: process.env.PRIMARY_COLOR || '#7c3aed',
+  });
+});
 
 // Ensure DB is connected before handling any API request
 app.use('/api', async (req, res, next) => {
@@ -238,16 +301,6 @@ app.use('/api/foodtruck', require('./routes/foodtruck'));
 app.use('/api/simplewebsite', require('./routes/simplewebsite'));
 app.use('/api/square', require('./routes/squareWebhook'));
 
-// Public config endpoint — exposes client-mode settings for the React app
-app.get('/api/config', (req, res) => {
-  res.json({
-    clientMode: process.env.CLIENT_MODE === 'true',
-    enabledApps: process.env.ENABLED_APPS ? process.env.ENABLED_APPS.split(',').map(s => s.trim()) : [],
-    brandName: process.env.BRAND_NAME || '',
-    brandTagline: process.env.BRAND_TAGLINE || '',
-    primaryColor: process.env.PRIMARY_COLOR || '#7c3aed',
-  });
-});
 
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {

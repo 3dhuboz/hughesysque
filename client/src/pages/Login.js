@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useClientConfig } from '../context/ClientConfigContext';
 import { LogIn } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GoogleSignIn from '../components/GoogleSignIn';
@@ -11,6 +12,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, googleLogin } = useAuth();
+  const { clientMode, brandName, primaryColor, brandTagline } = useClientConfig();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -42,9 +44,13 @@ const Login = () => {
     <div className="auth-page">
       <div className="auth-card card">
         <div className="auth-header">
-          <div className="auth-logo"><img src="/logo.png" alt="Penny Wise I.T" className="auth-logo-img" /></div>
+          {clientMode && brandName ? (
+            <div className="auth-logo" style={{ fontSize: '1.75rem', fontWeight: 800, color: primaryColor || '#7c3aed' }}>{brandName}</div>
+          ) : (
+            <div className="auth-logo"><img src="/logo.png" alt="Penny Wise I.T" className="auth-logo-img" /></div>
+          )}
           <h1>Welcome Back</h1>
-          <p>Sign in to your Penny Wise I.T account</p>
+          <p>Sign in to your {clientMode && brandName ? brandName : 'Penny Wise I.T'} account</p>
         </div>
 
         <GoogleSignIn onSuccess={handleGoogle} text="signin_with" />

@@ -1,4 +1,4 @@
-const { Client } = require('square');
+const { SquareClient, SquareEnvironment } = require('square');
 const SiteSettings = require('../models/SiteSettings');
 
 let squareClient = null;
@@ -48,9 +48,9 @@ async function getSquareClient() {
     return squareClient;
   }
 
-  squareClient = new Client({
-    accessToken: settings.accessToken,
-    environment: settings.environment === 'production' ? 'production' : 'sandbox'
+  squareClient = new SquareClient({
+    token: settings.accessToken,
+    environment: settings.environment === 'production' ? SquareEnvironment.Production : SquareEnvironment.Sandbox
   });
   // Tag for change detection
   squareClient._accessToken = settings.accessToken;
@@ -74,7 +74,7 @@ async function findOrCreateSquareCustomer({ email, firstName, lastName, company,
 
   try {
     // Search for existing customer
-    const searchRes = await client.customersApi.searchCustomers({
+    const searchRes = await client.customers.search({
       query: {
         filter: {
           emailAddress: { exact: email }
@@ -82,12 +82,12 @@ async function findOrCreateSquareCustomer({ email, firstName, lastName, company,
       }
     });
 
-    if (searchRes.result.customers?.length > 0) {
-      return searchRes.result.customers[0];
+    if (searchRes.customers?.length > 0) {
+      return searchRes.customers[0];
     }
 
     // Create new customer
-    const createRes = await client.customersApi.createCustomer({
+    const createRes = await client.customers.create({
       emailAddress: email,
       givenName: firstName || '',
       familyName: lastName || '',
@@ -97,7 +97,7 @@ async function findOrCreateSquareCustomer({ email, firstName, lastName, company,
       note: 'Created by Penny Wise I.T platform'
     });
 
-    return createRes.result.customer;
+    return createRes.customer;
   } catch (err) {
     console.error('[Square] Customer error:', err.message || err);
     return null;
@@ -129,7 +129,7 @@ async function createSquareInvoice({ squareCustomerId, lineItems, dueDate, title
       }
     }));
 
-    const orderRes = await client.ordersApi.createOrder({
+    const orderRes = await client.orders.create({
       order: {
         locationId,
         lineItems: orderLineItems,
@@ -138,10 +138,10 @@ async function createSquareInvoice({ squareCustomerId, lineItems, dueDate, title
       idempotencyKey: `order-${invoiceNumber}-${Date.now()}`
     });
 
-    const orderId = orderRes.result.order.id;
+    const orderId = orderRes.order.id;
 
     // Create the invoice
-    const invoiceRes = await client.invoicesApi.createInvoice({
+    const invoiceRes = await client.invoices.create({
       invoice: {
         locationId,
         orderId,
@@ -174,7 +174,7 @@ async function createSquareInvoice({ squareCustomerId, lineItems, dueDate, title
     });
 
     return {
-      invoice: invoiceRes.result.invoice,
+      invoice: invoiceRes.invoice,
       orderId
     };
   } catch (err) {
@@ -188,11 +188,11 @@ async function publishSquareInvoice(squareInvoiceId, version) {
   if (!client) return null;
 
   try {
-    const res = await client.invoicesApi.publishInvoice(squareInvoiceId, {
+    const res = await client.invoices.publish(squareInvoiceId, {
       version: version || 0,
       idempotencyKey: `pub-${squareInvoiceId}-${Date.now()}`
     });
-    return res.result.invoice;
+    return res.invoice;
   } catch (err) {
     console.error('[Square] Publish invoice error:', JSON.stringify(err.result?.errors || err.message || err));
     return null;
@@ -204,10 +204,10 @@ async function cancelSquareInvoice(squareInvoiceId, version) {
   if (!client) return null;
 
   try {
-    const res = await client.invoicesApi.cancelInvoice(squareInvoiceId, {
+    const res = await client.invoices.cancel(squareInvoiceId, {
       version: version || 0
     });
-    return res.result.invoice;
+    return res.invoice;
   } catch (err) {
     console.error('[Square] Cancel invoice error:', JSON.stringify(err.result?.errors || err.message || err));
     return null;
@@ -219,8 +219,8 @@ async function getSquareInvoice(squareInvoiceId) {
   if (!client) return null;
 
   try {
-    const res = await client.invoicesApi.getInvoice(squareInvoiceId);
-    return res.result.invoice;
+    const res = await client.invoices.get(squareInvoiceId);
+    return res.invoice;
   } catch (err) {
     console.error('[Square] Get invoice error:', err.message || err);
     return null;

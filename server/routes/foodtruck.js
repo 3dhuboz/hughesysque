@@ -6,6 +6,32 @@ const FoodOrder = require('../models/FoodOrder');
 const CookDay = require('../models/CookDay');
 
 // ═══════════════════════════════════════════
+// PUBLIC STOREFRONT ENDPOINTS (no auth)
+// ═══════════════════════════════════════════
+
+// GET public menu — available items only, for customer-facing storefront
+router.get('/public/menu', async (req, res) => {
+  try {
+    const items = await MenuItem.find({ available: true }).sort({ category: 1, sortOrder: 1 });
+    res.json(items);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load menu', error: err.message });
+  }
+});
+
+// GET public upcoming cook days
+router.get('/public/cookdays', async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = await CookDay.find({ date: { $gte: today }, status: { $ne: 'cancelled' } }).sort({ date: 1 }).limit(10);
+    res.json(days);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load cook days', error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════
 // MENU ITEMS
 // ═══════════════════════════════════════════
 
