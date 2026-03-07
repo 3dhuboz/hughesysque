@@ -2405,13 +2405,40 @@ const FTDevTools = () => {
           {diagnosticsResult && (
             <div className="mt-3 space-y-2">
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Diagnostics Results</p>
-              {diagnosticsResult.map((r, i) => (
-                <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg border text-xs ${r.ok ? 'bg-green-950/30 border-green-800/50' : 'bg-red-950/30 border-red-800/50'}`}>
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${r.ok ? 'bg-green-400' : 'bg-red-500'}`} />
-                  <span className={`font-bold w-24 shrink-0 ${r.ok ? 'text-green-300' : 'text-red-300'}`}>{r.label}</span>
-                  <span className="text-gray-400">{r.detail}</span>
+              {diagnosticsResult.map((r, i) => {
+                const projectId = devSettings.firebaseProjectId || 'hughesys-que';
+                const rulesUrl = `https://console.firebase.google.com/project/${projectId}/firestore/rules`;
+                return (
+                  <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg border text-xs ${r.ok ? 'bg-green-950/30 border-green-800/50' : 'bg-red-950/30 border-red-800/50'}`}>
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${r.ok ? 'bg-green-400' : 'bg-red-500'}`} />
+                    <span className={`font-bold w-24 shrink-0 ${r.ok ? 'text-green-300' : 'text-red-300'}`}>{r.label}</span>
+                    <span className="text-gray-400 flex-1">{r.detail}</span>
+                    {!r.ok && r.label === 'Firestore DB' && (
+                      <a href={rulesUrl} target="_blank" rel="noreferrer"
+                        className="shrink-0 bg-red-700 hover:bg-red-600 text-white font-bold px-2 py-1 rounded text-[10px] whitespace-nowrap">Fix Rules →</a>
+                    )}
+                  </div>
+                );
+              })}
+              {diagnosticsResult.some(r => !r.ok && r.label === 'Firestore DB') && (
+                <div className="bg-red-950/30 border border-red-800/50 rounded-lg p-3 space-y-2">
+                  <p className="text-xs font-bold text-red-300">How to fix Firestore security rules:</p>
+                  <ol className="text-[11px] text-gray-400 space-y-1 list-decimal list-inside">
+                    <li>Click <strong className="text-white">Fix Rules →</strong> above to open Firebase Console</li>
+                    <li>Replace the entire rules block with the rules below</li>
+                    <li>Click <strong className="text-white">Publish</strong></li>
+                  </ol>
+                  <pre className="bg-black/50 border border-gray-700 rounded p-2 text-[10px] text-green-300 overflow-x-auto whitespace-pre">{`rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}`}</pre>
+                  <p className="text-[10px] text-yellow-500">⚠ These open rules are fine for development. Tighten them before a public launch.</p>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
