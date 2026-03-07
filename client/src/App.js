@@ -165,7 +165,22 @@ const AppShell = () => {
     }
   }, [clientMode, brandName]);
 
-  // Storefront has its own header/nav/footer — render without shell chrome
+  // Storefront pages get the BBQ-themed StorefrontLayout
+  if (isStorefront && clientMode) {
+    return (
+      <>
+        <StorefrontLayout>
+          <AppRoutes />
+        </StorefrontLayout>
+        <Toaster position="top-right" toastOptions={{
+          duration: 4000,
+          style: { background: '#1e293b', color: '#f8fafc', borderRadius: '8px' }
+        }} />
+      </>
+    );
+  }
+
+  // Storefront without client mode (direct /order or /storefront access)
   if (isStorefront) {
     return (
       <>
