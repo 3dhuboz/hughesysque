@@ -1,4 +1,5 @@
 # Infrastructure Strategy — All Apps
+>
 > Last updated: March 2026
 > Problem solved: Vercel build minutes billing $100+/month
 
@@ -19,6 +20,7 @@
 ## Per-App Migration Plan
 
 ### 1. Hughesys Que (food truck white-label)
+
 - **Current**: Netlify (paused) → now Firebase + static React
 - **Move to**: Cloudflare Pages ✅ `_redirects` already added
 - **Action**: Create Cloudflare Pages project (see setup below)
@@ -27,43 +29,67 @@
 - **Output dir**: `client/build`
 
 ### 2. Street Meatz (food truck reference / live client)
+
 - **Current**: Vercel static SPA + Firebase
 - **Move to**: Cloudflare Pages ✅ `_redirects` already added
 - **Action**: Create Cloudflare Pages project from same GitHub repo
 - **Data**: Existing Firebase project (unchanged)
 
-### 3. FoodTruck-App (old Street Meatz staging)
-- **Current**: Vercel (unused staging)
-- **Action**: **Disconnect from Vercel entirely** — delete the project in Vercel dashboard
-- This alone saves build minutes every time you push
+### 3. FoodTruck-App (old Street Meatz staging — DEAD)
 
-### 4. SimpleWebsite (Pennywise white-label generator)
+- **Current**: Vercel (unused staging)
+- **Action**: **Delete from Vercel dashboard immediately** — saves build minutes on every push
+
+### 4. wi3d (unused project)
+
+- **Current**: Vercel
+- **Action**: **Delete from Vercel dashboard** — user confirmed it can go
+
+### 5. SimpleWebsite (Pennywise white-label generator)
+
 - **Current**: Vercel Vite SPA
-- **Move to**: Cloudflare Pages ✅ `_redirects` already added
-- **Build cmd**: `vite build`
+- **Move to**: Cloudflare Pages ✅ `_redirects` added
+- **Build cmd**: `npm install && vite build`
 - **Output dir**: `dist`
 
-### 5. Pickle Nick (white-label SocialAI client)
-- **Current**: Vercel Vite SPA + hourly cron (`/api/publish-scheduled`)
-- **Move to**: Cloudflare Pages (static) + Cloudflare Workers (cron)
-- **Cron migration**: The hourly publish job needs a Cloudflare Worker with a Cron Trigger
-- **Or**: Keep on Vercel Pro if the cron is business-critical and migration is too complex right now
+### 6. socialai-studio — windsurf-project (MAIN SOCIALAI PLATFORM)
 
-### 6. Penny Wise IT — windsurf-project (MAIN PLATFORM)
-- **Current**: Vercel (Express serverless + React build) — **#1 cause of build minutes**
+- **Current**: Vercel (Express serverless + React) — **#1 cause of build minutes** (most active dev)
 - **Move to**:
-  - Frontend → **Cloudflare Pages** (static React build)
-  - Backend → **Railway** (Express server, always-on, ~$5-20/month)
-- **This is the biggest win** — most commits happen here, each build = 3-5 min on Vercel
-- **See migration steps below**
+  - Frontend → **Cloudflare Pages** ✅ `_redirects` added to `client/public/`
+  - Backend → **Railway** (Express server, ~$5-20/month)
+- **Biggest savings** — each commit = 3-5 min Vercel build
 
-### 7. Wires-R-Us (electrical contractor app)
-- **Current**: Vercel Vite SPA + serverless functions + 5-minute email poll cron
-- **Assessment**: The 5-min cron makes this complex to move
-- **Option A**: Keep on Vercel (live with the build cost since frontend builds are small)
-- **Option B**: Move static to Cloudflare Pages + migrate cron to Cloudflare Worker
-- **Recommendation**: Move frontend to Cloudflare Pages, replace 5-min cron with
-  Cloudflare Worker (free tier: 100K requests/day = 20,000 5-min intervals/day)
+### 7. Penny Wise IT — main platform
+
+- **Current**: Vercel (Express serverless + React)
+- **Move to**: Frontend → Cloudflare Pages, Backend → Railway (same pattern as socialai-studio)
+- **Can share the same Railway project** as socialai-studio if hosted together
+
+### 8. Pickle Nick (white-label SocialAI client)
+
+- **Current**: Vercel Vite SPA + hourly cron (`/api/publish-scheduled`)
+- **Move to**: Cloudflare Pages ✅ `_redirects` added
+- **Cron**: Migrate hourly publish job to a **Cloudflare Worker** with Cron Trigger (free tier)
+
+### 9. Wires-R-Us (electrical contractor app)
+
+- **Current**: Vercel Vite SPA + serverless functions + 5-min email poll cron
+- **Move to**: Cloudflare Pages ✅ `_redirects` added
+- **Cron**: Migrate 5-min email poll to **Cloudflare Worker** Cron Trigger (100K req/day free)
+
+### 10. Gladstone BBQ (festival ticketing app — white-label)
+
+- **Architecture**: Express + SQLite + Stripe webhooks + QR tickets + SendGrid/Twilio
+- **Cannot be static** — needs persistent filesystem (SQLite) + persistent server URL (Stripe webhooks)
+- **Deploy to**: **Railway** ✅ `railway.json` added, `.env.example` updated with brand vars
+- **White-label vars**: `FESTIVAL_NAME`, `FESTIVAL_TAGLINE`, `FESTIVAL_PRIMARY_COLOR`
+- **Cost per client**: ~$5-10/month on Railway
+
+### 11. Autohue (white-label — TBD)
+
+- **Status**: Local files not found — need to locate repo
+- **Action**: Once found, assess architecture and apply appropriate pattern
 
 ---
 
@@ -81,9 +107,9 @@
 | Pickle Nick | `npm install && vite build` | `dist` |
 | Penny Wise IT frontend | `cd client && npm install && npm run build` | `client/build` |
 
-4. Add **Environment Variables** (Firebase keys, brand vars, etc.)
-5. Click **Save and Deploy**
-6. Custom domain: **Pages → Custom domains → Add domain** → point CNAME at Cloudflare
+1. Add **Environment Variables** (Firebase keys, brand vars, etc.)
+2. Click **Save and Deploy**
+3. Custom domain: **Pages → Custom domains → Add domain** → point CNAME at Cloudflare
 
 ---
 
@@ -107,9 +133,11 @@ Railway replaces Vercel serverless for the Express backend.
 7. Add custom domain: `api.pennywiseit.com.au` → point A/CNAME at Railway
 
 Then update the Penny Wise IT frontend `client/src/api.js`:
+
 ```
 REACT_APP_API_URL=https://api.pennywiseit.com.au/api
 ```
+
 Set this in Cloudflare Pages environment variables.
 
 ---
@@ -117,6 +145,7 @@ Set this in Cloudflare Pages environment variables.
 ## Vercel — What Stays
 
 After migrating everything above, Vercel should only have:
+
 - **Wires-R-Us** (if cron migration is deferred)
 - **Pickle Nick** (if cron migration is deferred)
 
