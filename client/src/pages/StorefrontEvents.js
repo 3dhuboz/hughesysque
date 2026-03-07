@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import SmartHeroImg from '../components/SmartHeroImg';
 import { useStorefront } from '../context/StorefrontContext';
 import { Calendar, MapPin, Clock, Share2, Bell, Check, BellOff, Megaphone, Utensils, Star, Flame, Coffee } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -27,8 +28,9 @@ const StorefrontEvents = () => {
     <div className="space-y-12 animate-fade-in pb-20">
       <div className="relative h-[40vh] min-h-[300px] rounded-2xl overflow-hidden shadow-2xl">
         <div className="absolute inset-0 bg-black/60 z-10" />
-        <img
-          src={settings.siteVisuals?.eventsPageHero || settings.siteVisuals?.eventsHero || "https://images.unsplash.com/photo-1533174072545-e8d4aa97edf9?auto=format&fit=crop&w=1950&q=80"}
+        <SmartHeroImg
+          src={settings.siteVisuals?.eventsPageHero || settings.siteVisuals?.eventsHero}
+          fallback="https://images.unsplash.com/photo-1533174072545-e8d4aa97edf9?auto=format&fit=crop&w=1950&q=80"
           className="absolute inset-0 w-full h-full object-cover" alt="BBQ Event Crowd" />
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-6">
           <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight uppercase">
