@@ -8,12 +8,33 @@ import { useStorefront } from '../context/StorefrontContext';
 const StorefrontLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const { brandName, brandTagline, primaryColor } = useClientConfig();
-  const { cart } = useStorefront();
+  const { cart, settings } = useStorefront();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const name = brandName || 'Hughesys Que';
+  const name = settings.businessName || brandName || 'Hughesys Que';
   const tagline = brandTagline || 'Quality Street Food';
+  const logoUrl = settings.logoUrl;
+
+  // Maintenance mode — block all non-admin visitors
+  if (settings?.maintenanceMode && user?.role !== 'admin' && user?.role !== 'dev') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-6"
+        style={{ backgroundColor: '#0f0f0f', color: '#e5e5e5' }}>
+        <div className="text-center space-y-6 max-w-sm">
+          <div className="w-20 h-20 mx-auto rounded-full bg-red-900/30 border-2 border-bbq-red flex items-center justify-center overflow-hidden">
+            {logoUrl ? <img src={logoUrl} alt={name} className="w-full h-full object-contain" /> : <Flame size={40} className="text-bbq-red" />}
+          </div>
+          <h1 className="text-3xl font-display font-bold text-white uppercase tracking-wider">{name}</h1>
+          <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-3">
+            <p className="text-bbq-gold font-bold text-lg">We're Firing Up the Pits</p>
+            <p className="text-gray-400 text-sm leading-relaxed">We're currently offline for maintenance. Check back soon — the smoke is still rising.</p>
+          </div>
+          <p className="text-xs text-gray-600">Hungry? Follow us on socials for updates.</p>
+        </div>
+      </div>
+    );
+  }
 
   const isActive = (path) => location.pathname === path ? 'text-bbq-ember' : 'text-gray-400 hover:text-white';
 
@@ -33,7 +54,7 @@ const StorefrontLayout = ({ children }) => {
         style={{ background: 'rgba(31,31,31,0.7)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <Link to="/" className="flex items-center gap-3 group">
           <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center overflow-hidden border-2 border-bbq-red group-hover:border-bbq-gold transition-colors duration-500 shadow-lg shadow-red-900/20">
-            <Flame className="text-bbq-red" size={24} />
+            {logoUrl ? <img src={logoUrl} alt={name} className="w-full h-full object-contain p-1" /> : <Flame className="text-bbq-red" size={24} />}
           </div>
           <div className="flex flex-col">
             <h1 className="text-2xl font-display font-bold text-white tracking-wider uppercase leading-none group-hover:text-bbq-red transition-colors">{name}</h1>
@@ -84,7 +105,7 @@ const StorefrontLayout = ({ children }) => {
         style={{ background: 'rgba(31,31,31,0.7)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <Link to="/" className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-full bg-black flex items-center justify-center overflow-hidden border border-bbq-red">
-            <Flame className="text-bbq-red" size={20} />
+            {logoUrl ? <img src={logoUrl} alt={name} className="w-full h-full object-contain p-0.5" /> : <Flame className="text-bbq-red" size={20} />}
           </div>
           <h1 className="text-lg font-display font-bold text-white uppercase tracking-tight">{name}</h1>
         </Link>
@@ -113,7 +134,7 @@ const StorefrontLayout = ({ children }) => {
           {/* Brand */}
           <div className="space-y-4">
             <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center overflow-hidden border-2 border-bbq-red shadow-2xl">
-              <Flame className="text-bbq-red" size={32} />
+              {logoUrl ? <img src={logoUrl} alt={name} className="w-full h-full object-contain p-1" /> : <Flame className="text-bbq-red" size={32} />}
             </div>
             <h3 className="font-display font-bold text-2xl tracking-wide uppercase text-white">{name}</h3>
             <p className="text-gray-500 text-sm leading-relaxed">
