@@ -1085,26 +1085,33 @@ const FTSettingsManager = () => {
 // Runtime key override — set from saved Firestore settings or admin panel
 let _geminiKeyOverride = null;
 
+const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-pro'];
+
 const callGemini = async (prompt, system) => {
   const key = _geminiKeyOverride || process.env.REACT_APP_GEMINI_API_KEY;
   if (!key) return null;
-  try {
-    const body = {
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      ...(system ? { system_instruction: { parts: [{ text: system }] } } : {}),
-    };
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-    );
-    const data = await res.json();
-    if (!res.ok) {
-      const msg = data?.error?.message || `HTTP ${res.status}`;
-      console.warn('[Gemini]', msg);
-      return { __error: msg };
-    }
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-  } catch (e) { console.warn('[Gemini]', e.message); return null; }
+  const body = {
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    ...(system ? { system_instruction: { parts: [{ text: system }] } } : {}),
+  };
+  for (const model of GEMINI_MODELS) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = data?.error?.message || `HTTP ${res.status}`;
+        const notFound = res.status === 404 || msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('not supported');
+        if (notFound) { console.warn(`[Gemini] ${model} not available, trying next…`); continue; }
+        console.warn('[Gemini]', msg);
+        return { __error: msg };
+      }
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    } catch (e) { console.warn('[Gemini]', e.message); return null; }
+  }
+  return { __error: 'No available Gemini model responded — check your API key and quota.' };
 };
 
 // ─── AI IMAGE GENERATOR ─────────────────────────────────────────────
