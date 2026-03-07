@@ -786,6 +786,8 @@ const FTMenuManager = () => {
 // ─── IMAGE UPLOAD FIELD ──────────────────────────────────────────────
 const ImageField = ({ label, value, onChange, hint, businessName }) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [imgState, setImgState] = useState('idle'); // idle | loading | loaded | error
+  useEffect(() => { setImgState(value ? 'loading' : 'idle'); }, [value]);
   const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -801,7 +803,7 @@ const ImageField = ({ label, value, onChange, hint, businessName }) => {
     toast.success('AI image generated!');
   };
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">{label}</label>
       <div className="flex gap-1.5 items-center">
         <input value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Paste a URL..."
@@ -816,7 +818,33 @@ const ImageField = ({ label, value, onChange, hint, businessName }) => {
         </button>
         {value && <button type="button" onClick={() => onChange('')} className="p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700 shrink-0"><X size={13} className="text-gray-400" /></button>}
       </div>
-      {value && <img src={value} alt={label} className="w-full h-24 object-cover rounded border border-gray-700" onError={e => e.target.style.display = 'none'} />}
+      <div className="relative w-full h-36 rounded border border-gray-700 overflow-hidden bg-gray-900/60">
+        {!value && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-gray-700">
+            <ImageIcon size={22} />
+            <span className="text-[10px] uppercase tracking-wider">No image set</span>
+          </div>
+        )}
+        {value && imgState === 'loading' && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/60">
+            <Loader2 size={18} className="animate-spin text-gray-500" />
+          </div>
+        )}
+        {value && imgState === 'error' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-red-500/60">
+            <AlertTriangle size={18} />
+            <span className="text-[10px]">Could not load preview</span>
+          </div>
+        )}
+        {value && (
+          <img
+            src={value} alt={label}
+            className={`w-full h-full object-cover transition-opacity duration-500 ${imgState === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setImgState('loaded')}
+            onError={() => setImgState('error')}
+          />
+        )}
+      </div>
     </div>
   );
 };
@@ -854,9 +882,35 @@ const FTSettingsManager = () => {
   const removePrize = (idx) => setRewards(r => ({ ...r, possiblePrizes: r.possiblePrizes.filter((_, i) => i !== idx) }));
 
   const VISUAL_SECTIONS = [
-    { label: 'HOME PAGE', fields: [{ key: 'cateringHero', label: 'CATERING HERO' }, { key: 'cookMenuHero', label: 'COOK/MENU HERO' }, { key: 'promoterSection', label: 'PROMOTER SECTION' }] },
-    { label: 'CATERING & DIY', fields: [{ key: 'diyPageHero', label: 'DIY PAGE HERO' }, { key: 'packageCard', label: 'PACKAGE CARD' }, { key: 'customCard', label: 'CUSTOM CARD' }] },
-    { label: 'OTHER PAGES', fields: [{ key: 'menuHero', label: 'MENU HERO' }, { key: 'eventsHero', label: 'EVENTS HERO' }, { key: 'galleryHero', label: 'GALLERY HERO' }] },
+    {
+      label: 'HOME PAGE', fields: [
+        { key: 'cateringHero', label: 'CATERING HERO (LEFT)' },
+        { key: 'cookMenuHero', label: 'COOK DAY HERO (RIGHT)' },
+        { key: 'promoterSection', label: 'PROMOTER PARALLAX' },
+        { key: 'eventsHero', label: 'SCHEDULE CARD' },
+        { key: 'menuHero', label: 'MENU CARD' },
+      ]
+    },
+    {
+      label: 'MENU PAGE', fields: [
+        { key: 'menuPackHero1', label: 'PACK HERO (LARGE)' },
+        { key: 'menuPackHero2', label: 'PACK HERO (TOP RIGHT)' },
+        { key: 'menuPackHero3', label: 'PACK HERO (BOTTOM RIGHT)' },
+      ]
+    },
+    {
+      label: 'CATERING & DIY', fields: [
+        { key: 'diyPageHero', label: 'CATERING PAGE HERO' },
+        { key: 'packageCard', label: 'CURATED PACKAGES CARD' },
+        { key: 'customCard', label: 'BUILD YOUR OWN CARD' },
+      ]
+    },
+    {
+      label: 'OTHER PAGES', fields: [
+        { key: 'eventsPageHero', label: 'EVENTS PAGE HERO' },
+        { key: 'galleryHero', label: 'GALLERY PAGE HERO' },
+      ]
+    },
   ];
 
   return (
