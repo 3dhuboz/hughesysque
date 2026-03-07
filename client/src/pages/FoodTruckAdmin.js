@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useStorefront } from '../context/StorefrontContext';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-import { auth } from '../firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, storage } from '../firebase';
 import toast from 'react-hot-toast';
 import {
   CalendarCheck, CalendarDays, Utensils, Settings, Plus, Edit2, Trash2, X, Save,
@@ -13,6 +14,14 @@ import {
   RefreshCw, BarChart2, Database, Activity, CreditCard, Mail, TrendingUp, Eye, Zap, Server,
   Share2, Globe, ImagePlus, Lock, UploadCloud, FileText, Palette, Link
 } from 'lucide-react';
+
+// ─── FIREBASE STORAGE UPLOAD HELPER ────────────────────────────────
+const uploadToStorage = async (file, path) => {
+  if (!storage) throw new Error('Firebase Storage not configured');
+  const fileRef = storageRef(storage, path);
+  await uploadBytes(fileRef, file);
+  return await getDownloadURL(fileRef);
+};
 
 // ─── HELP TIP COMPONENT ─────────────────────────────────────────────
 const Tip = ({ text }) => (
