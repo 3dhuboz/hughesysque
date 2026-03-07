@@ -786,11 +786,13 @@ const FTMenuManager = () => {
 // ─── IMAGE UPLOAD FIELD ──────────────────────────────────────────────
 const ImageField = ({ label, value, onChange, hint, businessName }) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [imgState, setImgState] = useState('idle'); // idle | loading | loaded | error | timeout
+  const [imgState, setImgState] = useState('idle'); // idle | loading | loaded | error | slow
+  const [slowTimer, setSlowTimer] = useState(null);
   useEffect(() => {
     if (!value) { setImgState('idle'); return; }
     setImgState('loading');
-    const t = setTimeout(() => setImgState(s => s === 'loading' ? 'timeout' : s), 15000);
+    const t = setTimeout(() => setImgState(s => s === 'loading' ? 'slow' : s), 20000);
+    setSlowTimer(t);
     return () => clearTimeout(t);
   }, [value]);
   const handleFile = (e) => {
@@ -830,26 +832,19 @@ const ImageField = ({ label, value, onChange, hint, businessName }) => {
             <span className="text-[10px] uppercase tracking-wider">No image set</span>
           </div>
         )}
-        {value && imgState === 'loading' && (
+        {value && (imgState === 'loading' || imgState === 'slow') && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-900/80 z-10">
             <Loader2 size={18} className="animate-spin text-gray-500" />
-            <span className="text-[10px] text-gray-600">Loading preview…</span>
-          </div>
-        )}
-        {value && imgState === 'timeout' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-900/90 z-10 p-3 text-center">
-            <Clock size={16} className="text-yellow-500/70" />
-            <span className="text-[10px] text-yellow-500/80 leading-tight">AI images take time to generate.<br />The URL is saved — click View to check it.</span>
-            <div className="flex gap-2 mt-1">
+            {imgState === 'slow'
+              ? <span className="text-[10px] text-yellow-500/80 text-center px-2 leading-tight">AI image is generating…<br />hang tight, almost there</span>
+              : <span className="text-[10px] text-gray-600">Loading preview…</span>
+            }
+            {imgState === 'slow' && (
               <a href={value} target="_blank" rel="noreferrer"
-                className="text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2.5 py-1 rounded flex items-center gap-1">
-                <Eye size={10} /> View
+                className="text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2.5 py-1 rounded flex items-center gap-1 mt-1">
+                <Eye size={10} /> Open in new tab
               </a>
-              <button onClick={() => setImgState('loading')}
-                className="text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2.5 py-1 rounded flex items-center gap-1">
-                <RefreshCw size={10} /> Retry
-              </button>
-            </div>
+            )}
           </div>
         )}
         {value && imgState === 'error' && (
