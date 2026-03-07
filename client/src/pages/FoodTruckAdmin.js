@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStorefront } from '../context/StorefrontContext';
+import api from '../api';
 import {
   CalendarCheck, CalendarDays, Utensils, Settings, Plus, Edit2, Trash2, X, Save,
   ChevronLeft, ChevronRight, ShoppingBag, Truck, Package, Check, AlertTriangle,
@@ -379,8 +380,8 @@ const FTPlanner = () => {
                 {evts.map(evt => (
                   <div key={evt.id} onClick={(e) => { e.stopPropagation(); setEditingEvent({ ...evt }); setIsModalOpen(true); }}
                     className={`text-[10px] p-0.5 rounded truncate border-l-2 cursor-pointer ${evt.type === 'BLOCKED' ? 'bg-red-900/40 border-red-500 text-red-200' :
-                        evt.type === 'ORDER_PICKUP' ? 'bg-blue-900/40 border-blue-500 text-blue-200' :
-                          'bg-green-900/40 border-green-500 text-green-200'}`}>
+                      evt.type === 'ORDER_PICKUP' ? 'bg-blue-900/40 border-blue-500 text-blue-200' :
+                        'bg-green-900/40 border-green-500 text-green-200'}`}>
                     {evt.type === 'ORDER_PICKUP' && <ShoppingBag size={8} className="inline mr-0.5" />}
                     {evt.title}
                   </div>
@@ -745,6 +746,20 @@ const FTSettingsManager = () => {
     await updateSettings({ ...form, rewards: { ...rewardsForm } });
     setIsSaving(false); setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (pwForm.newPassword !== pwForm.confirm) { setPwStatus({ ok: false, msg: 'Passwords do not match.' }); return; }
+    if (pwForm.newPassword.length < 8) { setPwStatus({ ok: false, msg: 'New password must be at least 8 characters.' }); return; }
+    setIsPwSaving(true); setPwStatus(null);
+    try {
+      await api.put('/auth/password', { currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+      setPwStatus({ ok: true, msg: 'Password changed successfully!' });
+      setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
+    } catch (err) {
+      setPwStatus({ ok: false, msg: err.response?.data?.message || 'Failed to change password.' });
+    } finally { setIsPwSaving(false); }
   };
 
   return (
