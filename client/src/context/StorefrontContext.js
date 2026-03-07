@@ -333,6 +333,41 @@ export const StorefrontProvider = ({ children }) => {
     }
   };
 
+  // ── Favicon + SEO meta injection ──
+  useEffect(() => {
+    const setMeta = (attr, key, content) => {
+      if (!content) return;
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
+      el.setAttribute('content', content);
+    };
+    const bizName = settings.businessName || brandName;
+    if (!bizName) return;
+    const address = settings.businessAddress || 'Queensland, AU';
+    const desc = `${bizName} — Authentic wood-smoked BBQ food truck in ${address}. Order online, browse our menu, and book catering.`;
+    const keywords = `${bizName}, BBQ food truck, smoked meat, catering, wood smoked BBQ, ${address}, order online`;
+    document.title = bizName;
+    if (settings.logoUrl) {
+      ['icon', 'shortcut icon', 'apple-touch-icon'].forEach(rel => {
+        let link = document.querySelector(`link[rel="${rel}"]`);
+        if (!link) { link = document.createElement('link'); link.rel = rel; document.head.appendChild(link); }
+        link.href = settings.logoUrl;
+      });
+    }
+    setMeta('name', 'description', desc);
+    setMeta('name', 'keywords', keywords);
+    setMeta('name', 'author', bizName);
+    setMeta('property', 'og:title', bizName);
+    setMeta('property', 'og:description', desc);
+    setMeta('property', 'og:type', 'restaurant');
+    setMeta('property', 'og:site_name', bizName);
+    if (settings.logoUrl) setMeta('property', 'og:image', settings.logoUrl);
+    setMeta('name', 'twitter:card', 'summary_large_image');
+    setMeta('name', 'twitter:title', bizName);
+    setMeta('name', 'twitter:description', desc);
+    if (settings.logoUrl) setMeta('name', 'twitter:image', settings.logoUrl);
+  }, [settings.businessName, settings.businessAddress, settings.logoUrl, brandName]);
+
   // ── Cook Days (derived from events) ──
   const cookDays = calendarEvents.filter(e => e.type === 'ORDER_PICKUP');
   const addCookDay = async (day) => {
