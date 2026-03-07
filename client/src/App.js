@@ -43,6 +43,8 @@ import Hosting from './pages/Hosting';
 import FoodTruck from './pages/FoodTruck';
 import SimpleWebsite from './pages/SimpleWebsite';
 import Storefront from './pages/Storefront';
+import StorefrontHome from './pages/StorefrontHome';
+import StorefrontLayout from './components/StorefrontLayout';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -63,7 +65,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/" element={enabledApps.includes('foodtruck') ? <Storefront /> : <Navigate to="/dashboard" />} />
+        <Route path="/" element={enabledApps.includes('foodtruck') ? <StorefrontHome /> : <Navigate to="/dashboard" />} />
 
         {/* Client dashboard & profile */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -155,7 +157,7 @@ const AppRoutes = () => {
 const AppShell = () => {
   const { clientMode, brandName } = useClientConfig();
   const location = useLocation();
-  const isStorefront = ['/storefront', '/order'].includes(location.pathname) || (clientMode && location.pathname === '/');
+  const isStorefront = ['/storefront', '/order', '/contact'].includes(location.pathname) || (clientMode && location.pathname === '/');
 
   useEffect(() => {
     if (clientMode && brandName) {
