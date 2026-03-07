@@ -21,7 +21,7 @@ app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://hugheseysque.au', 'https://www.hugheseysque.au', 'https://pennywiseit.com.au', 'https://www.pennywiseit.com.au', /\.vercel\.app$/]
+    ? ['https://hugheseysque.au', 'https://www.hugheseysque.au', 'https://pennywiseit.com.au', 'https://www.pennywiseit.com.au', /\.vercel\.app$/, /\.netlify\.app$/]
     : 'http://localhost:3000',
   credentials: true
 }));
