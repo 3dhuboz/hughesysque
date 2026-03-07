@@ -916,79 +916,66 @@ const FTSettingsManager = () => {
         </div>
       </div>
 
-      {/* Facebook / Instagram */}
-      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-3">
-        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Globe size={14} className="text-blue-400" /> Facebook / Instagram</h3>
-        <div className="bg-blue-950/40 border border-blue-800/60 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle size={15} className="text-blue-400 mt-0.5 shrink-0" />
-          <div>
-            <p className="text-sm font-bold text-white">Manage Facebook connection in the Social & AI tab</p>
-            <p className="text-xs text-gray-400 mt-1">The full Facebook login wizard, page selection, connection testing, and Instagram linking are all in the <strong className="text-white">Social & AI</strong> tab to keep everything in one place.</p>
-            {form.facebookConnected && <p className="text-xs text-green-400 mt-2 flex items-center gap-1"><Check size={11} /> Page currently connected</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* Rewards Program */}
-      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
-        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Gift size={14} className="text-yellow-400" /> Rewards Program<Tip text="Staff enter the Staff PIN at checkout to add a stamp. When a customer reaches the Stamps to Reward target, they unlock a random prize from your prize pool." /></h3>
-        <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
-          <input type="checkbox" checked={rewards.enabled || false} onChange={e => setRewards(r => ({ ...r, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
-          <div>
-            <span className="font-bold text-white text-sm">Enable Rewards Program</span>
-            <p className="text-xs text-gray-500">Customers can earn stamps and redeem prizes.</p>
-          </div>
-        </label>
-        {rewards.enabled && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PROGRAM NAME</label>
-                <input value={rewards.programName || ''} onChange={e => setRewards(r => ({ ...r, programName: e.target.value }))} placeholder="Meat Sweats Club"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">STAFF PIN</label>
-                  <input type="password" value={rewards.staffPin || ''} onChange={e => setRewards(r => ({ ...r, staffPin: e.target.value }))} placeholder="••••"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" />
-                  <p className="text-[10px] text-gray-500 mt-1">Staff enter this to add/redeem stamps.</p>
-                </div>
-                <div>
-                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">STAMPS TO REWARD</label>
-                  <input type="number" min="1" max="50" value={rewards.maxStamps || 10} onChange={e => setRewards(r => ({ ...r, maxStamps: parseInt(e.target.value) || 10 }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm text-center font-mono" />
-                  <p className="text-[10px] text-gray-500 mt-1">Stamps needed to earn a prize.</p>
-                </div>
-              </div>
+      {/* Rewards Program */
+        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Gift size={14} className="text-yellow-400" /> Rewards Program<Tip text="Staff enter the Staff PIN at checkout to add a stamp. When a customer reaches the Stamps to Reward target, they unlock a random prize from your prize pool." /></h3>
+          <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
+            <input type="checkbox" checked={rewards.enabled || false} onChange={e => setRewards(r => ({ ...r, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
+            <div>
+              <span className="font-bold text-white text-sm">Enable Rewards Program</span>
+              <p className="text-xs text-gray-500">Customers can earn stamps and redeem prizes.</p>
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PRIZE POOL (POSSIBLE WINNINGS)</label>
-                <p className="text-[10px] text-gray-500 mb-2">Add multiple items. The Golden Ticket will randomly select one upon scratching.</p>
-              </div>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {prizes.map((prize, idx) => (
-                  <div key={idx} className="flex items-center gap-3 bg-gray-800 border border-gray-700 rounded-lg p-3">
-                    {prize.image ? <img src={prize.image} alt="" className="w-9 h-9 object-cover rounded" /> : <div className="w-9 h-9 bg-gray-700 rounded flex items-center justify-center shrink-0"><Gift size={14} className="text-gray-500" /></div>}
-                    <span className="flex-1 text-sm font-medium text-white">{prize.name}</span>
-                    <button onClick={() => { const n = prompt('Edit prize name:', prize.name); if (n?.trim()) setRewards(r => ({ ...r, possiblePrizes: r.possiblePrizes.map((p, i) => i === idx ? { ...p, name: n.trim() } : p) })); }} className="p-1.5 text-gray-400 hover:text-white"><Edit2 size={13} /></button>
-                    <button onClick={() => removePrize(idx)} className="p-1.5 text-red-400 hover:text-red-300"><Trash2 size={13} /></button>
+          </label>
+          {rewards.enabled && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PROGRAM NAME</label>
+                  <input value={rewards.programName || ''} onChange={e => setRewards(r => ({ ...r, programName: e.target.value }))} placeholder="Meat Sweats Club"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">STAFF PIN</label>
+                    <input type="password" value={rewards.staffPin || ''} onChange={e => setRewards(r => ({ ...r, staffPin: e.target.value }))} placeholder="••••"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" />
+                    <p className="text-[10px] text-gray-500 mt-1">Staff enter this to add/redeem stamps.</p>
                   </div>
-                ))}
+                  <div>
+                    <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">STAMPS TO REWARD</label>
+                    <input type="number" min="1" max="50" value={rewards.maxStamps || 10} onChange={e => setRewards(r => ({ ...r, maxStamps: parseInt(e.target.value) || 10 }))}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm text-center font-mono" />
+                    <p className="text-[10px] text-gray-500 mt-1">Stamps needed to earn a prize.</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">ADD NEW PRIZE</label>
-                <input value={newPrize} onChange={e => setNewPrize(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPrize()} placeholder="e.g. Free Burger"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-2" />
-                <button onClick={addPrize} className="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-2.5 rounded-lg text-sm flex items-center justify-center gap-2">
-                  <Plus size={14} /> Add to Pool
-                </button>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PRIZE POOL (POSSIBLE WINNINGS)</label>
+                  <p className="text-[10px] text-gray-500 mb-2">Add multiple items. The Golden Ticket will randomly select one upon scratching.</p>
+                </div>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {prizes.map((prize, idx) => (
+                    <div key={idx} className="flex items-center gap-3 bg-gray-800 border border-gray-700 rounded-lg p-3">
+                      {prize.image ? <img src={prize.image} alt="" className="w-9 h-9 object-cover rounded" /> : <div className="w-9 h-9 bg-gray-700 rounded flex items-center justify-center shrink-0"><Gift size={14} className="text-gray-500" /></div>}
+                      <span className="flex-1 text-sm font-medium text-white">{prize.name}</span>
+                      <button onClick={() => { const n = prompt('Edit prize name:', prize.name); if (n?.trim()) setRewards(r => ({ ...r, possiblePrizes: r.possiblePrizes.map((p, i) => i === idx ? { ...p, name: n.trim() } : p) })); }} className="p-1.5 text-gray-400 hover:text-white"><Edit2 size={13} /></button>
+                      <button onClick={() => removePrize(idx)} className="p-1.5 text-red-400 hover:text-red-300"><Trash2 size={13} /></button>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">ADD NEW PRIZE</label>
+                  <input value={newPrize} onChange={e => setNewPrize(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPrize()} placeholder="e.g. Free Burger"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-2" />
+                  <button onClick={addPrize} className="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-2.5 rounded-lg text-sm flex items-center justify-center gap-2">
+                    <Plus size={14} /> Add to Pool
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
       {/* Invoice Template */}
       <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
@@ -1053,15 +1040,39 @@ const FTSettingsManager = () => {
         </div>
         <div className="border-t border-gray-700 pt-5">
           <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-3">EMAIL PREVIEW</label>
-          <div className="rounded-xl overflow-hidden border border-gray-700 max-w-xs">
-            <div className="p-4 text-center font-bold text-white text-xs tracking-wider" style={{ background: invoice.headerColor || '#d9381e' }}>
-              INVOICE FROM {(form.businessName || brandName || 'HUGHESYS QUE').toUpperCase()}
+          <div className="rounded-xl overflow-hidden border border-gray-700 max-w-2xl shadow-2xl">
+            <div className="px-8 py-5 text-center font-bold text-white tracking-wider flex items-center justify-center gap-3" style={{ background: invoice.headerColor || '#d9381e' }}>
+              {invoice.invoiceLogo && <img src={invoice.invoiceLogo} alt="logo" className="h-8 w-8 object-contain rounded" onError={e => e.target.style.display = 'none'} />}
+              <span className="text-sm">INVOICE FROM {(form.businessName || brandName || 'HUGHESYS QUE').toUpperCase()}</span>
             </div>
-            <div className="bg-gray-900 p-4 text-xs text-gray-400 space-y-3">
-              <p>{invoice.thankYouMessage || "Here's your invoice."}</p>
-              {invoice.bankDetails && <div className="font-mono bg-black/40 p-2 rounded text-gray-500 whitespace-pre text-[10px]">{invoice.bankDetails}</div>}
-              <button className="w-full py-2 rounded font-bold text-white text-xs" style={{ background: invoice.headerColor || '#d9381e' }}>{invoice.paymentButtonLabel || 'Pay Now'}</button>
-              {invoice.footerNote && <p className="text-center text-[10px] text-gray-500">{invoice.footerNote}</p>}
+            <div className="bg-[#1a1a1a] px-8 py-6 space-y-5">
+              <div className="text-xs text-gray-300 bg-gray-900/60 rounded-lg p-4 border border-gray-700/50">
+                <p className="font-bold text-white text-sm mb-1">Hi Customer,</p>
+                <p className="text-gray-400 leading-relaxed">{invoice.thankYouMessage || "Here's your invoice. Please review the details below and arrange payment at your earliest convenience."}</p>
+              </div>
+              <div className="bg-gray-900/60 rounded-lg border border-gray-700/50">
+                <div className="px-4 py-2 border-b border-gray-700/50 flex justify-between text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                  <span>Item</span><span>Amount</span>
+                </div>
+                <div className="px-4 py-3 flex justify-between text-xs text-gray-300">
+                  <span>BBQ Catering Package</span><span className="font-bold text-white">$350.00</span>
+                </div>
+                <div className="px-4 py-2 border-t border-gray-700/50 flex justify-between text-sm font-bold">
+                  <span className="text-gray-400">TOTAL DUE</span>
+                  <span className="text-white">$350.00</span>
+                </div>
+              </div>
+              {invoice.bankDetails && (
+                <div className="bg-gray-900/60 rounded-lg p-4 border border-gray-700/50">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Payment Details</p>
+                  <pre className="font-mono text-[11px] text-gray-300 whitespace-pre-wrap">{invoice.bankDetails}</pre>
+                </div>
+              )}
+              <button className="w-full py-3 rounded-lg font-bold text-white text-sm tracking-wide" style={{ background: invoice.headerColor || '#d9381e' }}>{invoice.paymentButtonLabel || 'Pay Now'}</button>
+              {invoice.footerNote && <p className="text-center text-[11px] text-gray-500 pb-2">{invoice.footerNote}</p>}
+            </div>
+            <div className="px-8 py-3 text-center text-[10px] text-gray-600 border-t border-gray-800" style={{ background: '#111' }}>
+              &copy; {new Date().getFullYear()} {form.businessName || brandName || 'Hughesys Que'} &mdash; This is an automated invoice.
             </div>
           </div>
         </div>
@@ -2272,6 +2283,9 @@ const FTDevTools = () => {
   const hasGemini = !!(_geminiKeyOverride || process.env.REACT_APP_GEMINI_API_KEY || settings.geminiApiKey);
   const [diagnosticsResult, setDiagnosticsResult] = useState(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [squareStatus, setSquareStatus] = useState(null);
+  const [isTestingSquare, setIsTestingSquare] = useState(false);
+  const [isSendingSms, setIsSendingSms] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -2333,6 +2347,67 @@ const FTDevTools = () => {
     } catch (err) {
       setPwStatus({ ok: false, msg: err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' ? 'Current password is incorrect.' : err.message });
     } finally { setIsPwSaving(false); }
+  };
+
+  const handleSquareTest = async () => {
+    if (!devSettings.squareAppId || !devSettings.squareLocationId) {
+      toast.error('Enter Application ID and Location ID first.');
+      return;
+    }
+    setIsTestingSquare(true); setSquareStatus(null);
+    const tid = toast.loading('Testing Square connection...');
+    try {
+      const res = await fetch('/api/v1/square/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appId: devSettings.squareAppId, locationId: devSettings.squareLocationId }),
+      });
+      if (res.ok) {
+        setSquareStatus({ ok: true, msg: 'Connection verified — payments ready.' });
+        toast.success('Square connection verified!', { id: tid });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSquareStatus({ ok: false, msg: data.message || `Server error ${res.status}` });
+        toast.error(data.message || 'Square credentials invalid.', { id: tid });
+      }
+    } catch {
+      const appIdValid = devSettings.squareAppId.startsWith('sq0idp-') || devSettings.squareAppId.startsWith('sandbox-sq0idp-');
+      if (appIdValid) {
+        setSquareStatus({ ok: true, msg: 'Format valid. Deploy server to test live connection.' });
+        toast.success('Credentials look valid. Deploy server to run live test.', { id: tid });
+      } else {
+        setSquareStatus({ ok: false, msg: 'App ID should start with sq0idp- or sandbox-sq0idp-' });
+        toast.error('Invalid App ID format — check Square Developer Dashboard.', { id: tid });
+      }
+    }
+    setIsTestingSquare(false);
+  };
+
+  const handleSendTestSms = async () => {
+    if (!smsSettings.accountSid || !smsSettings.authToken || !smsSettings.fromNumber) {
+      toast.error('Fill in Account SID, Auth Token, and From Number first.');
+      return;
+    }
+    const testPhone = window.prompt('Enter test phone number (E.164 format, e.g. +61412345678):');
+    if (!testPhone?.trim()) return;
+    setIsSendingSms(true);
+    const tid = toast.loading('Sending test SMS...');
+    try {
+      const res = await fetch('/api/v1/sms/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ smsSettings, to: testPhone.trim() }),
+      });
+      if (res.ok) {
+        toast.success(`Test SMS sent to ${testPhone.trim()}!`, { id: tid });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.message || `Error ${res.status} — check Twilio credentials.`, { id: tid });
+      }
+    } catch {
+      toast.error('Backend SMS endpoint not reachable — ensure server is running.', { id: tid });
+    }
+    setIsSendingSms(false);
   };
 
   const handleSquareDisconnect = () => {
@@ -2442,10 +2517,16 @@ const FTDevTools = () => {
               <div className="w-9 h-9 bg-green-900/40 rounded-lg flex items-center justify-center"><CreditCard size={16} className="text-green-400" /></div>
               <div>
                 <p className="text-sm font-bold text-white">Square Payments</p>
-                <p className={`text-xs ${devSettings.squareAppId ? 'text-green-400' : 'text-gray-500'}`}>{devSettings.squareAppId ? '⊙ Connected — Live Mode' : 'Not connected'}</p>
+                <p className={`text-xs ${devSettings.squareAppId ? 'text-green-400' : 'text-gray-500'}`}>{devSettings.squareAppId ? '⊙ Configured' : 'Not connected'}</p>
+                {squareStatus && <p className={`text-[11px] mt-0.5 ${squareStatus.ok ? 'text-green-400' : 'text-red-400'}`}>{squareStatus.msg}</p>}
               </div>
             </div>
-            {devSettings.squareAppId && <button onClick={handleSquareDisconnect} className="text-xs bg-red-900 hover:bg-red-800 text-red-200 font-bold px-3 py-1.5 rounded">Disconnect</button>}
+            <div className="flex gap-2">
+              <button onClick={handleSquareTest} disabled={isTestingSquare} className="text-xs bg-green-900 hover:bg-green-800 text-green-200 font-bold px-3 py-1.5 rounded flex items-center gap-1.5 disabled:opacity-50">
+                {isTestingSquare ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />} Test Connection
+              </button>
+              {devSettings.squareAppId && <button onClick={handleSquareDisconnect} className="text-xs bg-red-900 hover:bg-red-800 text-red-200 font-bold px-3 py-1.5 rounded">Disconnect</button>}
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[{ key: 'squareAppId', label: 'APPLICATION ID', ph: 'sq0idp-...', pw: true }, { key: 'squareLocationId', label: 'LOCATION ID', ph: 'LEG88M0C3BZA...' }].map(({ key, label, ph, pw }) => (
@@ -2629,6 +2710,13 @@ service cloud.firestore {
                 <input type={pw ? 'password' : 'text'} value={smsSettings[k] || ''} onChange={e => setSmsSettings(s => ({ ...s, [k]: e.target.value }))} placeholder={p}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" /></div>
             ))}
+            <div className="col-span-full">
+              <button onClick={handleSendTestSms} disabled={isSendingSms}
+                className="bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-2.5 px-5 rounded-lg text-sm flex items-center gap-2">
+                {isSendingSms ? <Loader2 size={13} className="animate-spin" /> : <Smartphone size={13} />} Send Test SMS
+              </button>
+              <p className="text-[10px] text-gray-500 mt-1">Sends a test message to a number you specify. Requires server to be running.</p>
+            </div>
           </div>
         )}
       </div>
