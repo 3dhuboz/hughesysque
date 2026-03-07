@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, Flame, ChefHat, Utensils, MapPin, Calendar, Star, Truck } from 'lucide-react';
 import { useClientConfig } from '../context/ClientConfigContext';
 import { useStorefront } from '../context/StorefrontContext';
+import SmartHeroImg from '../components/SmartHeroImg';
 import api from '../api';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80';
@@ -62,11 +63,11 @@ const StorefrontHome = () => {
         <Link to="/order" className="relative flex-1 group overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
           <div className="absolute inset-0">
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/80 z-10" />
-            <img
-              src={sv.cateringHero || HERO_CATERING}
+            <SmartHeroImg
+              src={sv.cateringHero}
+              fallback={HERO_CATERING}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
               alt="Catering Feast"
-              onError={handleImageError}
             />
           </div>
           <div className="absolute inset-0 z-20 flex flex-col justify-end p-8 md:p-12 items-start">
@@ -90,11 +91,11 @@ const StorefrontHome = () => {
           <div className="absolute inset-0">
             <div className="absolute inset-0 bg-gradient-to-t from-bbq-red/40 to-transparent mix-blend-overlay z-10" />
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/90 z-20" />
-            <img
-              src={sv.cookMenuHero || HERO_COOK}
+            <SmartHeroImg
+              src={sv.cookMenuHero}
+              fallback={HERO_COOK}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 contrast-125"
               alt="Smoker and BBQ"
-              onError={handleImageError}
             />
           </div>
           <div className="absolute inset-0 z-30 flex flex-col justify-end p-8 md:p-12 items-start">
@@ -177,11 +178,11 @@ const StorefrontHome = () => {
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4 max-w-7xl mx-auto">
         <Link to="/order" className="relative h-64 rounded-2xl overflow-hidden group border border-white/10 hover:border-bbq-red/50 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
-          <img
-            src={sv.eventsHero || CARD_SCHEDULE}
+          <SmartHeroImg
+            src={sv.eventsHero}
+            fallback={CARD_SCHEDULE}
             alt="Events"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700"
-            onError={handleImageError}
           />
           <div className="absolute bottom-0 left-0 w-full p-8 z-20">
             <div className="flex items-center gap-3 mb-2">
@@ -197,11 +198,11 @@ const StorefrontHome = () => {
 
         <Link to="/order" className="relative h-64 rounded-2xl overflow-hidden group border border-white/10 hover:border-bbq-red/50 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
-          <img
-            src={sv.menuHero || CARD_MENU}
+          <SmartHeroImg
+            src={sv.menuHero}
+            fallback={CARD_MENU}
             alt="Menu"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700"
-            onError={handleImageError}
           />
           <div className="absolute bottom-0 left-0 w-full p-8 z-20">
             <div className="flex items-center gap-3 mb-2">
@@ -220,7 +221,7 @@ const StorefrontHome = () => {
       <section className="relative w-full h-[500px] overflow-hidden flex items-center justify-center my-12 group">
         <div
           className="absolute inset-0 bg-fixed bg-cover bg-center"
-          style={{ backgroundImage: `url('${sv.promoterSection || PROMOTER_IMG}')` }}
+          style={{ backgroundImage: `url('${sv.promoterSection && sv.promoterSection.trim() ? sv.promoterSection : PROMOTER_IMG}')` }}
         ></div>
         <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition duration-700"></div>
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
