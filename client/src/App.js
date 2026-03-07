@@ -54,6 +54,7 @@ import StorefrontTracking from './pages/StorefrontTracking';
 import StorefrontLogin from './pages/StorefrontLogin';
 import StorefrontProfile from './pages/StorefrontProfile';
 import StorefrontCatering from './pages/StorefrontCatering';
+import FoodTruckAdmin from './pages/FoodTruckAdmin';
 import StorefrontLayout from './components/StorefrontLayout';
 import { StorefrontProvider } from './context/StorefrontContext';
 
@@ -105,6 +106,7 @@ const AppRoutes = () => {
         <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/social" element={<ProtectedRoute adminOnly><AdminSocial /></ProtectedRoute>} />
         <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
+        <Route path="/admin/foodtruck" element={<ProtectedRoute adminOnly><FoodTruckAdmin /></ProtectedRoute>} />
 
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
