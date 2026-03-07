@@ -1,7 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc,
+  query, orderBy, where, arrayUnion, arrayRemove, increment, getDoc,
+} from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { useClientConfig } from './ClientConfigContext';
-import api from '../api';
+import { db, isFirebaseConfigured } from '../firebase';
 
 const StorefrontContext = createContext(undefined);
 
