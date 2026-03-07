@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStorefront } from '../context/StorefrontContext';
-import api from '../api';
+import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { auth } from '../firebase';
 import {
   CalendarCheck, CalendarDays, Utensils, Settings, Plus, Edit2, Trash2, X, Save,
   ChevronLeft, ChevronRight, ShoppingBag, Truck, Package, Check, AlertTriangle,
@@ -754,11 +755,18 @@ const FTSettingsManager = () => {
     if (pwForm.newPassword.length < 8) { setPwStatus({ ok: false, msg: 'New password must be at least 8 characters.' }); return; }
     setIsPwSaving(true); setPwStatus(null);
     try {
-      await api.put('/auth/password', { currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+      const fbUser = auth.currentUser;
+      if (!fbUser) throw new Error('Not logged in');
+      const cred = EmailAuthProvider.credential(fbUser.email, pwForm.currentPassword);
+      await reauthenticateWithCredential(fbUser, cred);
+      await updatePassword(fbUser, pwForm.newPassword);
       setPwStatus({ ok: true, msg: 'Password changed successfully!' });
       setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
     } catch (err) {
-      setPwStatus({ ok: false, msg: err.response?.data?.message || 'Failed to change password.' });
+      const msg = err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential'
+        ? 'Current password is incorrect.'
+        : err.message || 'Failed to change password.';
+      setPwStatus({ ok: false, msg });
     } finally { setIsPwSaving(false); }
   };
 
