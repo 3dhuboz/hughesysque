@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useStorefront } from '../context/StorefrontContext';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -1012,8 +1012,11 @@ const FTSettingsManager = () => {
 };
 
 // ─── GEMINI AI HELPER ────────────────────────────────────────────────
+// Runtime key override — set from saved Firestore settings or admin panel
+let _geminiKeyOverride = null;
+
 const callGemini = async (prompt, system) => {
-  const key = process.env.REACT_APP_GEMINI_API_KEY;
+  const key = _geminiKeyOverride || process.env.REACT_APP_GEMINI_API_KEY;
   if (!key) return null;
   try {
     const body = {
@@ -2170,6 +2173,9 @@ const FTDevTools = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isTestingGemini, setIsTestingGemini] = useState(false);
   const [geminiStatus, setGeminiStatus] = useState(null);
+  const [showKeyInput, setShowKeyInput] = useState(false);
+  const [newKeyInput, setNewKeyInput] = useState('');
+  const [isSavingKey, setIsSavingKey] = useState(false);
   const [lastPulse, setLastPulse] = useState(new Date());
   const hasGemini = !!process.env.REACT_APP_GEMINI_API_KEY;
   const [diagnosticsResult, setDiagnosticsResult] = useState(null);
@@ -2184,8 +2190,27 @@ const FTDevTools = () => {
   const handleTestGemini = async () => {
     setIsTestingGemini(true); setGeminiStatus(null);
     const result = await callGemini('Reply with exactly: OK');
-    setGeminiStatus(result ? { ok: true, msg: 'Active — AI features enabled for all admins.' } : { ok: false, msg: 'Not responding. Check API key in CF Pages.' });
+    setGeminiStatus(result ? { ok: true, msg: 'Active — AI features enabled for all admins.' } : { ok: false, msg: 'Not responding. Check API key.' });
     setIsTestingGemini(false);
+  };
+
+  const handleSaveGeminiKey = async () => {
+    if (!newKeyInput.trim()) { toast.error('Enter an API key.'); return; }
+    setIsSavingKey(true);
+    _geminiKeyOverride = newKeyInput.trim();
+    await updateSettings({ geminiApiKey: newKeyInput.trim() });
+    setIsSavingKey(false);
+    setShowKeyInput(false);
+    setNewKeyInput('');
+    toast.success('Gemini API key saved! AI features are now active.');
+  };
+
+  const handleGeminiDisconnect = async () => {
+    if (window.confirm('Remove the saved Gemini API key from app settings?')) {
+      _geminiKeyOverride = null;
+      await updateSettings({ geminiApiKey: '' });
+      toast('Gemini key removed.');
+    }
   };
 
   const handleChangePassword = async (e) => {
@@ -2277,9 +2302,25 @@ const FTDevTools = () => {
             className="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5">
             {isTestingGemini ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />} Test Connection
           </button>
-          <button onClick={() => toast('To update your Gemini key: CF Pages → Settings → Environment variables → update REACT_APP_GEMINI_API_KEY → Redeploy.', { duration: 7000 })} className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5"><RefreshCw size={12} /> Reconnect with New Key</button>
-          <button onClick={() => toast('To disconnect Gemini: remove REACT_APP_GEMINI_API_KEY from CF Pages environment variables, then redeploy.', { duration: 7000 })} className="bg-red-900 hover:bg-red-800 text-red-200 font-bold px-4 py-2 rounded-lg text-xs">Disconnect</button>
+          <button onClick={() => setShowKeyInput(!showKeyInput)} className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5"><RefreshCw size={12} /> {showKeyInput ? 'Cancel' : 'Update API Key'}</button>
+          <button onClick={handleGeminiDisconnect} className="bg-red-900 hover:bg-red-800 text-red-200 font-bold px-4 py-2 rounded-lg text-xs">Disconnect</button>
         </div>
+        {showKeyInput && (
+          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 space-y-3">
+            <p className="text-xs font-bold text-white">Enter Gemini API Key</p>
+            <p className="text-xs text-gray-400">Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">aistudio.google.com/apikey</a>. The key is saved directly to your app settings — no CF Pages required.</p>
+            <div className="flex gap-2">
+              <input type="password" value={newKeyInput} onChange={e => setNewKeyInput(e.target.value)}
+                placeholder="AIzaSy..."
+                className="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono focus:outline-none focus:border-green-600" />
+              <button onClick={handleSaveGeminiKey} disabled={isSavingKey || !newKeyInput.trim()}
+                className="bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-1.5">
+                {isSavingKey ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Key
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-500">Key is saved to Firestore settings and persists across deployments. Optionally also add as <code className="text-gray-400">REACT_APP_GEMINI_API_KEY</code> in CF Pages for extra redundancy.</p>
+          </div>
+        )}
       </div>
 
       {/* Payment Gateway */}
@@ -2463,8 +2504,12 @@ const FTDevTools = () => {
 
 // ─── MAIN ADMIN DASHBOARD ────────────────────────────────────────────
 const FoodTruckAdmin = () => {
-  const { connectionError, orders, brandName } = useStorefront();
+  const { connectionError, orders, brandName, settings } = useStorefront();
   const [activeTab, setActiveTab] = useState('orders');
+
+  useEffect(() => {
+    if (settings?.geminiApiKey) _geminiKeyOverride = settings.geminiApiKey;
+  }, [settings?.geminiApiKey]);
 
   const TABS = [
     { id: 'orders', icon: CalendarCheck, label: 'Orders', badge: orders.filter(o => o.status === 'pending').length },
