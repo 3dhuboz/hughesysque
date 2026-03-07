@@ -1704,6 +1704,10 @@ const FoodTruckAdmin = () => {
     { id: 'orders', icon: CalendarCheck, label: 'Orders', badge: orders.filter(o => o.status === 'pending').length },
     { id: 'planner', icon: CalendarDays, label: 'Planner' },
     { id: 'menu', icon: Utensils, label: 'Menu', badge: menu.length },
+    { id: 'customers', icon: Users, label: 'Customers' },
+    { id: 'catering', icon: Package, label: 'Catering' },
+    { id: 'sms', icon: Smartphone, label: 'SMS Blast' },
+    { id: 'pitmaster', icon: Flame, label: 'Pitmaster' },
     { id: 'settings', icon: Settings, label: 'Settings' },
   ];
 
