@@ -19,12 +19,15 @@ app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://hugheseysque.au', 'https://www.hugheseysque.au', 'https://pennywiseit.com.au', 'https://www.pennywiseit.com.au', /\.vercel\.app$/, /\.netlify\.app$/]
-    : 'http://localhost:3000',
-  credentials: true
-}));
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [
+    'https://hugheseysque.au', 'https://www.hugheseysque.au',
+    'https://pennywiseit.com.au', 'https://www.pennywiseit.com.au',
+    /\.vercel\.app$/, /\.netlify\.app$/, /\.railway\.app$/,
+    ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [])
+  ]
+  : ['http://localhost:3000', 'http://localhost:3001'];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
 // Rate limiting
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
@@ -256,6 +259,9 @@ async function connectDB() {
     throw err;
   }
 }
+
+// Health check — used by Railway
+app.get('/api/health', (req, res) => res.json({ status: 'ok', ts: Date.now() }));
 
 // Public config endpoint — exposes client-mode settings for the React app (no DB needed)
 app.get('/api/config', (req, res) => {
