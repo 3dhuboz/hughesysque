@@ -9,7 +9,7 @@ import {
   DollarSign, Loader2, Image as ImageIcon, ChevronDown, ChevronUp, HelpCircle,
   CheckSquare, Square, Flame, Cloud, Wifi, Users, Star, Gift,
   Search, UserCheck, AlertCircle, Smartphone, Wand2, Sparkles, Copy,
-  ClipboardList, Thermometer, Clock, BookOpen, MessageSquare, Bot, User as UserIcon, Send
+  ClipboardList, Thermometer, Clock, BookOpen, MessageSquare, Bot, User as UserIcon, Send, Code2
 } from 'lucide-react';
 
 // ─── ORDER MANAGER ───────────────────────────────────────────────────
@@ -1695,58 +1695,117 @@ const FTPitmaster = () => {
   );
 };
 
+// ─── DEV TOOLS ───────────────────────────────────────────────────────
+const FTDevTools = () => {
+  const { connectionError, brandName } = useStorefront();
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-display font-bold text-white uppercase tracking-wide">Dev Tools</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 space-y-3">
+          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Connection</h3>
+          <div className={`flex items-center gap-2 text-sm ${connectionError ? 'text-red-400' : 'text-green-400'}`}>
+            {connectionError ? <Wifi size={14} /> : <Cloud size={14} />}
+            <span>{connectionError ? `Error: ${connectionError}` : 'Firebase Connected'}</span>
+          </div>
+        </div>
+        <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 space-y-2">
+          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Environment</h3>
+          <div className="font-mono text-xs text-gray-300 space-y-1.5">
+            <div><span className="text-gray-500">CLIENT_MODE: </span>{process.env.REACT_APP_CLIENT_MODE || 'false'}</div>
+            <div><span className="text-gray-500">BRAND: </span>{brandName}</div>
+            <div><span className="text-gray-500">APPS: </span>{process.env.REACT_APP_ENABLED_APPS || '—'}</div>
+            <div><span className="text-gray-500">NODE_ENV: </span>{process.env.NODE_ENV}</div>
+          </div>
+        </div>
+        <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 col-span-full">
+          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">SMS Blast</h3>
+          <SmsBlast />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── MAIN ADMIN DASHBOARD ────────────────────────────────────────────
 const FoodTruckAdmin = () => {
-  const { connectionError, orders, menu, brandName } = useStorefront();
+  const { connectionError, orders, brandName } = useStorefront();
   const [activeTab, setActiveTab] = useState('orders');
 
   const TABS = [
     { id: 'orders', icon: CalendarCheck, label: 'Orders', badge: orders.filter(o => o.status === 'pending').length },
     { id: 'planner', icon: CalendarDays, label: 'Planner' },
-    { id: 'menu', icon: Utensils, label: 'Menu', badge: menu.length },
-    { id: 'customers', icon: Users, label: 'Customers' },
-    { id: 'catering', icon: Package, label: 'Catering' },
-    { id: 'sms', icon: Smartphone, label: 'SMS Blast' },
     { id: 'pitmaster', icon: Flame, label: 'Pitmaster' },
+    { id: 'menu', icon: Utensils, label: 'Menu' },
+    { id: 'catering', icon: Package, label: 'Catering' },
+    { id: 'customers', icon: Users, label: 'Customers' },
+    { id: 'social', icon: Sparkles, label: 'Social & AI' },
     { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'devtools', icon: Code2, label: 'Dev Tools' },
   ];
 
+  const activeTabInfo = TABS.find(t => t.id === activeTab);
+  const ActiveIcon = activeTabInfo?.icon;
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
-        <div>
-          <h2 className="text-3xl font-display font-bold text-white">{brandName} Admin</h2>
-          <div className="flex items-center gap-2 mt-1">
-            {connectionError ? (
-              <span className="text-xs bg-red-900/50 text-red-200 px-2 py-1 rounded border border-red-500 flex items-center gap-1"><Wifi size={12} /> Offline</span>
-            ) : (
-              <span className="text-xs bg-green-900/50 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1"><Cloud size={12} /> Connected</span>
-            )}
-          </div>
+    <div className="flex -mx-4 md:-mx-8 -mb-8 min-h-[calc(100vh-8rem)] overflow-hidden">
+      {/* Sidebar */}
+      <aside className="w-52 shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col">
+        <div className="px-4 pt-5 pb-2">
+          <p className="text-[10px] font-mono text-gray-500 uppercase tracking-[0.2em]">Dev Panel</p>
         </div>
-        <div className="flex flex-wrap gap-2 bg-bbq-charcoal p-2 rounded-lg border border-gray-800">
+        <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
           {TABS.map(({ id, icon: Icon, label, badge }) => (
             <button key={id} onClick={() => setActiveTab(id)}
-              className={`px-4 py-2 rounded-md flex items-center gap-2 transition text-sm font-medium whitespace-nowrap relative ${activeTab === id ? 'bg-bbq-red text-white' : 'text-gray-400 hover:text-white'}`}>
-              <Icon size={16} /> {label}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                ${activeTab === id ? 'bg-bbq-red text-white shadow-lg shadow-red-900/30' : 'text-gray-400 hover:text-white hover:bg-gray-800/60'}`}>
+              <Icon size={16} className="shrink-0" />
+              <span>{label}</span>
               {badge > 0 && (
-                <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">{badge}</span>
+                <span className="ml-auto bg-yellow-500 text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shrink-0">{badge}</span>
               )}
             </button>
           ))}
+        </nav>
+        <div className="px-4 py-4 border-t border-gray-800 space-y-2">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <UserIcon size={12} />
+            <span>Developer Mode</span>
+          </div>
+          {connectionError ? (
+            <div className="flex items-center gap-2 text-xs text-red-400">
+              <Wifi size={12} />
+              <span>Offline</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-purple-400">
+              <Cloud size={12} />
+              <span>Live · {brandName}</span>
+            </div>
+          )}
         </div>
-      </div>
+      </aside>
 
-      <div className="bg-bbq-charcoal/50 border border-gray-800 rounded-xl p-6 min-h-[500px]">
-        {activeTab === 'orders' && <OrderManager />}
-        {activeTab === 'planner' && <FTPlanner />}
-        {activeTab === 'menu' && <FTMenuManager />}
-        {activeTab === 'customers' && <CustomerManager />}
-        {activeTab === 'catering' && <CateringManager />}
-        {activeTab === 'sms' && <SmsBlast />}
-        {activeTab === 'pitmaster' && <FTPitmaster />}
-        {activeTab === 'settings' && <FTSettingsManager />}
-      </div>
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-6">
+          {activeTabInfo && ActiveIcon && (
+            <div className="flex items-center gap-2 mb-6 text-gray-400">
+              <ActiveIcon size={16} />
+              <span className="text-white font-medium text-sm">{activeTabInfo.label}</span>
+            </div>
+          )}
+          {activeTab === 'orders' && <OrderManager />}
+          {activeTab === 'planner' && <FTPlanner />}
+          {activeTab === 'pitmaster' && <FTPitmaster />}
+          {activeTab === 'menu' && <FTMenuManager />}
+          {activeTab === 'catering' && <CateringManager />}
+          {activeTab === 'customers' && <CustomerManager />}
+          {activeTab === 'social' && <FTPitmasterChat />}
+          {activeTab === 'settings' && <FTSettingsManager />}
+          {activeTab === 'devtools' && <FTDevTools />}
+        </div>
+      </main>
     </div>
   );
 };
