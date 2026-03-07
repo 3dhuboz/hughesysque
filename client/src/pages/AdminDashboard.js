@@ -65,10 +65,10 @@ const AdminDashboard = () => {
             </>
           )}
           {clientMode && enabledApps.includes('foodtruck') && (
-            <Link to="/foodtruck-app" className="admin-nav-card card">
+            <Link to="/admin/foodtruck" className="admin-nav-card card">
               <Zap size={24} />
               <h3>Food Truck</h3>
-              <p>Manage orders, menu, cook days & more</p>
+              <p>Orders, menu, cook days, planner & settings</p>
             </Link>
           )}
           {clientMode && enabledApps.includes('simplewebsite') && (
