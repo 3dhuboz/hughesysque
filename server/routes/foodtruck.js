@@ -93,6 +93,7 @@ router.get('/public/settings', async (req, res) => {
   try {
     const SiteSettings = require('../models/SiteSettings');
     const settings = await SiteSettings.getSettings();
+    const rewards = settings.rewards || {};
     res.json({
       businessName: settings.businessName || settings.brandName || '',
       businessAddress: settings.businessAddress || '',
@@ -101,6 +102,16 @@ router.get('/public/settings', async (req, res) => {
       businessEmail: settings.businessEmail || '',
       businessFacebook: settings.businessFacebook || '',
       businessInstagram: settings.businessInstagram || '',
+      maintenanceMode: settings.maintenanceMode || false,
+      rewards: {
+        enabled: rewards.enabled || false,
+        programName: rewards.programName || 'Loyalty Rewards',
+        maxStamps: rewards.maxStamps || 10,
+        rewardTitle: rewards.rewardTitle || 'Free Item',
+        rewardImage: rewards.rewardImage || '',
+        possiblePrizes: rewards.possiblePrizes || [],
+        // staffPin intentionally omitted from public endpoint
+      },
     });
   } catch (err) {
     // Return empty defaults if settings model doesn't exist yet
