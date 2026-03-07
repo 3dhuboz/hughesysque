@@ -1024,12 +1024,17 @@ const callGemini = async (prompt, system) => {
       ...(system ? { system_instruction: { parts: [{ text: system }] } } : {}),
     };
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
     );
     const data = await res.json();
+    if (!res.ok) {
+      const msg = data?.error?.message || `HTTP ${res.status}`;
+      console.warn('[Gemini]', msg);
+      return { __error: msg };
+    }
     return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-  } catch { return null; }
+  } catch (e) { console.warn('[Gemini]', e.message); return null; }
 };
 
 // ─── CUSTOMER MANAGER ────────────────────────────────────────────────
