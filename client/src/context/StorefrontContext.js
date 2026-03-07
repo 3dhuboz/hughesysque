@@ -33,7 +33,7 @@ const DEFAULT_SETTINGS = {
 };
 
 export const StorefrontProvider = ({ children }) => {
-  const { user: authUser, logout: authLogout, login: authLogin, register: authRegister } = useAuth();
+  const { user: authUser, logout: authLogout, login: authLogin, register: authRegister, updateProfile: authUpdateProfile } = useAuth();
   const { brandName, brandTagline, primaryColor } = useClientConfig();
 
   // ── Data State ──
@@ -42,7 +42,9 @@ export const StorefrontProvider = ({ children }) => {
   const [menu, setMenu] = useState(() => {
     try { const s = localStorage.getItem('hq_menu'); return s ? JSON.parse(s) : []; } catch { return []; }
   });
-  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState(() => {
+    try { const s = localStorage.getItem('hq_events'); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
   const [orders, setOrders] = useState([]);
   const [galleryPosts, setGalleryPosts] = useState([]);
   const [users, setUsers] = useState([]);
@@ -60,10 +62,11 @@ export const StorefrontProvider = ({ children }) => {
   });
   const [selectedOrderDate, setSelectedOrderDate] = useState(() => localStorage.getItem('hq_selected_date'));
 
-  // ── Map authUser to Street Meatz user shape ──
+  // ── Map Firebase user to Street Meatz user shape ──
   const user = authUser ? {
-    id: authUser._id || authUser.id,
-    name: authUser.name || 'User',
+    id: authUser.uid || authUser.id,
+    uid: authUser.uid,
+    name: authUser.name || authUser.displayName || 'User',
     email: authUser.email || '',
     role: authUser.role === 'admin' ? 'ADMIN' : 'CUSTOMER',
     isVerified: true,
@@ -82,152 +85,132 @@ export const StorefrontProvider = ({ children }) => {
     } catch { }
   }, [selectedOrderDate]);
 
-  // ── Fetch all data on mount ──
+  // ── Firestore real-time listeners ──
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [menuRes, cookRes] = await Promise.all([
-          api.get('/foodtruck/public/menu').catch(() => ({ data: [] })),
-          api.get('/foodtruck/public/cookdays').catch(() => ({ data: [] })),
-        ]);
+    if (!isFirebaseConfigured) {
+      setConnectionError('Firebase not configured. Set REACT_APP_FIREBASE_* env vars.');
+      setIsLoading(false);
+      return;
+    }
 
-        const menuData = menuRes.data || [];
-        setMenu(menuData);
-        try { localStorage.setItem('hq_menu', JSON.stringify(menuData.map(i => ({ ...i, image: '' })))); } catch { }
-
-        // Map cook days to CalendarEvent format for public display
-        const cookEvents = (cookRes.data || []).map(d => ({
-          id: d._id || d.id,
-          date: d.date,
-          type: 'ORDER_PICKUP',
-          title: d.title || 'Cook Day',
-          location: d.location?.name || d.location || '',
-          time: d.timeStart && d.timeEnd ? `${d.timeStart} - ${d.timeEnd}` : '',
-          startTime: d.timeStart,
-          endTime: d.timeEnd,
-        }));
-
-        // Also load public events (blocked, pop-ups)
-        try {
-          const pubEvtsRes = await api.get('/foodtruck/public/events');
-          const pubEvts = (pubEvtsRes.data || []).map(e => ({ ...e, id: e._id || e.id }));
-          // Merge: prefer full CalendarEvent over cook day entry for same date
-          const merged = [...pubEvts];
-          cookEvents.forEach(ce => {
-            if (!merged.find(e => e.date === ce.date && e.type === 'ORDER_PICKUP')) merged.push(ce);
-          });
-          setCalendarEvents(merged);
-        } catch {
-          setCalendarEvents(cookEvents);
-        }
-
-        // Fetch public settings
-        try {
-          const settingsRes = await api.get('/foodtruck/public/settings');
-          if (settingsRes.data) {
-            setSettings(prev => {
-              const merged = { ...prev, ...settingsRes.data };
-              try { localStorage.setItem('hq_settings', JSON.stringify(merged)); } catch { }
-              return merged;
-            });
-          }
-        } catch { }
-
-        // Fetch gallery
-        try {
-          const galRes = await api.get('/foodtruck/public/gallery');
-          setGalleryPosts(galRes.data || []);
-        } catch { }
-
-        setConnectionError(null);
-      } catch (err) {
-        console.error('StorefrontContext fetch error:', err);
-        setConnectionError('Unable to connect to server. Some features may be limited.');
-      } finally {
-        setIsLoading(false);
+    const handleError = (source) => (err) => {
+      if (err.code === 'permission-denied') {
+        setConnectionError('Database access denied. Check Firestore security rules.');
+      } else {
+        console.error(`Firestore error (${source}):`, err);
       }
     };
-    fetchData();
-  }, []);
 
-  // Fetch orders + full calendar events when user is logged in
-  useEffect(() => {
-    if (!authUser) { setOrders([]); return; }
-    const fetchOrders = async () => {
-      try {
-        const res = await api.get('/foodtruck/orders');
-        setOrders(res.data?.orders || res.data || []);
-      } catch { }
+    // Menu
+    const unsubMenu = onSnapshot(collection(db, 'menu'), (snap) => {
+      const data = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      setMenu(data);
+      try { localStorage.setItem('hq_menu', JSON.stringify(data.map(i => ({ ...i, image: '' })))); } catch { }
+      setConnectionError(null);
+    }, handleError('menu'));
+
+    // Orders
+    const unsubOrders = onSnapshot(
+      query(collection(db, 'orders'), orderBy('createdAt', 'desc')),
+      (snap) => {
+        setOrders(snap.docs.map(d => ({ ...d.data(), id: d.id })));
+        setConnectionError(null);
+      }, handleError('orders')
+    );
+
+    // Events
+    const unsubEvents = onSnapshot(collection(db, 'events'), (snap) => {
+      const data = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      setCalendarEvents(data);
+      try { localStorage.setItem('hq_events', JSON.stringify(data)); } catch { }
+      setConnectionError(null);
+    }, handleError('events'));
+
+    // Gallery
+    const unsubGallery = onSnapshot(
+      query(collection(db, 'gallery_posts'), orderBy('createdAt', 'desc')),
+      (snap) => setGalleryPosts(snap.docs.map(d => ({ ...d.data(), id: d.id }))),
+      handleError('gallery')
+    );
+
+    // Users
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+      setUsers(snap.docs.map(d => ({ ...d.data(), id: d.id, uid: d.id })));
+      setConnectionError(null);
+    }, handleError('users'));
+
+    // Settings — merge multiple sub-docs into one settings object
+    const mergeSettings = (data) => {
+      if (!data) return;
+      setSettings(prev => {
+        const merged = { ...prev, ...data };
+        try { localStorage.setItem('hq_settings', JSON.stringify(merged)); } catch { }
+        return merged;
+      });
     };
-    fetchOrders();
+    const unsubGeneral = onSnapshot(doc(db, 'settings', 'general'), snap => mergeSettings(snap.data()), handleError('settings/general'));
+    const unsubRewards = onSnapshot(doc(db, 'settings', 'rewards'), snap => mergeSettings(snap.data()), handleError('settings/rewards'));
 
-    // Load full calendar events (including BLOCKED/PUBLIC_EVENT) for admin Planner
-    if (authUser.role === 'admin') {
-      const fetchEvents = async () => {
-        try {
-          const res = await api.get('/foodtruck/events');
-          const evts = (res.data || []).map(e => ({ ...e, id: e._id || e.id }));
-          if (evts.length > 0) setCalendarEvents(evts);
-        } catch { }
-      };
-      fetchEvents();
-    }
-  }, [authUser]);
+    setIsLoading(false);
+
+    return () => {
+      unsubMenu(); unsubOrders(); unsubEvents(); unsubGallery(); unsubUsers();
+      unsubGeneral(); unsubRewards();
+    };
+  }, []);
 
   // ── Auth Actions ──
   const login = async (role, email, password, name) => {
-    if (role === 'signup') {
-      return await authRegister({ name, email, password });
-    }
+    if (role === 'signup') return await authRegister({ name, email, password });
     return await authLogin(email, password);
   };
 
-  const logout = () => { authLogout(); };
+  const logout = () => authLogout();
 
-  const addUser = async (newUser) => { /* handled by auth routes */ };
-  const updateUserProfile = async (updatedUser) => {
-    try { await api.put('/auth/profile', updatedUser); } catch (err) { console.error(err); }
+  const addUser = async (newUser) => {
+    if (!newUser.id && !newUser.uid) return;
+    const uid = newUser.id || newUser.uid;
+    await setDoc(doc(db, 'users', uid), newUser, { merge: true });
   };
-  const adminUpdateUser = async (updatedUser) => { await updateUserProfile(updatedUser); };
+
+  const updateUserProfile = async (updatedUser) => {
+    const uid = updatedUser.uid || updatedUser.id;
+    if (!uid) return;
+    await updateDoc(doc(db, 'users', uid), updatedUser);
+    if (authUser && uid === authUser.uid) {
+      await authUpdateProfile(updatedUser);
+    }
+  };
+
+  const adminUpdateUser = updateUserProfile;
+
   const deleteUser = async (userId) => {
-    try { await api.delete(`/auth/users/${userId}`); } catch (err) { console.error(err); }
+    await deleteDoc(doc(db, 'users', userId));
   };
 
   // ── Menu Actions ──
   const addMenuItem = async (item) => {
-    try {
-      const res = await api.post('/foodtruck/menu', item);
-      setMenu(prev => [...prev, res.data]);
-    } catch (err) { console.error(err); }
+    const id = item.id || doc(collection(db, 'menu')).id;
+    await setDoc(doc(db, 'menu', id), { ...item, id });
   };
 
   const updateMenuItem = async (item) => {
-    try {
-      const res = await api.put(`/foodtruck/menu/${item._id || item.id}`, item);
-      setMenu(prev => prev.map(i => (i._id || i.id) === (item._id || item.id) ? res.data : i));
-    } catch (err) { console.error(err); }
+    const id = item.id || item._id;
+    await updateDoc(doc(db, 'menu', id), { ...item });
   };
 
   // ── Calendar/Event Actions ──
   const addCalendarEvent = async (event) => {
-    try {
-      const res = await api.post('/foodtruck/events', event);
-      setCalendarEvents(prev => [...prev, res.data]);
-    } catch (err) { console.error(err); }
+    const id = event.id || doc(collection(db, 'events')).id;
+    await setDoc(doc(db, 'events', id), { ...event, id });
   };
 
   const updateCalendarEvent = async (event) => {
-    try {
-      const res = await api.put(`/foodtruck/events/${event.id}`, event);
-      setCalendarEvents(prev => prev.map(e => e.id === event.id ? res.data : e));
-    } catch (err) { console.error(err); }
+    await updateDoc(doc(db, 'events', event.id), { ...event });
   };
 
   const removeCalendarEvent = async (eventId) => {
-    try {
-      await api.delete(`/foodtruck/events/${eventId}`);
-      setCalendarEvents(prev => prev.filter(e => e.id !== eventId));
-    } catch (err) { console.error(err); }
+    await deleteDoc(doc(db, 'events', eventId));
   };
 
   const isDatePastCutoff = (dateStr) => {
@@ -240,38 +223,41 @@ export const StorefrontProvider = ({ children }) => {
 
   const checkAvailability = (dateStr) => {
     if (isDatePastCutoff(dateStr)) return false;
-    const blocked = calendarEvents.find(e => e.date === dateStr && e.type === 'BLOCKED');
-    if (blocked) return false;
-    const ordersOnDay = orders.filter(o => o.cookDay === dateStr && o.type === 'CATERING');
-    if (ordersOnDay.length >= 2) return false;
+    if (calendarEvents.find(e => e.date === dateStr && e.type === 'BLOCKED')) return false;
+    if (orders.filter(o => o.cookDay === dateStr && o.type === 'CATERING').length >= 2) return false;
     return true;
   };
 
   // ── Order Actions ──
   const createOrder = async (order) => {
-    try {
-      const res = await api.post('/foodtruck/public/orders', order);
-      setOrders(prev => [res.data, ...prev]);
-      clearCart();
-      return res.data;
-    } catch (err) {
-      console.error(err);
-      throw err;
+    const id = order.id || doc(collection(db, 'orders')).id;
+    const orderData = { ...order, id, createdAt: order.createdAt || new Date().toISOString() };
+    await setDoc(doc(db, 'orders', id), orderData);
+    if (order.discountApplied && user?.hasCateringDiscount) {
+      await updateUserProfile({ ...authUser, hasCateringDiscount: false });
     }
+    clearCart();
+    return orderData;
   };
 
   const updateOrderStatus = async (orderId, status) => {
-    try {
-      await api.put(`/foodtruck/orders/${orderId}/status`, { status });
-      setOrders(prev => prev.map(o => (o._id || o.id) === orderId ? { ...o, status } : o));
-    } catch (err) { console.error(err); }
+    await updateDoc(doc(db, 'orders', orderId), { status });
+    if (status === 'Confirmed') {
+      const order = orders.find(o => o.id === orderId);
+      if (order?.type === 'CATERING') {
+        const dateStr = new Date(order.cookDay).toISOString().split('T')[0];
+        const evtId = `evt_o_${orderId}`;
+        await setDoc(doc(db, 'events', evtId), {
+          id: evtId, date: dateStr, type: 'ORDER_PICKUP',
+          title: `Pickup: ${order.customerName}`, orderId,
+        });
+      }
+    }
   };
 
   const updateOrder = async (updatedOrder) => {
-    try {
-      await api.put(`/foodtruck/orders/${updatedOrder._id || updatedOrder.id}`, updatedOrder);
-      setOrders(prev => prev.map(o => (o._id || o.id) === (updatedOrder._id || updatedOrder.id) ? updatedOrder : o));
-    } catch (err) { console.error(err); }
+    const id = updatedOrder.id || updatedOrder._id;
+    await setDoc(doc(db, 'orders', id), { ...updatedOrder, id });
   };
 
   // ── Cart Actions ──
@@ -282,44 +268,47 @@ export const StorefrontProvider = ({ children }) => {
       setSelectedOrderDate(specificDate);
     }
     if (!selectedOrderDate && specificDate) setSelectedOrderDate(specificDate);
-
     setCart(prev => {
-      const existing = prev.find(i => (i._id || i.id) === (item._id || item.id));
-      if (existing) {
-        return prev.map(i => (i._id || i.id) === (item._id || item.id) ? { ...i, quantity: i.quantity + quantity } : i);
-      }
+      const existing = prev.find(i => i.id === item.id);
+      if (existing) return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i);
       return [...prev, { ...item, quantity }];
     });
   };
 
   const updateCartItemQuantity = (itemId, delta) => {
     setCart(prev =>
-      prev.map(item => {
-        if ((item._id || item.id) === itemId) return { ...item, quantity: Math.max(0, item.quantity + delta) };
-        return item;
-      }).filter(i => i.quantity > 0)
+      prev.map(i => i.id === itemId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i)
+        .filter(i => i.quantity > 0)
     );
   };
 
-  const removeFromCart = (itemId) => setCart(prev => prev.filter(i => (i._id || i.id) !== itemId));
+  const removeFromCart = (itemId) => setCart(prev => prev.filter(i => i.id !== itemId));
   const clearCart = () => setCart([]);
 
   // ── Social/Gallery Actions ──
   const addSocialPost = (post) => setSocialPosts(prev => [post, ...prev]);
 
   const addGalleryPost = async (post) => {
-    try {
-      const res = await api.post('/foodtruck/gallery', post);
-      setGalleryPosts(prev => [res.data, ...prev]);
-    } catch (err) { console.error(err); }
+    const id = post.id || doc(collection(db, 'gallery_posts')).id;
+    await setDoc(doc(db, 'gallery_posts', id), {
+      ...post, id,
+      createdAt: post.createdAt || new Date().toISOString(),
+      likes: post.likes || 0,
+      likedBy: post.likedBy || [],
+    });
   };
 
   const toggleGalleryLike = async (postId) => {
     if (!user) return;
-    try {
-      const res = await api.post(`/foodtruck/gallery/${postId}/like`);
-      setGalleryPosts(prev => prev.map(p => (p._id || p.id) === postId ? res.data : p));
-    } catch (err) { console.error(err); }
+    const post = galleryPosts.find(p => p.id === postId);
+    if (!post) return;
+    const isLiked = post.likedBy?.includes(user.id);
+    const ref = doc(db, 'gallery_posts', postId);
+    if (isLiked) {
+      await updateDoc(ref, { likes: increment(-1), likedBy: arrayRemove(user.id) });
+    } else {
+      await updateDoc(ref, { likes: increment(1), likedBy: arrayUnion(user.id) });
+    }
   };
 
   // ── Settings Actions ──
@@ -327,7 +316,15 @@ export const StorefrontProvider = ({ children }) => {
     const merged = { ...settings, ...newSettings };
     setSettings(merged);
     try {
-      await api.put('/foodtruck/settings', newSettings);
+      const { rewards, ...general } = newSettings;
+      const promises = [];
+      if (Object.keys(general).length > 0) {
+        promises.push(setDoc(doc(db, 'settings', 'general'), general, { merge: true }));
+      }
+      if (rewards !== undefined) {
+        promises.push(setDoc(doc(db, 'settings', 'rewards'), { rewards }, { merge: true }));
+      }
+      await Promise.all(promises);
       try { localStorage.setItem('hq_settings', JSON.stringify(merged)); } catch { }
       return true;
     } catch (err) {
@@ -336,10 +333,10 @@ export const StorefrontProvider = ({ children }) => {
     }
   };
 
-  // ── Cook Days (legacy) ──
+  // ── Cook Days (derived from events) ──
   const cookDays = calendarEvents.filter(e => e.type === 'ORDER_PICKUP');
-  const addCookDay = (day) => {
-    setCalendarEvents(prev => [...prev, { ...day, type: 'ORDER_PICKUP' }]);
+  const addCookDay = async (day) => {
+    await addCalendarEvent({ ...day, type: 'ORDER_PICKUP' });
   };
 
   // ── Reminders ──
@@ -348,18 +345,18 @@ export const StorefrontProvider = ({ children }) => {
       ? reminders.filter(id => id !== eventId)
       : [...reminders, eventId];
     setReminders(newReminders);
-    localStorage.setItem('hq_reminders', JSON.stringify(newReminders));
+    try { localStorage.setItem('hq_reminders', JSON.stringify(newReminders)); } catch { }
   };
 
   // ── Rewards ──
   const verifyStaffPin = (pin, action) => {
     if (pin !== settings.rewards?.staffPin) return false;
     if (user) {
-      const currentStamps = user.stamps || 0;
-      let newStamps = currentStamps;
-      if (action === 'ADD') newStamps = currentStamps + 1;
-      else if (action === 'REDEEM') newStamps = Math.max(0, currentStamps - (settings.rewards?.maxStamps || 10));
-      updateUserProfile({ ...user, stamps: newStamps });
+      const stamps = user.stamps || 0;
+      const newStamps = action === 'ADD'
+        ? stamps + 1
+        : Math.max(0, stamps - (settings.rewards?.maxStamps || 10));
+      updateUserProfile({ ...authUser, stamps: newStamps });
     }
     return true;
   };
@@ -379,10 +376,9 @@ export const StorefrontProvider = ({ children }) => {
       verifyStaffPin,
       selectedOrderDate, setSelectedOrderDate,
       isLoading, connectionError,
-      // Extras for convenience
-      brandName: brandName || settings.businessName || 'Hughesys Que',
-      brandTagline: brandTagline || 'Quality Street Food',
-      primaryColor: primaryColor || '#f59e0b',
+      brandName: brandName || settings.businessName || process.env.REACT_APP_BRAND_NAME || 'Food Truck',
+      brandTagline: brandTagline || process.env.REACT_APP_BRAND_TAGLINE || 'Quality Street Food',
+      primaryColor: primaryColor || process.env.REACT_APP_PRIMARY_COLOR || '#f59e0b',
     }}>
       {children}
     </StorefrontContext.Provider>
