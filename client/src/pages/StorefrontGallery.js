@@ -35,7 +35,7 @@ const FeedPost = ({ post }) => {
 
   const handleShare = () => {
     if (navigator.share) {
-      navigator.share({ title: 'Hughesys Que BBQ', text: `Check out this shot by @${post.userName}!`, url: window.location.href }).catch(() => {});
+      navigator.share({ title: 'Hughesys Que BBQ', text: `Check out this shot by @${post.userName}!`, url: window.location.href }).catch(() => { });
     } else { alert('Link copied!'); }
   };
 
@@ -78,7 +78,8 @@ const FeedPost = ({ post }) => {
 };
 
 const StorefrontGallery = () => {
-  const { galleryPosts, addGalleryPost, user, brandName } = useStorefront();
+  const { galleryPosts, addGalleryPost, settings, user, brandName } = useStorefront();
+  const sv = settings.siteVisuals || {};
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [caption, setCaption] = useState('');
@@ -128,7 +129,7 @@ const StorefrontGallery = () => {
     <div className="animate-fade-in pb-20">
       <div className="relative h-[40vh] min-h-[300px] rounded-2xl overflow-hidden shadow-2xl mb-8">
         <div className="absolute inset-0 bg-black/60 z-10" />
-        <img src="https://images.unsplash.com/photo-1516054575922-f0b8eeadec1a?auto=format&fit=crop&w=1950&q=80"
+        <img src={sv.galleryHero || "https://images.unsplash.com/photo-1516054575922-f0b8eeadec1a?auto=format&fit=crop&w=1950&q=80"}
           className="absolute inset-0 w-full h-full object-cover" alt="BBQ Gallery" />
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-6">
           <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-4 tracking-tight uppercase drop-shadow-xl">
@@ -136,12 +137,12 @@ const StorefrontGallery = () => {
           </h1>
           <p className="text-gray-200 max-w-xl font-light text-lg mb-6 leading-relaxed">
             Show us your {brandName} spread! Upload your best shot for a chance to be featured on our
-            official <span className="text-white font-bold inline-flex items-center gap-1 mx-1"><Instagram size={14}/> Instagram</span> &amp;
-            <span className="text-white font-bold inline-flex items-center gap-1 mx-1"><Facebook size={14}/> Facebook</span>.
+            official <span className="text-white font-bold inline-flex items-center gap-1 mx-1"><Instagram size={14} /> Instagram</span> &amp;
+            <span className="text-white font-bold inline-flex items-center gap-1 mx-1"><Facebook size={14} /> Facebook</span>.
           </p>
           <button onClick={() => user ? setShowUploadModal(true) : alert('Please login to upload photos.')}
             className="bg-white text-black font-bold uppercase tracking-widest px-8 py-3 rounded-full hover:bg-gray-200 transition shadow-xl transform hover:-translate-y-1 flex items-center gap-2">
-            <Camera size={18}/> Upload Your Flex
+            <Camera size={18} /> Upload Your Flex
           </button>
         </div>
       </div>
@@ -155,7 +156,7 @@ const StorefrontGallery = () => {
       <div className="max-w-2xl mx-auto px-4">
         {visiblePosts.length === 0 ? (
           <div className="text-center py-20 border-2 border-dashed border-gray-800 rounded-xl">
-            <ImageIcon className="mx-auto text-gray-700 mb-4" size={48}/>
+            <ImageIcon className="mx-auto text-gray-700 mb-4" size={48} />
             <p className="text-gray-500">No photos yet. Be the first to flex!</p>
             <button onClick={() => user ? setShowUploadModal(true) : alert('Please login to upload photos.')}
               className="mt-4 text-bbq-gold hover:underline font-bold text-sm">Upload Now</button>
@@ -171,21 +172,21 @@ const StorefrontGallery = () => {
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
           <div className="bg-bbq-charcoal w-full max-w-md rounded-xl border border-gray-700 shadow-2xl overflow-hidden" style={{ animation: 'fadeIn 0.3s ease-out' }}>
             <div className="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-900/50">
-              <h3 className="font-bold text-white flex items-center gap-2"><Upload size={18}/> Upload Photo</h3>
-              <button onClick={() => setShowUploadModal(false)}><X className="text-gray-400 hover:text-white"/></button>
+              <h3 className="font-bold text-white flex items-center gap-2"><Upload size={18} /> Upload Photo</h3>
+              <button onClick={() => setShowUploadModal(false)}><X className="text-gray-400 hover:text-white" /></button>
             </div>
             <div className="p-6 space-y-6">
               {!selectedImage ? (
                 <div className="border-2 border-dashed border-gray-600 rounded-xl h-64 flex flex-col items-center justify-center bg-black/20 hover:bg-black/40 transition relative">
                   <input type="file" accept="image/*" onChange={handleFileSelect} className="absolute inset-0 opacity-0 cursor-pointer" />
-                  <Camera className="text-gray-500 mb-4" size={48}/>
+                  <Camera className="text-gray-500 mb-4" size={48} />
                   <p className="text-gray-400 text-sm font-bold">Tap to Select Photo</p>
                 </div>
               ) : (
                 <div className="relative rounded-xl overflow-hidden h-64 bg-black group">
                   <img src={selectedImage} className="w-full h-full object-contain" alt="Preview" />
                   <button onClick={() => setSelectedImage(null)} className="absolute top-2 right-2 bg-black/60 p-2 rounded-full text-white hover:bg-red-600 transition">
-                    <X size={16}/>
+                    <X size={16} />
                   </button>
                 </div>
               )}
