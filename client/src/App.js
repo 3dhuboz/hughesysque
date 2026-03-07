@@ -44,7 +44,12 @@ import FoodTruck from './pages/FoodTruck';
 import SimpleWebsite from './pages/SimpleWebsite';
 import Storefront from './pages/Storefront';
 import StorefrontHome from './pages/StorefrontHome';
+import StorefrontMenu from './pages/StorefrontMenu';
+import StorefrontOrder from './pages/StorefrontOrder';
+import StorefrontContact from './pages/StorefrontContact';
+import StorefrontEvents from './pages/StorefrontEvents';
 import StorefrontLayout from './components/StorefrontLayout';
+import { StorefrontProvider } from './context/StorefrontContext';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -98,8 +103,11 @@ const AppRoutes = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         {/* Public storefront — customer-facing menu & ordering */}
-        <Route path="/order" element={<Storefront />} />
-        <Route path="/storefront" element={<Storefront />} />
+        <Route path="/menu" element={<StorefrontMenu />} />
+        <Route path="/order" element={<StorefrontOrder />} />
+        <Route path="/contact" element={<StorefrontContact />} />
+        <Route path="/events" element={<StorefrontEvents />} />
+        <Route path="/storefront" element={<StorefrontMenu />} />
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
     );
@@ -157,7 +165,7 @@ const AppRoutes = () => {
 const AppShell = () => {
   const { clientMode, brandName } = useClientConfig();
   const location = useLocation();
-  const isStorefront = ['/storefront', '/order', '/contact'].includes(location.pathname) || (clientMode && location.pathname === '/');
+  const isStorefront = ['/storefront', '/menu', '/order', '/contact', '/events'].includes(location.pathname) || (clientMode && location.pathname === '/');
 
   useEffect(() => {
     if (clientMode && brandName) {
@@ -165,10 +173,10 @@ const AppShell = () => {
     }
   }, [clientMode, brandName]);
 
-  // Storefront pages get the BBQ-themed StorefrontLayout
+  // Storefront pages get the BBQ-themed StorefrontLayout + StorefrontProvider
   if (isStorefront && clientMode) {
     return (
-      <>
+      <StorefrontProvider>
         <StorefrontLayout>
           <AppRoutes />
         </StorefrontLayout>
@@ -176,7 +184,7 @@ const AppShell = () => {
           duration: 4000,
           style: { background: '#1e293b', color: '#f8fafc', borderRadius: '8px' }
         }} />
-      </>
+      </StorefrontProvider>
     );
   }
 
