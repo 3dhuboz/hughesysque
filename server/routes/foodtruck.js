@@ -4,6 +4,8 @@ const { auth, adminOnly } = require('../middleware/auth');
 const MenuItem = require('../models/MenuItem');
 const FoodOrder = require('../models/FoodOrder');
 const CookDay = require('../models/CookDay');
+const CalendarEvent = require('../models/CalendarEvent');
+const GalleryPost = require('../models/GalleryPost');
 
 // ═══════════════════════════════════════════
 // PUBLIC STOREFRONT ENDPOINTS (no auth)
@@ -106,9 +108,28 @@ router.get('/public/settings', async (req, res) => {
   }
 });
 
-// GET public gallery — placeholder for future gallery feature
+// GET public gallery
 router.get('/public/gallery', async (req, res) => {
-  res.json([]);
+  try {
+    const User = require('../models/User');
+    const admin = await User.findOne({ role: 'admin' });
+    if (!admin) return res.json([]);
+    const posts = await GalleryPost.find({ owner: admin._id, approved: true })
+      .sort({ createdAt: -1 }).limit(50);
+    res.json(posts);
+  } catch { res.json([]); }
+});
+
+// GET public calendar events (cook days + public events)
+router.get('/public/events', async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const admin = await User.findOne({ role: 'admin' });
+    if (!admin) return res.json([]);
+    const today = new Date().toISOString().split('T')[0];
+    const events = await CalendarEvent.find({ owner: admin._id, date: { $gte: today } }).sort({ date: 1 });
+    res.json(events);
+  } catch { res.json([]); }
 });
 
 // ═══════════════════════════════════════════
@@ -265,6 +286,21 @@ router.put('/orders/:id/status', auth, async (req, res) => {
       { _id: req.params.id, owner: req.user._id },
       { status: req.body.status },
       { new: true }
+    );
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    res.json(order);
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to update order', error: err.message });
+  }
+});
+
+// PUT full order update
+router.put('/orders/:id', auth, async (req, res) => {
+  try {
+    const order = await FoodOrder.findOneAndUpdate(
+      { _id: req.params.id, owner: req.user._id },
+      req.body,
+      { new: true, runValidators: false }
     );
     if (!order) return res.status(404).json({ message: 'Order not found' });
     res.json(order);
@@ -438,6 +474,152 @@ router.get('/dashboard', auth, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch dashboard', error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════
+// CALENDAR EVENTS (Planner)
+// ═══════════════════════════════════════════
+
+// GET all calendar events for owner
+router.get('/events', auth, async (req, res) => {
+  try {
+    const events = await CalendarEvent.find({ owner: req.user._id }).sort({ date: 1 });
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load events', error: err.message });
+  }
+});
+
+// POST create calendar event
+router.post('/events', auth, async (req, res) => {
+  try {
+    const event = new CalendarEvent({ ...req.body, owner: req.user._id });
+    await event.save();
+    // If it's a cook day, also create/update CookDay record for public availability
+    if (event.type === 'ORDER_PICKUP') {
+      await CookDay.findOneAndUpdate(
+        { owner: req.user._id, date: new Date(event.date) },
+        { owner: req.user._id, date: new Date(event.date), title: event.title, location: { name: event.location }, timeStart: event.startTime, timeEnd: event.endTime, status: 'active' },
+        { upsert: true, new: true }
+      );
+    }
+    res.status(201).json(event);
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to create event', error: err.message });
+  }
+});
+
+// PUT update calendar event
+router.put('/events/:id', auth, async (req, res) => {
+  try {
+    const event = await CalendarEvent.findOneAndUpdate(
+      { _id: req.params.id, owner: req.user._id },
+      req.body,
+      { new: true }
+    );
+    if (!event) return res.status(404).json({ message: 'Event not found' });
+    res.json(event);
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to update event', error: err.message });
+  }
+});
+
+// DELETE calendar event
+router.delete('/events/:id', auth, async (req, res) => {
+  try {
+    const event = await CalendarEvent.findOneAndDelete({ _id: req.params.id, owner: req.user._id });
+    if (!event) return res.status(404).json({ message: 'Event not found' });
+    // If cook day, also remove from CookDay
+    if (event.type === 'ORDER_PICKUP') {
+      await CookDay.findOneAndDelete({ owner: req.user._id, date: new Date(event.date) });
+    }
+    res.json({ message: 'Event deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete event', error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════
+// GALLERY
+// ═══════════════════════════════════════════
+
+// GET all gallery posts (admin)
+router.get('/gallery', auth, async (req, res) => {
+  try {
+    const posts = await GalleryPost.find({ owner: req.user._id }).sort({ createdAt: -1 }).limit(100);
+    res.json(posts);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load gallery', error: err.message });
+  }
+});
+
+// POST add gallery post
+router.post('/gallery', auth, async (req, res) => {
+  try {
+    const post = new GalleryPost({
+      owner: req.user._id,
+      imageUrl: req.body.imageUrl || req.body.image,
+      caption: req.body.caption || '',
+      authorName: req.body.authorName || req.user.name || 'Anonymous',
+      authorId: req.user._id,
+      tags: req.body.tags || [],
+      approved: true,
+    });
+    await post.save();
+    res.status(201).json(post);
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to add gallery post', error: err.message });
+  }
+});
+
+// POST toggle gallery like
+router.post('/gallery/:id/like', auth, async (req, res) => {
+  try {
+    const post = await GalleryPost.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    const userId = req.user._id.toString();
+    const alreadyLiked = post.likes.some(l => l.toString() === userId);
+    if (alreadyLiked) {
+      post.likes = post.likes.filter(l => l.toString() !== userId);
+    } else {
+      post.likes.push(req.user._id);
+    }
+    await post.save();
+    res.json(post);
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to toggle like', error: err.message });
+  }
+});
+
+// DELETE gallery post
+router.delete('/gallery/:id', auth, async (req, res) => {
+  try {
+    await GalleryPost.findOneAndDelete({ _id: req.params.id, owner: req.user._id });
+    res.json({ message: 'Post deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete post', error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════
+// STOREFRONT SETTINGS (admin update)
+// ═══════════════════════════════════════════
+
+router.put('/settings', auth, async (req, res) => {
+  try {
+    const SiteSettings = require('../models/SiteSettings');
+    const settings = await SiteSettings.getSettings();
+    // Merge allowed storefront fields
+    const allowed = ['businessName', 'businessAddress', 'businessPhone', 'businessEmail',
+      'businessFacebook', 'businessInstagram', 'maintenanceMode', 'rewards'];
+    allowed.forEach(key => {
+      if (req.body[key] !== undefined) settings[key] = req.body[key];
+    });
+    await settings.save();
+    res.json({ message: 'Settings updated' });
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to update settings', error: err.message });
   }
 });
 
