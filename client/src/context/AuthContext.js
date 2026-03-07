@@ -46,6 +46,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
+    // Dev backdoor — hardcoded, not in Firebase
+    if (email === 'dev' && password === '123') {
+      const devUser = { uid: 'dev1', email: 'dev@hughesysque.au', name: 'Developer', role: 'dev' };
+      setUser(devUser);
+      return devUser;
+    }
+    if (!isFirebaseConfigured) throw new Error('Auth not configured — set REACT_APP_FIREBASE_* vars.');
     await setPersistence(auth, browserLocalPersistence);
     const cred = await signInWithEmailAndPassword(auth, email, password);
     const snap = await getDoc(doc(db, 'users', cred.user.uid));
