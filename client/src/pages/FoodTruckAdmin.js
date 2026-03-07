@@ -2413,7 +2413,7 @@ const FoodTruckAdmin = () => {
           {activeTab === 'menu' && <FTMenuManager />}
           {activeTab === 'catering' && <CateringManager />}
           {activeTab === 'customers' && <CustomerManager />}
-          {activeTab === 'social' && <FTPitmasterChat />}
+          {activeTab === 'social' && <SocialCommandCenter />}
           {activeTab === 'settings' && <FTSettingsManager />}
           {activeTab === 'devtools' && <FTDevTools />}
         </div>
