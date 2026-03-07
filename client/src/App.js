@@ -155,7 +155,7 @@ const AppRoutes = () => {
 const AppShell = () => {
   const { clientMode, brandName } = useClientConfig();
   const location = useLocation();
-  const isStorefront = ['/', '/storefront', '/order'].includes(location.pathname);
+  const isStorefront = ['/storefront', '/order'].includes(location.pathname) || (clientMode && location.pathname === '/');
 
   useEffect(() => {
     if (clientMode && brandName) {
