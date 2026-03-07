@@ -1741,6 +1741,10 @@ const FoodTruckAdmin = () => {
         {activeTab === 'orders' && <OrderManager />}
         {activeTab === 'planner' && <FTPlanner />}
         {activeTab === 'menu' && <FTMenuManager />}
+        {activeTab === 'customers' && <CustomerManager />}
+        {activeTab === 'catering' && <CateringManager />}
+        {activeTab === 'sms' && <SmsBlast />}
+        {activeTab === 'pitmaster' && <FTPitmaster />}
         {activeTab === 'settings' && <FTSettingsManager />}
       </div>
     </div>
