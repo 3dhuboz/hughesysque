@@ -68,7 +68,7 @@ export const StorefrontProvider = ({ children }) => {
     uid: authUser.uid,
     name: authUser.name || authUser.displayName || 'User',
     email: authUser.email || '',
-    role: authUser.role === 'admin' ? 'ADMIN' : 'CUSTOMER',
+    role: (authUser.role === 'admin' || authUser.role === 'dev') ? 'ADMIN' : 'CUSTOMER',
     isVerified: true,
     phone: authUser.phone || '',
     address: authUser.address || '',
