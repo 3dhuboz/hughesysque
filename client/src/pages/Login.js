@@ -20,8 +20,8 @@ const Login = () => {
     setLoading(true);
     try {
       const data = await login(email, password);
-      toast.success(`Welcome back, ${data.user.firstName}!`);
-      navigate(data.user.role === 'admin' ? '/admin' : '/dashboard');
+      toast.success(`Welcome back, ${data.name || data.email}!`);
+      navigate(data.role === 'admin' || data.role === 'dev' ? '/admin' : '/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed');
     }
@@ -62,7 +62,7 @@ const Login = () => {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Email Address</label>
-            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" />
+            <input type="text" required value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" />
           </div>
           <div className="form-group">
             <label>Password</label>
