@@ -47,8 +47,8 @@ const StorefrontLayout = ({ children }) => {
           <Link to="/events" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/events')}`}>Events</Link>
           <Link to="/gallery" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/gallery')}`}>Gallery</Link>
           <Link to="/contact" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/contact')}`}>Contact</Link>
-          {user?.role === 'admin' && (
-            <Link to="/admin" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/admin')}`}>Dashboard</Link>
+          {(user?.role === 'admin' || user?.role === 'dev') && (
+            <Link to="/admin/foodtruck" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/admin/foodtruck')}`}>Dashboard</Link>
           )}
         </nav>
 
