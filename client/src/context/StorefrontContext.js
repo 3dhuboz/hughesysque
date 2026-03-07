@@ -29,7 +29,7 @@ const DEFAULT_SETTINGS = {
 };
 
 export const StorefrontProvider = ({ children }) => {
-  const { user: authUser, logout: authLogout } = useAuth();
+  const { user: authUser, logout: authLogout, login: authLogin, register: authRegister } = useAuth();
   const { brandName, brandTagline, primaryColor } = useClientConfig();
 
   // ── Data State ──
@@ -70,12 +70,12 @@ export const StorefrontProvider = ({ children }) => {
   } : null;
 
   // ── Persist local state ──
-  useEffect(() => { try { localStorage.setItem('hq_cart', JSON.stringify(cart)); } catch {} }, [cart]);
+  useEffect(() => { try { localStorage.setItem('hq_cart', JSON.stringify(cart)); } catch { } }, [cart]);
   useEffect(() => {
     try {
       if (selectedOrderDate) localStorage.setItem('hq_selected_date', selectedOrderDate);
       else localStorage.removeItem('hq_selected_date');
-    } catch {}
+    } catch { }
   }, [selectedOrderDate]);
 
   // ── Fetch all data on mount ──
@@ -89,7 +89,7 @@ export const StorefrontProvider = ({ children }) => {
 
         const menuData = menuRes.data || [];
         setMenu(menuData);
-        try { localStorage.setItem('hq_menu', JSON.stringify(menuData.map(i => ({ ...i, image: '' })))); } catch {}
+        try { localStorage.setItem('hq_menu', JSON.stringify(menuData.map(i => ({ ...i, image: '' })))); } catch { }
 
         // Map cook days to CalendarEvent format
         const events = (cookRes.data || []).map(d => ({
@@ -110,17 +110,17 @@ export const StorefrontProvider = ({ children }) => {
           if (settingsRes.data) {
             setSettings(prev => {
               const merged = { ...prev, ...settingsRes.data };
-              try { localStorage.setItem('hq_settings', JSON.stringify(merged)); } catch {}
+              try { localStorage.setItem('hq_settings', JSON.stringify(merged)); } catch { }
               return merged;
             });
           }
-        } catch {}
+        } catch { }
 
         // Fetch gallery
         try {
           const galRes = await api.get('/foodtruck/public/gallery');
           setGalleryPosts(galRes.data || []);
-        } catch {}
+        } catch { }
 
         setConnectionError(null);
       } catch (err) {
@@ -140,7 +140,7 @@ export const StorefrontProvider = ({ children }) => {
       try {
         const res = await api.get('/foodtruck/orders');
         setOrders(res.data?.orders || res.data || []);
-      } catch {}
+      } catch { }
     };
     fetchOrders();
   }, [authUser]);
@@ -298,7 +298,7 @@ export const StorefrontProvider = ({ children }) => {
     setSettings(merged);
     try {
       await api.put('/foodtruck/settings', newSettings);
-      try { localStorage.setItem('hq_settings', JSON.stringify(merged)); } catch {}
+      try { localStorage.setItem('hq_settings', JSON.stringify(merged)); } catch { }
       return true;
     } catch (err) {
       console.error('Save settings error:', err);
