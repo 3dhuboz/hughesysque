@@ -241,10 +241,10 @@ const StorefrontMenu = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
               </div>
               <div className="relative overflow-hidden rounded-xl">
-                <img src={packImages[1]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="Brisket" onError={handleImageError} />
+                <SmartHeroImg src={sv.menuPackHero2} fallback={packImages[1]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="Brisket" />
               </div>
               <div className="relative overflow-hidden rounded-xl">
-                <img src={packImages[2]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="Ribs" onError={handleImageError} />
+                <SmartHeroImg src={sv.menuPackHero3} fallback={packImages[2]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="Ribs" />
               </div>
             </div>
             <div className="absolute inset-0 bg-gradient-to-r from-purple-900/95 via-transparent to-transparent md:block hidden pointer-events-none"></div>
