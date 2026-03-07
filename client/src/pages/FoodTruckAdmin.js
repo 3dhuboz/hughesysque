@@ -14,6 +14,17 @@ import {
   Share2, Globe, ImagePlus, Lock, UploadCloud, FileText, Palette, Link
 } from 'lucide-react';
 
+// ─── HELP TIP COMPONENT ─────────────────────────────────────────────
+const Tip = ({ text }) => (
+  <span className="relative group inline-flex items-center cursor-help">
+    <HelpCircle size={13} className="text-gray-600 group-hover:text-gray-400 transition-colors ml-1.5" />
+    <span className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-900 border border-gray-700 rounded-xl p-3 text-[11px] text-gray-300 leading-relaxed opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-2xl whitespace-normal">
+      {text}
+      <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-700" />
+    </span>
+  </span>
+);
+
 // ─── ORDER MANAGER ───────────────────────────────────────────────────
 const OrderManager = () => {
   const { orders, updateOrderStatus, updateOrder, createOrder, menu, calendarEvents, updateUserProfile, users } = useStorefront();
@@ -2629,6 +2640,12 @@ service cloud.firestore {
 const FoodTruckAdmin = () => {
   const { connectionError, orders, brandName, settings } = useStorefront();
   const [activeTab, setActiveTab] = useState('orders');
+  const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('__adminWelcomeSeen'));
+
+  const dismissWelcome = () => {
+    localStorage.setItem('__adminWelcomeSeen', '1');
+    setShowWelcome(false);
+  };
 
   useEffect(() => {
     if (settings?.geminiApiKey) _geminiKeyOverride = settings.geminiApiKey;
@@ -2691,6 +2708,23 @@ const FoodTruckAdmin = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         <div className="p-6">
+          {showWelcome && (
+            <div className="mb-5 bg-gradient-to-r from-bbq-red/20 to-orange-900/10 border border-bbq-red/30 rounded-xl p-4 flex items-start gap-4">
+              <Flame size={22} className="text-bbq-red shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-white text-sm">Welcome to your Admin Dashboard</p>
+                <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                  <strong className="text-white">Orders</strong> — live order management &nbsp;·&nbsp;
+                  <strong className="text-white">Menu</strong> — add/edit items with AI images &nbsp;·&nbsp;
+                  <strong className="text-white">Settings</strong> — branding, logo &amp; rewards &nbsp;·&nbsp;
+                  <strong className="text-white">Dev Tools</strong> — API keys &amp; Firebase &nbsp;·&nbsp;
+                  <strong className="text-white">Social &amp; AI</strong> — content generation
+                </p>
+                <p className="text-[11px] text-gray-500 mt-2">Look for <HelpCircle size={11} className="inline text-gray-500" /> icons throughout the panel for contextual tips.</p>
+              </div>
+              <button onClick={dismissWelcome} className="text-gray-600 hover:text-white shrink-0 transition"><X size={15} /></button>
+            </div>
+          )}
           {activeTabInfo && ActiveIcon && (
             <div className="flex items-center gap-2 mb-6 text-gray-400">
               <ActiveIcon size={16} />
