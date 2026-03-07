@@ -7,7 +7,7 @@ const StorefrontEvents = () => {
   const { calendarEvents, toggleReminder, reminders, settings, brandName } = useStorefront();
 
   const publicEvents = calendarEvents
-    .filter(evt => new Date(evt.date) >= new Date(new Date().setHours(0,0,0,0)))
+    .filter(evt => new Date(evt.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const handleShare = (evt) => {
@@ -28,7 +28,7 @@ const StorefrontEvents = () => {
       <div className="relative h-[40vh] min-h-[300px] rounded-2xl overflow-hidden shadow-2xl">
         <div className="absolute inset-0 bg-black/60 z-10" />
         <img
-          src={settings.eventsHeroImage || "https://images.unsplash.com/photo-1533174072545-e8d4aa97edf9?auto=format&fit=crop&w=1950&q=80"}
+          src={(settings.siteVisuals?.eventsHero) || settings.eventsHeroImage || "https://images.unsplash.com/photo-1533174072545-e8d4aa97edf9?auto=format&fit=crop&w=1950&q=80"}
           className="absolute inset-0 w-full h-full object-cover" alt="BBQ Event Crowd" />
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-6">
           <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight uppercase">
@@ -54,7 +54,7 @@ const StorefrontEvents = () => {
             return (
               <div key={evt.id} className="bg-bbq-charcoal border border-gray-800 rounded-2xl overflow-hidden hover:border-bbq-red/50 transition duration-300 flex flex-col md:flex-row group">
                 <div className="md:hidden bg-bbq-red text-white p-4 text-center">
-                  <div className="text-sm font-bold uppercase">{new Date(evt.date).toLocaleDateString(undefined, {month:'long'})}</div>
+                  <div className="text-sm font-bold uppercase">{new Date(evt.date).toLocaleDateString(undefined, { month: 'long' })}</div>
                   <div className="text-3xl font-display font-bold">{new Date(evt.date).getDate()}</div>
                 </div>
                 <div className="w-full md:w-1/3 h-64 md:h-auto relative overflow-hidden">
@@ -63,7 +63,7 @@ const StorefrontEvents = () => {
                 </div>
                 <div className="p-6 md:p-8 flex-1 flex flex-col justify-center">
                   <div className="hidden md:block text-bbq-red font-bold uppercase tracking-widest text-sm mb-2">
-                    {new Date(evt.date).toLocaleDateString(undefined, {weekday: 'long', month: 'long', day: 'numeric'})}
+                    {new Date(evt.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
                   </div>
                   <h2 className="text-3xl font-display font-bold text-white mb-4 group-hover:text-bbq-gold transition">{evt.title}</h2>
                   <div className="space-y-3 mb-6">
@@ -84,7 +84,7 @@ const StorefrontEvents = () => {
                   <div className="flex gap-4 mt-auto">
                     <button onClick={() => toggleReminder(evt.id)}
                       className={`px-6 py-3 rounded-lg font-bold transition flex items-center gap-2 ${isReminded ? 'bg-green-600 text-white hover:bg-green-500' : 'bg-white text-black hover:bg-gray-200'}`}>
-                      {isReminded ? <><Check size={18}/> Reminder Set</> : <><Bell size={18}/> Remind Me</>}
+                      {isReminded ? <><Check size={18} /> Reminder Set</> : <><Bell size={18} /> Remind Me</>}
                     </button>
                     <button onClick={() => handleShare(evt)} className="p-3 border border-gray-600 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition">
                       <Share2 size={20} />
@@ -92,7 +92,7 @@ const StorefrontEvents = () => {
                   </div>
                   {isReminded && (
                     <div className="mt-3 text-xs text-green-400 flex items-center gap-1 animate-pulse">
-                      <Check size={12}/> We'll notify you on this device.
+                      <Check size={12} /> We'll notify you on this device.
                     </div>
                   )}
                   <div className="mt-4 text-xs text-gray-500 italic">* Pre-ordering not available for events. Walk-ups only until sold out!</div>
@@ -117,19 +117,19 @@ const StorefrontEvents = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-bbq-charcoal p-6 rounded-2xl border border-gray-700 hover:border-bbq-gold transition duration-300 group">
-              <div className="bg-yellow-900/30 w-12 h-12 rounded-full flex items-center justify-center text-yellow-500 mb-4 group-hover:bg-yellow-500 group-hover:text-black transition"><Coffee size={24}/></div>
+              <div className="bg-yellow-900/30 w-12 h-12 rounded-full flex items-center justify-center text-yellow-500 mb-4 group-hover:bg-yellow-500 group-hover:text-black transition"><Coffee size={24} /></div>
               <h3 className="text-xl font-bold text-white mb-2">The Morning Cure</h3>
               <p className="text-gray-400 text-sm leading-relaxed mb-4">We bring smoky flavour to mornings. Our <span className="text-white font-bold">Loaded BBQ Breakfast</span> features potato gems topped with cheese, smoked meat, egg, bacon & smoky BBQ sauce.</p>
               <div className="text-xs font-bold text-yellow-500 uppercase tracking-widest">Starts the day right</div>
             </div>
             <div className="bg-bbq-charcoal p-6 rounded-2xl border border-gray-700 hover:border-bbq-red transition duration-300 group relative overflow-hidden">
-              <div className="bg-red-900/30 w-12 h-12 rounded-full flex items-center justify-center text-red-500 mb-4 group-hover:bg-red-600 group-hover:text-white transition relative z-10"><Flame size={24}/></div>
+              <div className="bg-red-900/30 w-12 h-12 rounded-full flex items-center justify-center text-red-500 mb-4 group-hover:bg-red-600 group-hover:text-white transition relative z-10"><Flame size={24} /></div>
               <h3 className="text-xl font-bold text-white mb-2 relative z-10">Crowd Favourites</h3>
               <p className="text-gray-400 text-sm leading-relaxed mb-4 relative z-10">Juicy pulled pork, fall-off-the-bone ribs, and our famous <span className="text-white font-bold">Pork Belly Lollipops</span>. Real wood smoke, authentic flavour.</p>
               <div className="text-xs font-bold text-red-500 uppercase tracking-widest relative z-10">#1 BBQ At Events</div>
             </div>
             <div className="bg-bbq-charcoal p-6 rounded-2xl border border-gray-700 hover:border-blue-500 transition duration-300 group">
-              <div className="bg-blue-900/30 w-12 h-12 rounded-full flex items-center justify-center text-blue-400 mb-4 group-hover:bg-blue-500 group-hover:text-white transition"><Megaphone size={24}/></div>
+              <div className="bg-blue-900/30 w-12 h-12 rounded-full flex items-center justify-center text-blue-400 mb-4 group-hover:bg-blue-500 group-hover:text-white transition"><Megaphone size={24} /></div>
               <h3 className="text-xl font-bold text-white mb-2">The Full Experience</h3>
               <p className="text-gray-400 text-sm leading-relaxed mb-4">We don't just serve food; we create an atmosphere. Cheesy Mac & Cheese, loaded fries, and fresh-cut brisket keeps the people happy.</p>
               <div className="text-xs font-bold text-blue-400 uppercase tracking-widest">High Volume Capacity</div>
