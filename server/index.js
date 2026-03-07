@@ -310,21 +310,27 @@ app.use('/api/simplewebsite', require('./routes/simplewebsite'));
 app.use('/api/square', require('./routes/squareWebhook'));
 
 
-// Serve React app in production
+// Serve React app in production (only if client/build exists — not present in API-only Railway deploy)
 if (process.env.NODE_ENV === 'production') {
-  // Cache static assets (JS/CSS use content hashing) but NOT index.html
-  app.use(express.static(path.join(__dirname, '../client/build'), {
-    maxAge: '1y',
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  const fs = require('fs');
+  const buildPath = path.join(__dirname, '../client/build');
+  const indexPath = path.join(buildPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    app.use(express.static(buildPath, {
+      maxAge: '1y',
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
       }
-    }
-  }));
-  app.get('*', (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
-  });
+    }));
+    app.get('*', (req, res) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.sendFile(indexPath);
+    });
+  } else {
+    app.get('*', (req, res) => res.status(404).json({ error: 'Not found — this server provides API only.' }));
+  }
 }
 
 // Error handling middleware
