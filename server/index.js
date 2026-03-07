@@ -23,7 +23,7 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [
     'https://hugheseysque.au', 'https://www.hugheseysque.au',
     'https://pennywiseit.com.au', 'https://www.pennywiseit.com.au',
-    /\.vercel\.app$/, /\.netlify\.app$/, /\.railway\.app$/,
+    /\.vercel\.app$/, /\.netlify\.app$/, /\.railway\.app$/, /\.pages\.dev$/,
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [])
   ]
   : ['http://localhost:3000', 'http://localhost:3001'];
