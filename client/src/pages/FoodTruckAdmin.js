@@ -1910,7 +1910,12 @@ Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption"
   const handleCheckGemini = async () => {
     setIsCheckingGemini(true);
     const result = await callGemini('Reply with exactly: OK');
-    toast[result ? 'success' : 'error'](result ? 'Gemini AI is active and responding!' : hasGemini ? 'Key set but no response — check quota or validity.' : 'Add REACT_APP_GEMINI_API_KEY to CF Pages.');
+    if (result && typeof result === 'string') {
+      toast.success('Gemini AI is active and responding!');
+    } else {
+      const errMsg = result?.__error || (hasGemini ? 'Key set but no response — check quota or validity.' : 'No API key set. Go to Dev Tools → Update API Key.');
+      toast.error(errMsg);
+    }
     setIsCheckingGemini(false);
   };
   const handleUpdateStats = async () => {
@@ -2195,7 +2200,12 @@ const FTDevTools = () => {
   const handleTestGemini = async () => {
     setIsTestingGemini(true); setGeminiStatus(null);
     const result = await callGemini('Reply with exactly: OK');
-    setGeminiStatus(result ? { ok: true, msg: 'Active — AI features enabled for all admins.' } : { ok: false, msg: 'Not responding. Check API key.' });
+    if (result && typeof result === 'string') {
+      setGeminiStatus({ ok: true, msg: 'Active — AI features enabled for all admins.' });
+    } else {
+      const errMsg = result?.__error || 'No response — check key or quota.';
+      setGeminiStatus({ ok: false, msg: errMsg });
+    }
     setIsTestingGemini(false);
   };
 
@@ -2203,237 +2213,247 @@ const FTDevTools = () => {
     if (!newKeyInput.trim()) { toast.error('Enter an API key.'); return; }
     setIsSavingKey(true);
     _geminiKeyOverride = newKeyInput.trim();
-    await updateSettings({ geminiApiKey: newKeyInput.trim() });
+    const test = await callGemini('Reply with exactly: OK');
+    if (test && typeof test === 'string') {
+      await updateSettings({ geminiApiKey: newKeyInput.trim() });
+      setShowKeyInput(false);
+      setNewKeyInput('');
+      setGeminiStatus({ ok: true, msg: 'Active — AI features enabled for all admins.' });
+      toast.success('Key verified and saved!');
+    } else {
+      _geminiKeyOverride = settings.geminiApiKey || null;
+      const errMsg = test?.__error || 'Key did not respond — check it is a valid Gemini API key.';
+      toast.error(errMsg);
+    }
     setIsSavingKey(false);
-    setShowKeyInput(false);
-    setNewKeyInput('');
-    toast.success('Gemini API key saved! AI features are now active.');
-  };
+    ;
 
-  const handleGeminiDisconnect = async () => {
-    if (window.confirm('Remove the saved Gemini API key from app settings?')) {
-      _geminiKeyOverride = null;
-      await updateSettings({ geminiApiKey: '' });
-      toast('Gemini key removed.');
-    }
-  };
+    const handleGeminiDisconnect = async () => {
+      if (window.confirm('Remove the saved Gemini API key from app settings?')) {
+        _geminiKeyOverride = null;
+        await updateSettings({ geminiApiKey: '' });
+        toast('Gemini key removed.');
+      }
+    };
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    if (pwForm.newPassword !== pwForm.confirm) { setPwStatus({ ok: false, msg: 'Passwords do not match.' }); return; }
-    if (pwForm.newPassword.length < 8) { setPwStatus({ ok: false, msg: 'Min 8 characters.' }); return; }
-    setIsPwSaving(true); setPwStatus(null);
-    try {
-      const fbUser = auth.currentUser;
-      if (!fbUser) throw new Error('Not logged in to Firebase');
-      await reauthenticateWithCredential(fbUser, EmailAuthProvider.credential(fbUser.email, pwForm.currentPassword));
-      await updatePassword(fbUser, pwForm.newPassword);
-      setPwStatus({ ok: true, msg: 'Password changed successfully!' });
-      setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
-    } catch (err) {
-      setPwStatus({ ok: false, msg: err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' ? 'Current password is incorrect.' : err.message });
-    } finally { setIsPwSaving(false); }
-  };
+    const handleChangePassword = async (e) => {
+      e.preventDefault();
+      if (pwForm.newPassword !== pwForm.confirm) { setPwStatus({ ok: false, msg: 'Passwords do not match.' }); return; }
+      if (pwForm.newPassword.length < 8) { setPwStatus({ ok: false, msg: 'Min 8 characters.' }); return; }
+      setIsPwSaving(true); setPwStatus(null);
+      try {
+        const fbUser = auth.currentUser;
+        if (!fbUser) throw new Error('Not logged in to Firebase');
+        await reauthenticateWithCredential(fbUser, EmailAuthProvider.credential(fbUser.email, pwForm.currentPassword));
+        await updatePassword(fbUser, pwForm.newPassword);
+        setPwStatus({ ok: true, msg: 'Password changed successfully!' });
+        setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
+      } catch (err) {
+        setPwStatus({ ok: false, msg: err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' ? 'Current password is incorrect.' : err.message });
+      } finally { setIsPwSaving(false); }
+    };
 
-  const handleSquareDisconnect = () => {
-    if (window.confirm('Disconnect Square? This will clear your App ID and Location ID.')) {
-      setDevSettings(d => ({ ...d, squareAppId: '', squareLocationId: '' }));
-      toast.success('Square disconnected. Click Save Changes to apply.');
-    }
-  };
-  const handleResetFirebase = () => {
-    if (window.confirm('Clear all Firebase configuration fields?')) {
-      setDevSettings(d => ({ ...d, firebaseProjectId: '', firebaseAuthDomain: '', firebaseApiKey: '', firebaseStorageBucket: '', firebaseMessagingSenderId: '', firebaseAppId: '' }));
-      toast('Firebase fields cleared.');
-    }
-  };
-  const handleUpdateFirebase = async () => {
-    await handleSave();
-    toast('Config saved. Reloading app...');
-    setTimeout(() => window.location.reload(), 1200);
-  };
-  const handleRunDiagnostics = async () => {
-    setIsDiagnosing(true); setDiagnosticsResult(null);
-    const results = [];
-    results.push({ label: 'Firestore DB', ok: !connectionError, detail: connectionError || 'Read/write access confirmed' });
-    const geminiRes = await callGemini('Reply with exactly: DIAG_OK');
-    results.push({ label: 'Gemini AI', ok: !!geminiRes, detail: geminiRes ? 'API key valid — AI responding' : hasGemini ? 'Key set but no response — check quota' : 'No API key set in CF Pages' });
-    results.push({ label: 'Network', ok: navigator.onLine, detail: navigator.onLine ? 'Online — HTTPS active' : 'Offline — check connection' });
-    results.push({ label: 'Square', ok: !!devSettings.squareAppId, detail: devSettings.squareAppId ? 'App ID configured' : 'Not configured' });
-    setDiagnosticsResult(results);
-    setIsDiagnosing(false);
-  };
-  const handleSendTestEmail = async () => {
-    if (!emailSettings.smtpHost || !emailSettings.smtpUser) { toast.error('Configure SMTP host and user first.'); return; }
-    const tid = toast.loading('Sending test email...');
-    try {
-      const res = await fetch('/api/v1/email/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ emailSettings }) });
-      res.ok ? toast.success(`Test email sent to ${emailSettings.adminEmail || emailSettings.fromEmail}!`, { id: tid }) : toast.error(`Server error ${res.status} — check SMTP settings.`, { id: tid });
-    } catch { toast.error('Could not reach email endpoint — ensure backend is running and SMTP is configured.', { id: tid }); }
-  };
+    const handleSquareDisconnect = () => {
+      if (window.confirm('Disconnect Square? This will clear your App ID and Location ID.')) {
+        setDevSettings(d => ({ ...d, squareAppId: '', squareLocationId: '' }));
+        toast.success('Square disconnected. Click Save Changes to apply.');
+      }
+    };
+    const handleResetFirebase = () => {
+      if (window.confirm('Clear all Firebase configuration fields?')) {
+        setDevSettings(d => ({ ...d, firebaseProjectId: '', firebaseAuthDomain: '', firebaseApiKey: '', firebaseStorageBucket: '', firebaseMessagingSenderId: '', firebaseAppId: '' }));
+        toast('Firebase fields cleared.');
+      }
+    };
+    const handleUpdateFirebase = async () => {
+      await handleSave();
+      toast('Config saved. Reloading app...');
+      setTimeout(() => window.location.reload(), 1200);
+    };
+    const handleRunDiagnostics = async () => {
+      setIsDiagnosing(true); setDiagnosticsResult(null);
+      const results = [];
+      results.push({ label: 'Firestore DB', ok: !connectionError, detail: connectionError || 'Read/write access confirmed' });
+      const geminiRes = await callGemini('Reply with exactly: DIAG_OK');
+      const geminiOk = geminiRes && typeof geminiRes === 'string';
+      const geminiDetail = geminiOk ? 'API key valid — AI responding' : (geminiRes?.__error || (hasGemini ? 'Key set but no response — check quota' : 'No API key set — use Dev Tools → Update API Key'));
+      results.push({ label: 'Gemini AI', ok: geminiOk, detail: geminiDetail });
+      results.push({ label: 'Network', ok: navigator.onLine, detail: navigator.onLine ? 'Online — HTTPS active' : 'Offline — check connection' });
+      results.push({ label: 'Square', ok: !!devSettings.squareAppId, detail: devSettings.squareAppId ? 'App ID configured' : 'Not configured' });
+      setDiagnosticsResult(results);
+      setIsDiagnosing(false);
+    };
+    const handleSendTestEmail = async () => {
+      if (!emailSettings.smtpHost || !emailSettings.smtpUser) { toast.error('Configure SMTP host and user first.'); return; }
+      const tid = toast.loading('Sending test email...');
+      try {
+        const res = await fetch('/api/v1/email/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ emailSettings }) });
+        res.ok ? toast.success(`Test email sent to ${emailSettings.adminEmail || emailSettings.fromEmail}!`, { id: tid }) : toast.error(`Server error ${res.status} — check SMTP settings.`, { id: tid });
+      } catch { toast.error('Could not reach email endpoint — ensure backend is running and SMTP is configured.', { id: tid }); }
+    };
 
-  return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide">Developer Tools</h2>
-          <p className="text-gray-400 text-sm mt-1">Technical configuration, API keys, and system diagnostics.</p>
-        </div>
-        <button onClick={handleSave} disabled={isSaving}
-          className="flex items-center gap-2 bg-gray-800 border border-gray-600 text-white font-bold px-4 py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50 text-sm">
-          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Changes
-        </button>
-      </div>
-
-      {/* AI Configuration */}
-      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
-        <div>
-          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Wand2 size={14} className="text-yellow-400" /> AI Configuration (Gemini)</h3>
-          <p className="text-xs text-gray-500 mt-1">Powers Pitmaster Jay chat, social content generation, AI image generation, and strategic recommendations.</p>
-        </div>
-        <div className={`flex items-center justify-between p-4 rounded-xl border ${hasGemini ? 'bg-green-950/20 border-green-800/50' : 'bg-gray-800/50 border-gray-700'}`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${hasGemini ? 'bg-green-900/40' : 'bg-gray-700'}`}><Zap size={16} className={hasGemini ? 'text-green-400' : 'text-gray-500'} /></div>
-            <div>
-              <p className="text-sm font-bold text-white">Google Gemini AI</p>
-              <p className="text-xs text-gray-400">{hasGemini ? 'Connected — AI features active for all admins' : 'Not configured — add REACT_APP_GEMINI_API_KEY to CF Pages'}</p>
-              {geminiStatus && <p className={`text-xs mt-0.5 ${geminiStatus.ok ? 'text-green-400' : 'text-red-400'}`}>{geminiStatus.msg}</p>}
-            </div>
+    return (
+      <div className="space-y-6 max-w-5xl">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide">Developer Tools</h2>
+            <p className="text-gray-400 text-sm mt-1">Technical configuration, API keys, and system diagnostics.</p>
           </div>
-          <span className={`text-xs font-bold flex items-center gap-1 ${hasGemini ? 'text-green-400' : 'text-gray-500'}`}>{hasGemini ? <><Check size={11} /> Active</> : 'Inactive'}</span>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={handleTestGemini} disabled={isTestingGemini}
-            className="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5">
-            {isTestingGemini ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />} Test Connection
+          <button onClick={handleSave} disabled={isSaving}
+            className="flex items-center gap-2 bg-gray-800 border border-gray-600 text-white font-bold px-4 py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50 text-sm">
+            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Changes
           </button>
-          <button onClick={() => setShowKeyInput(!showKeyInput)} className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5"><RefreshCw size={12} /> {showKeyInput ? 'Cancel' : 'Update API Key'}</button>
-          <button onClick={handleGeminiDisconnect} className="bg-red-900 hover:bg-red-800 text-red-200 font-bold px-4 py-2 rounded-lg text-xs">Disconnect</button>
         </div>
-        {showKeyInput && (
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 space-y-3">
-            <p className="text-xs font-bold text-white">Enter Gemini API Key</p>
-            <p className="text-xs text-gray-400">Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">aistudio.google.com/apikey</a>. The key is saved directly to your app settings — no CF Pages required.</p>
-            <div className="flex gap-2">
-              <input type="password" value={newKeyInput} onChange={e => setNewKeyInput(e.target.value)}
-                placeholder="AIzaSy..."
-                className="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono focus:outline-none focus:border-green-600" />
-              <button onClick={handleSaveGeminiKey} disabled={isSavingKey || !newKeyInput.trim()}
-                className="bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-1.5">
-                {isSavingKey ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Key
-              </button>
-            </div>
-            <p className="text-[10px] text-gray-500">Key is saved to Firestore settings and persists across deployments. Optionally also add as <code className="text-gray-400">REACT_APP_GEMINI_API_KEY</code> in CF Pages for extra redundancy.</p>
-          </div>
-        )}
-      </div>
 
-      {/* Payment Gateway */}
-      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
-        <div>
-          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><CreditCard size={14} className="text-green-400" /> Payment Gateway</h3>
-          <p className="text-xs text-gray-500 mt-1">Connect your Square account to accept card payments for orders and catering deposits.</p>
-        </div>
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
+        {/* AI Configuration */}
+        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+          <div>
+            <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Wand2 size={14} className="text-yellow-400" /> AI Configuration (Gemini)</h3>
+            <p className="text-xs text-gray-500 mt-1">Powers Pitmaster Jay chat, social content generation, AI image generation, and strategic recommendations.</p>
+          </div>
+          <div className={`flex items-center justify-between p-4 rounded-xl border ${hasGemini ? 'bg-green-950/20 border-green-800/50' : 'bg-gray-800/50 border-gray-700'}`}>
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-green-900/40 rounded-lg flex items-center justify-center"><CreditCard size={16} className="text-green-400" /></div>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${hasGemini ? 'bg-green-900/40' : 'bg-gray-700'}`}><Zap size={16} className={hasGemini ? 'text-green-400' : 'text-gray-500'} /></div>
               <div>
-                <p className="text-sm font-bold text-white">Square Payments</p>
-                <p className={`text-xs ${devSettings.squareAppId ? 'text-green-400' : 'text-gray-500'}`}>{devSettings.squareAppId ? '⊙ Connected — Live Mode' : 'Not connected'}</p>
+                <p className="text-sm font-bold text-white">Google Gemini AI</p>
+                <p className="text-xs text-gray-400">{hasGemini ? 'Connected — AI features active for all admins' : 'Not configured — add REACT_APP_GEMINI_API_KEY to CF Pages'}</p>
+                {geminiStatus && <p className={`text-xs mt-0.5 ${geminiStatus.ok ? 'text-green-400' : 'text-red-400'}`}>{geminiStatus.msg}</p>}
               </div>
             </div>
-            {devSettings.squareAppId && <button onClick={handleSquareDisconnect} className="text-xs bg-red-900 hover:bg-red-800 text-red-200 font-bold px-3 py-1.5 rounded">Disconnect</button>}
+            <span className={`text-xs font-bold flex items-center gap-1 ${hasGemini ? 'text-green-400' : 'text-gray-500'}`}>{hasGemini ? <><Check size={11} /> Active</> : 'Inactive'}</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {[{ key: 'squareAppId', label: 'APPLICATION ID', ph: 'sq0idp-...', pw: true }, { key: 'squareLocationId', label: 'LOCATION ID', ph: 'LEG88M0C3BZA...' }].map(({ key, label, ph, pw }) => (
-              <div key={key}>
-                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</label>
-                <div className="flex gap-2">
-                  <input type={pw ? 'password' : 'text'} value={devSettings[key] || ''} onChange={e => setDevSettings(d => ({ ...d, [key]: e.target.value }))} placeholder={ph}
-                    className="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm font-mono" />
-                  <button onClick={() => { navigator.clipboard?.writeText(devSettings[key] || ''); toast.success('Copied!'); }} className="p-2 bg-gray-700 rounded-lg hover:bg-gray-600"><Copy size={13} className="text-gray-400" /></button>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={handleTestGemini} disabled={isTestingGemini}
+              className="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5">
+              {isTestingGemini ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />} Test Connection
+            </button>
+            <button onClick={() => setShowKeyInput(!showKeyInput)} className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5"><RefreshCw size={12} /> {showKeyInput ? 'Cancel' : 'Update API Key'}</button>
+            <button onClick={handleGeminiDisconnect} className="bg-red-900 hover:bg-red-800 text-red-200 font-bold px-4 py-2 rounded-lg text-xs">Disconnect</button>
+          </div>
+          {showKeyInput && (
+            <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 space-y-3">
+              <p className="text-xs font-bold text-white">Enter Gemini API Key</p>
+              <p className="text-xs text-gray-400">Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">aistudio.google.com/apikey</a>. The key is saved directly to your app settings — no CF Pages required.</p>
+              <div className="flex gap-2">
+                <input type="password" value={newKeyInput} onChange={e => setNewKeyInput(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono focus:outline-none focus:border-green-600" />
+                <button onClick={handleSaveGeminiKey} disabled={isSavingKey || !newKeyInput.trim()}
+                  className="bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-1.5">
+                  {isSavingKey ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Key
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-500">Key is saved to Firestore settings and persists across deployments. Optionally also add as <code className="text-gray-400">REACT_APP_GEMINI_API_KEY</code> in CF Pages for extra redundancy.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Payment Gateway */}
+        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+          <div>
+            <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><CreditCard size={14} className="text-green-400" /> Payment Gateway</h3>
+            <p className="text-xs text-gray-500 mt-1">Connect your Square account to accept card payments for orders and catering deposits.</p>
+          </div>
+          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-green-900/40 rounded-lg flex items-center justify-center"><CreditCard size={16} className="text-green-400" /></div>
+                <div>
+                  <p className="text-sm font-bold text-white">Square Payments</p>
+                  <p className={`text-xs ${devSettings.squareAppId ? 'text-green-400' : 'text-gray-500'}`}>{devSettings.squareAppId ? '⊙ Connected — Live Mode' : 'Not connected'}</p>
                 </div>
               </div>
-            ))}
+              {devSettings.squareAppId && <button onClick={handleSquareDisconnect} className="text-xs bg-red-900 hover:bg-red-800 text-red-200 font-bold px-3 py-1.5 rounded">Disconnect</button>}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[{ key: 'squareAppId', label: 'APPLICATION ID', ph: 'sq0idp-...', pw: true }, { key: 'squareLocationId', label: 'LOCATION ID', ph: 'LEG88M0C3BZA...' }].map(({ key, label, ph, pw }) => (
+                <div key={key}>
+                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</label>
+                  <div className="flex gap-2">
+                    <input type={pw ? 'password' : 'text'} value={devSettings[key] || ''} onChange={e => setDevSettings(d => ({ ...d, [key]: e.target.value }))} placeholder={ph}
+                      className="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm font-mono" />
+                    <button onClick={() => { navigator.clipboard?.writeText(devSettings[key] || ''); toast.success('Copied!'); }} className="p-2 bg-gray-700 rounded-lg hover:bg-gray-600"><Copy size={13} className="text-gray-400" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Live Operations Console */}
-      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Activity size={14} className="text-green-400" /> Live Operations Console</h3>
-          <button onClick={() => setLastPulse(new Date())} className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"><RefreshCw size={12} /> Refresh</button>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { label: 'FIRESTORE DB', value: connectionError ? 'Error' : 'Active', sub: connectionError || 'Latency: <200ms', icon: Database, ok: !connectionError },
-            { label: 'AUTH SERVICE', value: 'Local Admin', sub: 'Credential: App Settings', icon: Lock, ok: true },
-            { label: 'NETWORK', value: 'Secure', sub: 'TLS 1.3 / HTTPS', icon: Wifi, ok: true },
-            { label: 'LAST PULSE', value: lastPulse.toLocaleTimeString(), sub: 'Auto-sync active', icon: Activity, ok: true },
-          ].map(({ label, value, sub, icon: Icon, ok }) => (
-            <div key={label} className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2"><p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">{label}</p><Icon size={13} className="text-gray-600" /></div>
-              <p className={`text-base font-bold flex items-center gap-1.5 ${ok ? 'text-white' : 'text-red-400'}`}>
-                <span className={`w-2 h-2 rounded-full shrink-0 ${ok ? 'bg-green-400' : 'bg-red-500'}`} />{value}
-              </p>
-              <p className="text-[10px] text-gray-500 mt-1">{sub}</p>
-            </div>
-          ))}
-        </div>
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Firebase Configuration</label>
-            <div className="flex gap-3 text-xs">
-              <button onClick={handleRunDiagnostics} disabled={isDiagnosing} className="text-bbq-red hover:text-red-400 flex items-center gap-1 disabled:opacity-50">{isDiagnosing && <Loader2 size={11} className="animate-spin" />}&gt;_ Run Deep Diagnostics</button>
-              <button onClick={handleResetFirebase} className="text-gray-500 hover:text-gray-300">Reset to Default</button>
-            </div>
+        {/* Live Operations Console */}
+        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Activity size={14} className="text-green-400" /> Live Operations Console</h3>
+            <button onClick={() => setLastPulse(new Date())} className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"><RefreshCw size={12} /> Refresh</button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { key: 'firebaseProjectId', label: 'Project ID', ph: 'hughesys-que' },
-              { key: 'firebaseAuthDomain', label: 'Auth Domain', ph: 'hughesys-que.firebaseapp.com' },
-              { key: 'firebaseApiKey', label: 'API Key', ph: '••••••••', pw: true },
-              { key: 'firebaseStorageBucket', label: 'Storage Bucket', ph: 'hughesys-que.appspot.com' },
-              { key: 'firebaseMessagingSenderId', label: 'Messaging Sender ID', ph: '1234567890' },
-              { key: 'firebaseAppId', label: 'App ID', ph: '1:1234:web:abcd1234' },
-            ].map(({ key, label, ph, pw }) => (
-              <div key={key}>
-                <label className="block text-[10px] text-gray-500 mb-1">{label}</label>
-                <input type={pw ? 'password' : 'text'} value={devSettings[key] || ''} onChange={e => setDevSettings(d => ({ ...d, [key]: e.target.value }))} placeholder={ph}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono focus:outline-none" />
+              { label: 'FIRESTORE DB', value: connectionError ? 'Error' : 'Active', sub: connectionError || 'Latency: <200ms', icon: Database, ok: !connectionError },
+              { label: 'AUTH SERVICE', value: 'Local Admin', sub: 'Credential: App Settings', icon: Lock, ok: true },
+              { label: 'NETWORK', value: 'Secure', sub: 'TLS 1.3 / HTTPS', icon: Wifi, ok: true },
+              { label: 'LAST PULSE', value: lastPulse.toLocaleTimeString(), sub: 'Auto-sync active', icon: Activity, ok: true },
+            ].map(({ label, value, sub, icon: Icon, ok }) => (
+              <div key={label} className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2"><p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">{label}</p><Icon size={13} className="text-gray-600" /></div>
+                <p className={`text-base font-bold flex items-center gap-1.5 ${ok ? 'text-white' : 'text-red-400'}`}>
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${ok ? 'bg-green-400' : 'bg-red-500'}`} />{value}
+                </p>
+                <p className="text-[10px] text-gray-500 mt-1">{sub}</p>
               </div>
             ))}
           </div>
-          <button onClick={handleUpdateFirebase} className="w-full mt-3 bg-blue-700 hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm">Update Firebase Connection (Reloads App)</button>
-          {diagnosticsResult && (
-            <div className="mt-3 space-y-2">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Diagnostics Results</p>
-              {diagnosticsResult.map((r, i) => {
-                const projectId = devSettings.firebaseProjectId || 'hughesys-que';
-                const rulesUrl = `https://console.firebase.google.com/project/${projectId}/firestore/rules`;
-                return (
-                  <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg border text-xs ${r.ok ? 'bg-green-950/30 border-green-800/50' : 'bg-red-950/30 border-red-800/50'}`}>
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${r.ok ? 'bg-green-400' : 'bg-red-500'}`} />
-                    <span className={`font-bold w-24 shrink-0 ${r.ok ? 'text-green-300' : 'text-red-300'}`}>{r.label}</span>
-                    <span className="text-gray-400 flex-1">{r.detail}</span>
-                    {!r.ok && r.label === 'Firestore DB' && (
-                      <a href={rulesUrl} target="_blank" rel="noreferrer"
-                        className="shrink-0 bg-red-700 hover:bg-red-600 text-white font-bold px-2 py-1 rounded text-[10px] whitespace-nowrap">Fix Rules →</a>
-                    )}
-                  </div>
-                );
-              })}
-              {diagnosticsResult.some(r => !r.ok && r.label === 'Firestore DB') && (
-                <div className="bg-red-950/30 border border-red-800/50 rounded-lg p-3 space-y-2">
-                  <p className="text-xs font-bold text-red-300">How to fix Firestore security rules:</p>
-                  <ol className="text-[11px] text-gray-400 space-y-1 list-decimal list-inside">
-                    <li>Click <strong className="text-white">Fix Rules →</strong> above to open Firebase Console</li>
-                    <li>Replace the entire rules block with the rules below</li>
-                    <li>Click <strong className="text-white">Publish</strong></li>
-                  </ol>
-                  <pre className="bg-black/50 border border-gray-700 rounded p-2 text-[10px] text-green-300 overflow-x-auto whitespace-pre">{`rules_version = '2';
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Firebase Configuration</label>
+              <div className="flex gap-3 text-xs">
+                <button onClick={handleRunDiagnostics} disabled={isDiagnosing} className="text-bbq-red hover:text-red-400 flex items-center gap-1 disabled:opacity-50">{isDiagnosing && <Loader2 size={11} className="animate-spin" />}&gt;_ Run Deep Diagnostics</button>
+                <button onClick={handleResetFirebase} className="text-gray-500 hover:text-gray-300">Reset to Default</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                { key: 'firebaseProjectId', label: 'Project ID', ph: 'hughesys-que' },
+                { key: 'firebaseAuthDomain', label: 'Auth Domain', ph: 'hughesys-que.firebaseapp.com' },
+                { key: 'firebaseApiKey', label: 'API Key', ph: '••••••••', pw: true },
+                { key: 'firebaseStorageBucket', label: 'Storage Bucket', ph: 'hughesys-que.appspot.com' },
+                { key: 'firebaseMessagingSenderId', label: 'Messaging Sender ID', ph: '1234567890' },
+                { key: 'firebaseAppId', label: 'App ID', ph: '1:1234:web:abcd1234' },
+              ].map(({ key, label, ph, pw }) => (
+                <div key={key}>
+                  <label className="block text-[10px] text-gray-500 mb-1">{label}</label>
+                  <input type={pw ? 'password' : 'text'} value={devSettings[key] || ''} onChange={e => setDevSettings(d => ({ ...d, [key]: e.target.value }))} placeholder={ph}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono focus:outline-none" />
+                </div>
+              ))}
+            </div>
+            <button onClick={handleUpdateFirebase} className="w-full mt-3 bg-blue-700 hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm">Update Firebase Connection (Reloads App)</button>
+            {diagnosticsResult && (
+              <div className="mt-3 space-y-2">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Diagnostics Results</p>
+                {diagnosticsResult.map((r, i) => {
+                  const projectId = devSettings.firebaseProjectId || 'hughesys-que';
+                  const rulesUrl = `https://console.firebase.google.com/project/${projectId}/firestore/rules`;
+                  return (
+                    <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg border text-xs ${r.ok ? 'bg-green-950/30 border-green-800/50' : 'bg-red-950/30 border-red-800/50'}`}>
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${r.ok ? 'bg-green-400' : 'bg-red-500'}`} />
+                      <span className={`font-bold w-24 shrink-0 ${r.ok ? 'text-green-300' : 'text-red-300'}`}>{r.label}</span>
+                      <span className="text-gray-400 flex-1">{r.detail}</span>
+                      {!r.ok && r.label === 'Firestore DB' && (
+                        <a href={rulesUrl} target="_blank" rel="noreferrer"
+                          className="shrink-0 bg-red-700 hover:bg-red-600 text-white font-bold px-2 py-1 rounded text-[10px] whitespace-nowrap">Fix Rules →</a>
+                      )}
+                    </div>
+                  );
+                })}
+                {diagnosticsResult.some(r => !r.ok && r.label === 'Firestore DB') && (
+                  <div className="bg-red-950/30 border border-red-800/50 rounded-lg p-3 space-y-2">
+                    <p className="text-xs font-bold text-red-300">How to fix Firestore security rules:</p>
+                    <ol className="text-[11px] text-gray-400 space-y-1 list-decimal list-inside">
+                      <li>Click <strong className="text-white">Fix Rules →</strong> above to open Firebase Console</li>
+                      <li>Replace the entire rules block with the rules below</li>
+                      <li>Click <strong className="text-white">Publish</strong></li>
+                    </ol>
+                    <pre className="bg-black/50 border border-gray-700 rounded p-2 text-[10px] text-green-300 overflow-x-auto whitespace-pre">{`rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /{document=**} {
@@ -2441,184 +2461,184 @@ service cloud.firestore {
     }
   }
 }`}</pre>
-                  <p className="text-[10px] text-yellow-500">⚠ These open rules are fine for development. Tighten them before a public launch.</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Admin Access */}
-      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
-        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Lock size={14} className="text-gray-400" /> Admin Access</h3>
-        <div className="bg-yellow-900/20 border border-yellow-800/50 rounded-lg p-3 text-xs text-yellow-300">Change from the default password before going live.</div>
-        <form onSubmit={handleChangePassword} className="space-y-3 max-w-md">
-          {[{ key: 'currentPassword', label: 'Current Password' }, { key: 'newPassword', label: 'New Password (min 8 chars)' }, { key: 'confirm', label: 'Confirm New Password' }].map(({ key, label }) => (
-            <div key={key}>
-              <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</label>
-              <input type="password" value={pwForm[key]} onChange={e => setPwForm({ ...pwForm, [key]: e.target.value })} required
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" />
-            </div>
-          ))}
-          {pwStatus && <p className={`text-sm font-bold flex items-center gap-1 ${pwStatus.ok ? 'text-green-400' : 'text-red-400'}`}>{pwStatus.ok ? <Check size={13} /> : <AlertTriangle size={13} />} {pwStatus.msg}</p>}
-          <button type="submit" disabled={isPwSaving} className="bg-yellow-700 hover:bg-yellow-600 text-white px-5 py-2 rounded-lg font-bold text-sm disabled:opacity-50 flex items-center gap-2">
-            {isPwSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Change Password
-          </button>
-        </form>
-      </div>
-
-      {/* Email Settings */}
-      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
-        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Mail size={14} className="text-purple-400" /> Email Settings</h3>
-        <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
-          <input type="checkbox" checked={emailSettings.enabled || false} onChange={e => setEmailSettings(es => ({ ...es, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
-          <span className="font-bold text-white text-sm">Enable Email Notifications</span>
-        </label>
-        {emailSettings.enabled && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PROVIDER</label>
-                <select value={emailSettings.provider || 'SMTP (Custom)'} onChange={e => setEmailSettings(es => ({ ...es, provider: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm">
-                  {['SMTP (Custom)', 'SendGrid', 'Mailgun', 'Amazon SES'].map(p => <option key={p}>{p}</option>)}
-                </select>
+                    <p className="text-[10px] text-yellow-500">⚠ These open rules are fine for development. Tighten them before a public launch.</p>
+                  </div>
+                )}
               </div>
-              {[{ k: 'fromEmail', l: 'FROM EMAIL', p: 'orders@hughesysque.com.au' }, { k: 'fromName', l: 'FROM NAME', p: 'Hughesys Que' }, { k: 'adminEmail', l: 'ADMIN EMAIL (RECEIVES ORDER ALERTS)', p: 'admin@hughesysque.com.au' }].map(({ k, l, p }) => (
-                <div key={k}><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{l}</label>
-                  <input value={emailSettings[k] || ''} onChange={e => setEmailSettings(es => ({ ...es, [k]: e.target.value }))} placeholder={p} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" /></div>
-              ))}
-            </div>
-            <div className="space-y-3">
-              {[{ k: 'smtpHost', l: 'SMTP HOST', p: 'smtp.siteground.biz' }, { k: 'smtpPort', l: 'SMTP PORT', p: '465' }, { k: 'smtpUser', l: 'SMTP USER', p: 'admin@hughesysque.com.au' }].map(({ k, l, p }) => (
-                <div key={k}><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{l}</label>
-                  <input value={emailSettings[k] || ''} onChange={e => setEmailSettings(es => ({ ...es, [k]: e.target.value }))} placeholder={p} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" /></div>
-              ))}
-              <div><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">SMTP PASSWORD</label>
-                <input type="password" value={emailSettings.smtpPassword || ''} onChange={e => setEmailSettings(es => ({ ...es, smtpPassword: e.target.value }))} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" /></div>
-              <div className="bg-blue-950/30 border border-blue-800/40 rounded-lg p-3 text-xs text-blue-300">
-                <p className="font-bold">SiteGround GoGeek Guide</p>
-                <p className="text-gray-400 mt-1">Use SSL/TLS settings from SiteGround cPanel &gt; Email Accounts &gt; Connect Devices. Port is usually <strong className="text-white">465</strong>. The 'User' is your <strong className="text-white">full email address</strong>.</p>
-              </div>
-              <button onClick={handleSendTestEmail} className="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2.5 rounded-lg text-sm">Send Test Email</button>
-            </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* SMS Settings */}
-      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
-        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Smartphone size={14} className="text-green-400" /> SMS Settings (Twilio)</h3>
-        <p className="text-xs text-gray-500">Send order alerts and customer confirmations via SMS. Uses Twilio — enter credentials from <a href="https://console.twilio.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">console.twilio.com</a>.</p>
-        <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
-          <input type="checkbox" checked={smsSettings.enabled || false} onChange={e => setSmsSettings(s => ({ ...s, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
-          <div><span className="font-bold text-white text-sm">Enable SMS Notifications</span><p className="text-xs text-gray-500">Sends order alerts to admin and confirmation to customers.</p></div>
-        </label>
-        {smsSettings.enabled && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">FROM NUMBER</label>
-              <input value={smsSettings.fromNumber || ''} onChange={e => setSmsSettings(s => ({ ...s, fromNumber: e.target.value }))} placeholder="+61485019997"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" />
-            </div>
-            {[{ k: 'accountSid', l: 'ACCOUNT SID', p: 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' }, { k: 'authToken', l: 'AUTH TOKEN', pw: true, p: '••••••••••••••••' }].map(({ k, l, p, pw }) => (
-              <div key={k}><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{l}</label>
-                <input type={pw ? 'password' : 'text'} value={smsSettings[k] || ''} onChange={e => setSmsSettings(s => ({ ...s, [k]: e.target.value }))} placeholder={p}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" /></div>
+        {/* Admin Access */}
+        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Lock size={14} className="text-gray-400" /> Admin Access</h3>
+          <div className="bg-yellow-900/20 border border-yellow-800/50 rounded-lg p-3 text-xs text-yellow-300">Change from the default password before going live.</div>
+          <form onSubmit={handleChangePassword} className="space-y-3 max-w-md">
+            {[{ key: 'currentPassword', label: 'Current Password' }, { key: 'newPassword', label: 'New Password (min 8 chars)' }, { key: 'confirm', label: 'Confirm New Password' }].map(({ key, label }) => (
+              <div key={key}>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</label>
+                <input type="password" value={pwForm[key]} onChange={e => setPwForm({ ...pwForm, [key]: e.target.value })} required
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" />
+              </div>
             ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ─── MAIN ADMIN DASHBOARD ────────────────────────────────────────────
-const FoodTruckAdmin = () => {
-  const { connectionError, orders, brandName, settings } = useStorefront();
-  const [activeTab, setActiveTab] = useState('orders');
-
-  useEffect(() => {
-    if (settings?.geminiApiKey) _geminiKeyOverride = settings.geminiApiKey;
-  }, [settings?.geminiApiKey]);
-
-  const TABS = [
-    { id: 'orders', icon: CalendarCheck, label: 'Orders', badge: orders.filter(o => o.status === 'pending').length },
-    { id: 'planner', icon: CalendarDays, label: 'Planner' },
-    { id: 'pitmaster', icon: Flame, label: 'Pitmaster' },
-    { id: 'menu', icon: Utensils, label: 'Menu' },
-    { id: 'catering', icon: Package, label: 'Catering' },
-    { id: 'customers', icon: Users, label: 'Customers' },
-    { id: 'social', icon: Sparkles, label: 'Social & AI' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
-    { id: 'devtools', icon: Code2, label: 'Dev Tools' },
-  ];
-
-  const activeTabInfo = TABS.find(t => t.id === activeTab);
-  const ActiveIcon = activeTabInfo?.icon;
-
-  return (
-    <div className="flex -mx-4 md:-mx-8 -mb-8 min-h-[calc(100vh-8rem)] overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-52 shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col">
-        <div className="px-4 pt-5 pb-2">
-          <p className="text-[10px] font-mono text-gray-500 uppercase tracking-[0.2em]">Dev Panel</p>
-        </div>
-        <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
-          {TABS.map(({ id, icon: Icon, label, badge }) => (
-            <button key={id} onClick={() => setActiveTab(id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
-                ${activeTab === id ? 'bg-bbq-red text-white shadow-lg shadow-red-900/30' : 'text-gray-400 hover:text-white hover:bg-gray-800/60'}`}>
-              <Icon size={16} className="shrink-0" />
-              <span>{label}</span>
-              {badge > 0 && (
-                <span className="ml-auto bg-yellow-500 text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shrink-0">{badge}</span>
-              )}
+            {pwStatus && <p className={`text-sm font-bold flex items-center gap-1 ${pwStatus.ok ? 'text-green-400' : 'text-red-400'}`}>{pwStatus.ok ? <Check size={13} /> : <AlertTriangle size={13} />} {pwStatus.msg}</p>}
+            <button type="submit" disabled={isPwSaving} className="bg-yellow-700 hover:bg-yellow-600 text-white px-5 py-2 rounded-lg font-bold text-sm disabled:opacity-50 flex items-center gap-2">
+              {isPwSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Change Password
             </button>
-          ))}
-        </nav>
-        <div className="px-4 py-4 border-t border-gray-800 space-y-2">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <UserIcon size={12} />
-            <span>Developer Mode</span>
+          </form>
+        </div>
+
+        {/* Email Settings */}
+        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Mail size={14} className="text-purple-400" /> Email Settings</h3>
+          <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
+            <input type="checkbox" checked={emailSettings.enabled || false} onChange={e => setEmailSettings(es => ({ ...es, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
+            <span className="font-bold text-white text-sm">Enable Email Notifications</span>
+          </label>
+          {emailSettings.enabled && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PROVIDER</label>
+                  <select value={emailSettings.provider || 'SMTP (Custom)'} onChange={e => setEmailSettings(es => ({ ...es, provider: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm">
+                    {['SMTP (Custom)', 'SendGrid', 'Mailgun', 'Amazon SES'].map(p => <option key={p}>{p}</option>)}
+                  </select>
+                </div>
+                {[{ k: 'fromEmail', l: 'FROM EMAIL', p: 'orders@hughesysque.com.au' }, { k: 'fromName', l: 'FROM NAME', p: 'Hughesys Que' }, { k: 'adminEmail', l: 'ADMIN EMAIL (RECEIVES ORDER ALERTS)', p: 'admin@hughesysque.com.au' }].map(({ k, l, p }) => (
+                  <div key={k}><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{l}</label>
+                    <input value={emailSettings[k] || ''} onChange={e => setEmailSettings(es => ({ ...es, [k]: e.target.value }))} placeholder={p} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" /></div>
+                ))}
+              </div>
+              <div className="space-y-3">
+                {[{ k: 'smtpHost', l: 'SMTP HOST', p: 'smtp.siteground.biz' }, { k: 'smtpPort', l: 'SMTP PORT', p: '465' }, { k: 'smtpUser', l: 'SMTP USER', p: 'admin@hughesysque.com.au' }].map(({ k, l, p }) => (
+                  <div key={k}><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{l}</label>
+                    <input value={emailSettings[k] || ''} onChange={e => setEmailSettings(es => ({ ...es, [k]: e.target.value }))} placeholder={p} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" /></div>
+                ))}
+                <div><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">SMTP PASSWORD</label>
+                  <input type="password" value={emailSettings.smtpPassword || ''} onChange={e => setEmailSettings(es => ({ ...es, smtpPassword: e.target.value }))} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" /></div>
+                <div className="bg-blue-950/30 border border-blue-800/40 rounded-lg p-3 text-xs text-blue-300">
+                  <p className="font-bold">SiteGround GoGeek Guide</p>
+                  <p className="text-gray-400 mt-1">Use SSL/TLS settings from SiteGround cPanel &gt; Email Accounts &gt; Connect Devices. Port is usually <strong className="text-white">465</strong>. The 'User' is your <strong className="text-white">full email address</strong>.</p>
+                </div>
+                <button onClick={handleSendTestEmail} className="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2.5 rounded-lg text-sm">Send Test Email</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* SMS Settings */}
+        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Smartphone size={14} className="text-green-400" /> SMS Settings (Twilio)</h3>
+          <p className="text-xs text-gray-500">Send order alerts and customer confirmations via SMS. Uses Twilio — enter credentials from <a href="https://console.twilio.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">console.twilio.com</a>.</p>
+          <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
+            <input type="checkbox" checked={smsSettings.enabled || false} onChange={e => setSmsSettings(s => ({ ...s, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
+            <div><span className="font-bold text-white text-sm">Enable SMS Notifications</span><p className="text-xs text-gray-500">Sends order alerts to admin and confirmation to customers.</p></div>
+          </label>
+          {smsSettings.enabled && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">FROM NUMBER</label>
+                <input value={smsSettings.fromNumber || ''} onChange={e => setSmsSettings(s => ({ ...s, fromNumber: e.target.value }))} placeholder="+61485019997"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" />
+              </div>
+              {[{ k: 'accountSid', l: 'ACCOUNT SID', p: 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' }, { k: 'authToken', l: 'AUTH TOKEN', pw: true, p: '••••••••••••••••' }].map(({ k, l, p, pw }) => (
+                <div key={k}><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{l}</label>
+                  <input type={pw ? 'password' : 'text'} value={smsSettings[k] || ''} onChange={e => setSmsSettings(s => ({ ...s, [k]: e.target.value }))} placeholder={p}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" /></div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ─── MAIN ADMIN DASHBOARD ────────────────────────────────────────────
+  const FoodTruckAdmin = () => {
+    const { connectionError, orders, brandName, settings } = useStorefront();
+    const [activeTab, setActiveTab] = useState('orders');
+
+    useEffect(() => {
+      if (settings?.geminiApiKey) _geminiKeyOverride = settings.geminiApiKey;
+    }, [settings?.geminiApiKey]);
+
+    const TABS = [
+      { id: 'orders', icon: CalendarCheck, label: 'Orders', badge: orders.filter(o => o.status === 'pending').length },
+      { id: 'planner', icon: CalendarDays, label: 'Planner' },
+      { id: 'pitmaster', icon: Flame, label: 'Pitmaster' },
+      { id: 'menu', icon: Utensils, label: 'Menu' },
+      { id: 'catering', icon: Package, label: 'Catering' },
+      { id: 'customers', icon: Users, label: 'Customers' },
+      { id: 'social', icon: Sparkles, label: 'Social & AI' },
+      { id: 'settings', icon: Settings, label: 'Settings' },
+      { id: 'devtools', icon: Code2, label: 'Dev Tools' },
+    ];
+
+    const activeTabInfo = TABS.find(t => t.id === activeTab);
+    const ActiveIcon = activeTabInfo?.icon;
+
+    return (
+      <div className="flex -mx-4 md:-mx-8 -mb-8 min-h-[calc(100vh-8rem)] overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-52 shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col">
+          <div className="px-4 pt-5 pb-2">
+            <p className="text-[10px] font-mono text-gray-500 uppercase tracking-[0.2em]">Dev Panel</p>
           </div>
-          {connectionError ? (
-            <div className="flex items-center gap-2 text-xs text-red-400">
-              <Wifi size={12} />
-              <span>Offline</span>
+          <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
+            {TABS.map(({ id, icon: Icon, label, badge }) => (
+              <button key={id} onClick={() => setActiveTab(id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                ${activeTab === id ? 'bg-bbq-red text-white shadow-lg shadow-red-900/30' : 'text-gray-400 hover:text-white hover:bg-gray-800/60'}`}>
+                <Icon size={16} className="shrink-0" />
+                <span>{label}</span>
+                {badge > 0 && (
+                  <span className="ml-auto bg-yellow-500 text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shrink-0">{badge}</span>
+                )}
+              </button>
+            ))}
+          </nav>
+          <div className="px-4 py-4 border-t border-gray-800 space-y-2">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <UserIcon size={12} />
+              <span>Developer Mode</span>
             </div>
-          ) : (
-            <div className="flex items-center gap-2 text-xs text-purple-400">
-              <Cloud size={12} />
-              <span>Live · {brandName}</span>
-            </div>
-          )}
-        </div>
-      </aside>
+            {connectionError ? (
+              <div className="flex items-center gap-2 text-xs text-red-400">
+                <Wifi size={12} />
+                <span>Offline</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-purple-400">
+                <Cloud size={12} />
+                <span>Live · {brandName}</span>
+              </div>
+            )}
+          </div>
+        </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          {activeTabInfo && ActiveIcon && (
-            <div className="flex items-center gap-2 mb-6 text-gray-400">
-              <ActiveIcon size={16} />
-              <span className="text-white font-medium text-sm">{activeTabInfo.label}</span>
-            </div>
-          )}
-          {activeTab === 'orders' && <OrderManager />}
-          {activeTab === 'planner' && <FTPlanner />}
-          {activeTab === 'pitmaster' && <FTPitmaster />}
-          {activeTab === 'menu' && <FTMenuManager />}
-          {activeTab === 'catering' && <CateringManager />}
-          {activeTab === 'customers' && <CustomerManager />}
-          {activeTab === 'social' && <SocialCommandCenter />}
-          {activeTab === 'settings' && <FTSettingsManager />}
-          {activeTab === 'devtools' && <FTDevTools />}
-        </div>
-      </main>
-    </div>
-  );
-};
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            {activeTabInfo && ActiveIcon && (
+              <div className="flex items-center gap-2 mb-6 text-gray-400">
+                <ActiveIcon size={16} />
+                <span className="text-white font-medium text-sm">{activeTabInfo.label}</span>
+              </div>
+            )}
+            {activeTab === 'orders' && <OrderManager />}
+            {activeTab === 'planner' && <FTPlanner />}
+            {activeTab === 'pitmaster' && <FTPitmaster />}
+            {activeTab === 'menu' && <FTMenuManager />}
+            {activeTab === 'catering' && <CateringManager />}
+            {activeTab === 'customers' && <CustomerManager />}
+            {activeTab === 'social' && <SocialCommandCenter />}
+            {activeTab === 'settings' && <FTSettingsManager />}
+            {activeTab === 'devtools' && <FTDevTools />}
+          </div>
+        </main>
+      </div>
+    );
+  };
 
-export default FoodTruckAdmin;
+  export default FoodTruckAdmin;
