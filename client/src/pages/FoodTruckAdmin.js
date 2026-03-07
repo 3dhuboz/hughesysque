@@ -736,143 +736,276 @@ const FTMenuManager = () => {
   );
 };
 
+// ─── IMAGE UPLOAD FIELD ──────────────────────────────────────────────
+const ImageField = ({ label, value, onChange }) => {
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onChange(reader.result);
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div className="space-y-1">
+      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">{label}</label>
+      <div className="flex gap-1.5 items-center">
+        <input value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Paste a URL..."
+          className="flex-1 bg-gray-900 border border-gray-700 rounded p-2 text-[11px] text-gray-400 font-mono truncate focus:outline-none focus:border-gray-500" />
+        <label className="cursor-pointer p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700 shrink-0">
+          <UploadCloud size={13} className="text-gray-400" />
+          <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+        </label>
+        {value && <button type="button" onClick={() => onChange('')} className="p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700 shrink-0"><X size={13} className="text-gray-400" /></button>}
+      </div>
+      {value && <img src={value} alt={label} className="w-full h-24 object-cover rounded border border-gray-700" onError={e => e.target.style.display = 'none'} />}
+    </div>
+  );
+};
+
 // ─── SETTINGS MANAGER ────────────────────────────────────────────────
 const FTSettingsManager = () => {
   const { settings, updateSettings, brandName } = useStorefront();
   const [form, setForm] = useState({ ...settings });
-  const [rewardsForm, setRewardsForm] = useState({ ...(settings.rewards || {}) });
+  const [visuals, setVisuals] = useState({ ...(settings.siteVisuals || {}) });
+  const [rewards, setRewards] = useState({ ...(settings.rewards || {}) });
+  const [invoice, setInvoice] = useState({
+    paymentButtonLabel: 'Pay Now',
+    thankYouMessage: "Here's your invoice. Please review the details below and arrange payment at your earliest convenience.",
+    headerColor: '#d9381e', accentColor: '#eab308',
+    footerNote: 'Thank you for your business! If you have questions about this invoice, reply to this email or give us a call.',
+    smsTemplate: 'Hi {name}, you have an invoice for ${total} from {business}. Order #{orderNum}. {payLink}',
+    ...(settings.invoiceTemplate || {}),
+  });
+  const [newPrize, setNewPrize] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
-  const [pwStatus, setPwStatus] = useState(null);
-  const [isPwSaving, setIsPwSaving] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
-    await updateSettings({ ...form, rewards: { ...rewardsForm } });
-    setIsSaving(false); setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    await updateSettings({ ...form, siteVisuals: visuals, rewards, invoiceTemplate: invoice });
+    setIsSaving(false);
+    toast.success('Settings saved!');
   };
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    if (pwForm.newPassword !== pwForm.confirm) { setPwStatus({ ok: false, msg: 'Passwords do not match.' }); return; }
-    if (pwForm.newPassword.length < 8) { setPwStatus({ ok: false, msg: 'New password must be at least 8 characters.' }); return; }
-    setIsPwSaving(true); setPwStatus(null);
-    try {
-      const fbUser = auth.currentUser;
-      if (!fbUser) throw new Error('Not logged in');
-      const cred = EmailAuthProvider.credential(fbUser.email, pwForm.currentPassword);
-      await reauthenticateWithCredential(fbUser, cred);
-      await updatePassword(fbUser, pwForm.newPassword);
-      setPwStatus({ ok: true, msg: 'Password changed successfully!' });
-      setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
-    } catch (err) {
-      const msg = err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential'
-        ? 'Current password is incorrect.'
-        : err.message || 'Failed to change password.';
-      setPwStatus({ ok: false, msg });
-    } finally { setIsPwSaving(false); }
+  const prizes = rewards.possiblePrizes || [];
+  const addPrize = () => {
+    if (!newPrize.trim()) return;
+    setRewards(r => ({ ...r, possiblePrizes: [...(r.possiblePrizes || []), { name: newPrize.trim(), image: '' }] }));
+    setNewPrize('');
   };
+  const removePrize = (idx) => setRewards(r => ({ ...r, possiblePrizes: r.possiblePrizes.filter((_, i) => i !== idx) }));
+
+  const VISUAL_SECTIONS = [
+    { label: 'HOME PAGE', fields: [{ key: 'cateringHero', label: 'CATERING HERO' }, { key: 'cookMenuHero', label: 'COOK/MENU HERO' }, { key: 'promoterSection', label: 'PROMOTER SECTION' }] },
+    { label: 'CATERING & DIY', fields: [{ key: 'diyPageHero', label: 'DIY PAGE HERO' }, { key: 'packageCard', label: 'PACKAGE CARD' }, { key: 'customCard', label: 'CUSTOM CARD' }] },
+    { label: 'OTHER PAGES', fields: [{ key: 'menuHero', label: 'MENU HERO' }, { key: 'eventsHero', label: 'EVENTS HERO' }, { key: 'galleryHero', label: 'GALLERY HERO' }] },
+  ];
 
   return (
-    <div className="space-y-8 max-w-2xl">
-      <h3 className="text-xl font-bold text-white border-b border-gray-700 pb-2">Store Settings</h3>
-
-      <div className="space-y-4">
-        <h4 className="font-bold text-gray-300 uppercase text-xs tracking-widest">Business Info</h4>
-        {[
-          { key: 'businessName', label: 'Business Name', placeholder: brandName || 'Hughesys Que' },
-          { key: 'businessAddress', label: 'Address', placeholder: '123 Main St, Brisbane' },
-          { key: 'businessEmail', label: 'Email', placeholder: 'hello@example.com', type: 'email' },
-          { key: 'businessPhone', label: 'Phone', placeholder: '0400 000 000' },
-        ].map(({ key, label, placeholder, type }) => (
-          <div key={key}>
-            <label className="block text-xs text-gray-400 font-bold mb-1">{label}</label>
-            <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm({ ...form, [key]: e.target.value })}
-              placeholder={placeholder} className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm" />
-          </div>
-        ))}
+    <div className="space-y-6 max-w-5xl">
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide">Settings</h2>
+          <p className="text-gray-400 text-sm mt-1">Business settings, branding, and rewards.</p>
+        </div>
+        <button onClick={handleSave} disabled={isSaving}
+          className="flex items-center gap-2 bg-gray-800 border border-gray-600 text-white font-bold px-4 py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50 text-sm">
+          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Changes
+        </button>
       </div>
 
-      <div className="space-y-4 border-t border-gray-800 pt-6">
-        <h4 className="font-bold text-gray-300 uppercase text-xs tracking-widest flex items-center gap-2"><Star size={14} className="text-bbq-gold" /> Golden Ticket Rewards</h4>
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" checked={rewardsForm.enabled || false} onChange={e => setRewardsForm({ ...rewardsForm, enabled: e.target.checked })} className="w-5 h-5 rounded text-bbq-red" />
-          <span className="font-bold text-white">Enable Rewards Program</span>
+      {/* General Configuration */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Settings size={14} className="text-bbq-gold" /> General Configuration</h3>
+        <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
+          <input type="checkbox" checked={form.maintenanceMode || false} onChange={e => setForm({ ...form, maintenanceMode: e.target.checked })} className="w-4 h-4 accent-bbq-red" />
+          <div>
+            <span className="font-bold text-white text-sm">Maintenance Mode</span>
+            <p className="text-xs text-gray-500">Redirects all visitors to the Maintenance page.</p>
+          </div>
         </label>
-        {rewardsForm.enabled && (
-          <div className="pl-4 border-l-2 border-bbq-gold space-y-3">
-            {[
-              { key: 'programName', label: 'Program Name', placeholder: 'The Golden Ticket' },
-              { key: 'rewardTitle', label: 'Prize Description', placeholder: 'Free Rack of Ribs!' },
-              { key: 'staffPin', label: 'Staff PIN (4 digits)', placeholder: '1234', type: 'password' },
-            ].map(({ key, label, placeholder, type }) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            {[{ key: 'businessName', label: 'BUSINESS NAME', ph: brandName || 'Hughesys Que' }, { key: 'businessAddress', label: 'BUSINESS ADDRESS', ph: 'Brisbane, QLD' }].map(({ key, label, ph }) => (
               <div key={key}>
-                <label className="block text-xs text-gray-400 font-bold mb-1">{label}</label>
-                <input type={type || 'text'} value={rewardsForm[key] || ''} onChange={e => setRewardsForm({ ...rewardsForm, [key]: e.target.value })}
-                  placeholder={placeholder} className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm" />
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</label>
+                <input value={form[key] || ''} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder={ph}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-bbq-red" />
               </div>
             ))}
-            <div>
-              <label className="block text-xs text-gray-400 font-bold mb-1">Stamps to fill a ticket</label>
-              <input type="number" min="5" max="20" value={rewardsForm.maxStamps || 10} onChange={e => setRewardsForm({ ...rewardsForm, maxStamps: parseInt(e.target.value) })}
-                className="w-24 bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm text-center" />
+          </div>
+          <div>
+            <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">LOGO URL</label>
+            <input value={form.logoUrl || ''} onChange={e => setForm({ ...form, logoUrl: e.target.value })} placeholder="Paste logo URL..."
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono mb-2 focus:outline-none focus:border-bbq-red" />
+            {form.logoUrl && <img src={form.logoUrl} alt="Logo" className="w-full h-28 object-contain bg-black/40 rounded-lg border border-gray-700" onError={e => e.target.style.display = 'none'} />}
+          </div>
+        </div>
+      </div>
+
+      {/* Site Visuals */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><ImagePlus size={14} className="text-red-400" /> Site Visuals</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {VISUAL_SECTIONS.map(({ label, fields }) => (
+            <div key={label} className="space-y-4">
+              <h4 className="font-bold text-white text-sm">{label}</h4>
+              {fields.map(({ key, label: fl }) => (
+                <ImageField key={key} label={fl} value={visuals[key] || ''} onChange={v => setVisuals(p => ({ ...p, [key]: v }))} />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Facebook / Instagram */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-3">
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Globe size={14} className="text-blue-400" /> Facebook / Instagram</h3>
+        <div className="bg-blue-950/40 border border-blue-800/60 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle size={15} className="text-blue-400 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-bold text-white">Manage Facebook connection in the Social & AI tab</p>
+            <p className="text-xs text-gray-400 mt-1">The full Facebook login wizard, page selection, connection testing, and Instagram linking are all in the <strong className="text-white">Social & AI</strong> tab to keep everything in one place.</p>
+            {form.facebookConnected && <p className="text-xs text-green-400 mt-2 flex items-center gap-1"><Check size={11} /> Page currently connected</p>}
+          </div>
+        </div>
+      </div>
+
+      {/* Rewards Program */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Gift size={14} className="text-yellow-400" /> Rewards Program</h3>
+        <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
+          <input type="checkbox" checked={rewards.enabled || false} onChange={e => setRewards(r => ({ ...r, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
+          <div>
+            <span className="font-bold text-white text-sm">Enable Rewards Program</span>
+            <p className="text-xs text-gray-500">Customers can earn stamps and redeem prizes.</p>
+          </div>
+        </label>
+        {rewards.enabled && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PROGRAM NAME</label>
+                <input value={rewards.programName || ''} onChange={e => setRewards(r => ({ ...r, programName: e.target.value }))} placeholder="Meat Sweats Club"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">STAFF PIN</label>
+                  <input type="password" value={rewards.staffPin || ''} onChange={e => setRewards(r => ({ ...r, staffPin: e.target.value }))} placeholder="••••"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" />
+                  <p className="text-[10px] text-gray-500 mt-1">Staff enter this to add/redeem stamps.</p>
+                </div>
+                <div>
+                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">STAMPS TO REWARD</label>
+                  <input type="number" min="1" max="50" value={rewards.maxStamps || 10} onChange={e => setRewards(r => ({ ...r, maxStamps: parseInt(e.target.value) || 10 }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm text-center font-mono" />
+                  <p className="text-[10px] text-gray-500 mt-1">Stamps needed to earn a prize.</p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PRIZE POOL (POSSIBLE WINNINGS)</label>
+                <p className="text-[10px] text-gray-500 mb-2">Add multiple items. The Golden Ticket will randomly select one upon scratching.</p>
+              </div>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {prizes.map((prize, idx) => (
+                  <div key={idx} className="flex items-center gap-3 bg-gray-800 border border-gray-700 rounded-lg p-3">
+                    {prize.image ? <img src={prize.image} alt="" className="w-9 h-9 object-cover rounded" /> : <div className="w-9 h-9 bg-gray-700 rounded flex items-center justify-center shrink-0"><Gift size={14} className="text-gray-500" /></div>}
+                    <span className="flex-1 text-sm font-medium text-white">{prize.name}</span>
+                    <button onClick={() => { const n = prompt('Edit prize name:', prize.name); if (n?.trim()) setRewards(r => ({ ...r, possiblePrizes: r.possiblePrizes.map((p, i) => i === idx ? { ...p, name: n.trim() } : p) })); }} className="p-1.5 text-gray-400 hover:text-white"><Edit2 size={13} /></button>
+                    <button onClick={() => removePrize(idx)} className="p-1.5 text-red-400 hover:text-red-300"><Trash2 size={13} /></button>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">ADD NEW PRIZE</label>
+                <input value={newPrize} onChange={e => setNewPrize(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPrize()} placeholder="e.g. Free Burger"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-2" />
+                <button onClick={addPrize} className="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-2.5 rounded-lg text-sm flex items-center justify-center gap-2">
+                  <Plus size={14} /> Add to Pool
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      <div className="space-y-3 border-t border-gray-800 pt-6">
-        <h4 className="font-bold text-gray-300 uppercase text-xs tracking-widest">Display</h4>
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" checked={form.maintenanceMode || false} onChange={e => setForm({ ...form, maintenanceMode: e.target.checked })} className="w-5 h-5 rounded text-bbq-red" />
-          <div>
-            <span className="font-bold text-white">Maintenance Mode</span>
-            <p className="text-xs text-gray-500">Hide storefront from public when enabled.</p>
-          </div>
-        </label>
-      </div>
-
-      <div className="space-y-4 border-t border-gray-800 pt-6">
-        <h4 className="font-bold text-gray-300 uppercase text-xs tracking-widest flex items-center gap-2">
-          <AlertTriangle size={14} className="text-yellow-500" /> Admin Password
-        </h4>
-        <div className="bg-yellow-900/20 border border-yellow-800 rounded-lg p-3 text-xs text-yellow-200">
-          Change from the default password before going live.
-        </div>
-        <form onSubmit={handleChangePassword} className="space-y-3">
-          {[
-            { key: 'currentPassword', label: 'Current Password' },
-            { key: 'newPassword', label: 'New Password (min 8 chars)' },
-            { key: 'confirm', label: 'Confirm New Password' },
-          ].map(({ key, label }) => (
-            <div key={key}>
-              <label className="block text-xs text-gray-400 font-bold mb-1">{label}</label>
-              <input type="password" value={pwForm[key]} onChange={e => setPwForm({ ...pwForm, [key]: e.target.value })}
-                required className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm" />
+      {/* Invoice Template */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Lock size={14} className="text-yellow-400" /> Invoice Template</h3>
+        <p className="text-xs text-gray-500">Customise invoices sent via Email and SMS. Payment links are auto-generated from your Square account.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PAYMENT BUTTON LABEL</label>
+              <input value={invoice.paymentButtonLabel || ''} onChange={e => setInvoice(i => ({ ...i, paymentButtonLabel: e.target.value }))}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" />
+              <p className="text-[10px] text-gray-500 mt-1">Text shown on the payment button in email invoices.</p>
             </div>
-          ))}
-          {pwStatus && (
-            <p className={`text-sm font-bold flex items-center gap-1 ${pwStatus.ok ? 'text-green-400' : 'text-red-400'}`}>
-              {pwStatus.ok ? <Check size={14} /> : <AlertTriangle size={14} />} {pwStatus.msg}
-            </p>
-          )}
-          <button type="submit" disabled={isPwSaving}
-            className="bg-yellow-700 hover:bg-yellow-600 text-white px-5 py-2 rounded font-bold text-sm disabled:opacity-50 flex items-center gap-2">
-            {isPwSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            {isPwSaving ? 'Saving...' : 'Change Password'}
-          </button>
-        </form>
-      </div>
-
-      <div className="flex items-center gap-4 pt-4 border-t border-gray-800">
-        <button onClick={handleSave} disabled={isSaving}
-          className="bg-bbq-red text-white px-6 py-2 rounded font-bold hover:bg-red-700 disabled:opacity-50 flex items-center gap-2">
-          {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-          {isSaving ? 'Saving...' : 'Save Settings'}
-        </button>
-        {saved && <span className="text-green-400 text-sm font-bold flex items-center gap-1"><Check size={14} /> Saved!</span>}
+            <div>
+              <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">INVOICE LOGO</label>
+              <div className="flex gap-2">
+                <input value={invoice.invoiceLogo || ''} onChange={e => setInvoice(i => ({ ...i, invoiceLogo: e.target.value }))} placeholder="Paste a URL or upload an image..."
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" />
+                <label className="cursor-pointer p-2.5 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700 shrink-0">
+                  <UploadCloud size={14} className="text-gray-400" />
+                  <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => setInvoice(i => ({ ...i, invoiceLogo: r.result })); r.readAsDataURL(f); }} />
+                </label>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[{ key: 'headerColor', label: 'HEADER COLOR', def: '#d9381e' }, { key: 'accentColor', label: 'ACCENT COLOR', def: '#eab308' }].map(({ key, label, def }) => (
+                <div key={key}>
+                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</label>
+                  <div className="flex gap-2 items-center">
+                    <input type="color" value={invoice[key] || def} onChange={e => setInvoice(i => ({ ...i, [key]: e.target.value }))} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0" />
+                    <input value={invoice[key] || def} onChange={e => setInvoice(i => ({ ...i, [key]: e.target.value }))}
+                      className="flex-1 bg-gray-800 border border-gray-700 rounded-lg p-2 text-white text-sm font-mono" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">THANK YOU / INTRO MESSAGE</label>
+              <textarea value={invoice.thankYouMessage || ''} onChange={e => setInvoice(i => ({ ...i, thankYouMessage: e.target.value }))} rows={3}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm resize-none" />
+            </div>
+            <div>
+              <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">BANK / PAYMENT DETAILS (SHOWN IF NO PAYMENT LINK)</label>
+              <textarea value={invoice.bankDetails || ''} onChange={e => setInvoice(i => ({ ...i, bankDetails: e.target.value }))} rows={3} placeholder={'BSB: 000-000\nAccount: 12345678\nName: Your Business'}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono resize-none" />
+              <p className="text-[10px] text-gray-500 mt-1">Displayed when no payment URL is set. Each line appears as-is.</p>
+            </div>
+            <div>
+              <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">FOOTER NOTE</label>
+              <textarea value={invoice.footerNote || ''} onChange={e => setInvoice(i => ({ ...i, footerNote: e.target.value }))} rows={2}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm resize-none" />
+            </div>
+            <div>
+              <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">SMS TEMPLATE</label>
+              <textarea value={invoice.smsTemplate || ''} onChange={e => setInvoice(i => ({ ...i, smsTemplate: e.target.value }))} rows={3}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono resize-none" />
+              <p className="text-[10px] text-gray-500 mt-1">Variables: {'{name} {total} {business} {orderNum} {payLink}'}</p>
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-gray-700 pt-5">
+          <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-3">EMAIL PREVIEW</label>
+          <div className="rounded-xl overflow-hidden border border-gray-700 max-w-xs">
+            <div className="p-4 text-center font-bold text-white text-xs tracking-wider" style={{ background: invoice.headerColor || '#d9381e' }}>
+              INVOICE FROM {(form.businessName || brandName || 'HUGHESYS QUE').toUpperCase()}
+            </div>
+            <div className="bg-gray-900 p-4 text-xs text-gray-400 space-y-3">
+              <p>{invoice.thankYouMessage || "Here's your invoice."}</p>
+              {invoice.bankDetails && <div className="font-mono bg-black/40 p-2 rounded text-gray-500 whitespace-pre text-[10px]">{invoice.bankDetails}</div>}
+              <button className="w-full py-2 rounded font-bold text-white text-xs" style={{ background: invoice.headerColor || '#d9381e' }}>{invoice.paymentButtonLabel || 'Pay Now'}</button>
+              {invoice.footerNote && <p className="text-center text-[10px] text-gray-500">{invoice.footerNote}</p>}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
