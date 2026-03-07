@@ -787,12 +787,10 @@ const FTMenuManager = () => {
 const ImageField = ({ label, value, onChange, hint, businessName }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [imgState, setImgState] = useState('idle'); // idle | loading | loaded | error | slow
-  const [slowTimer, setSlowTimer] = useState(null);
   useEffect(() => {
     if (!value) { setImgState('idle'); return; }
     setImgState('loading');
     const t = setTimeout(() => setImgState(s => s === 'loading' ? 'slow' : s), 20000);
-    setSlowTimer(t);
     return () => clearTimeout(t);
   }, [value]);
   const handleFile = (e) => {
