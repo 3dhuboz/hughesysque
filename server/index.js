@@ -14,6 +14,9 @@ require('dotenv').config({ path: process.env.ENV_FILE || '.env' });
 
 const app = express();
 
+// Trust proxy (Netlify/Vercel/SiteGround sit behind load balancers)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
