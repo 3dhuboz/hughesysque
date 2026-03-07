@@ -62,7 +62,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="loading-screen">Loading...</div>;
   if (!user) return <Navigate to="/login" />;
-  if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard" />;
+  if (adminOnly && user.role !== 'admin' && user.role !== 'dev') return <Navigate to="/dashboard" />;
   return children;
 };
 
@@ -103,7 +103,7 @@ const AppRoutes = () => {
         )}
 
         {/* Client admin — limited to settings & social management */}
-        <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute adminOnly>{enabledApps.includes('foodtruck') ? <Navigate to="/admin/foodtruck" replace /> : <AdminDashboard />}</ProtectedRoute>} />
         <Route path="/admin/social" element={<ProtectedRoute adminOnly><AdminSocial /></ProtectedRoute>} />
         <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
         <Route path="/admin/foodtruck" element={<ProtectedRoute adminOnly><FoodTruckAdmin /></ProtectedRoute>} />
