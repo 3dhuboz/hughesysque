@@ -73,8 +73,8 @@ const AppRoutes = () => {
   if (clientMode) {
     return (
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<StorefrontLogin />} />
+        <Route path="/register" element={<StorefrontLogin />} />
         <Route path="/" element={enabledApps.includes('foodtruck') ? <StorefrontHome /> : <Navigate to="/dashboard" />} />
 
         {/* Client dashboard & profile */}
@@ -115,7 +115,6 @@ const AppRoutes = () => {
         <Route path="/gallery" element={<StorefrontGallery />} />
         <Route path="/rewards" element={<StorefrontRewards />} />
         <Route path="/tracking" element={<StorefrontTracking />} />
-        <Route path="/login" element={<StorefrontLogin />} />
         <Route path="/storefront-profile" element={<StorefrontProfile />} />
         <Route path="/storefront" element={<StorefrontMenu />} />
         <Route path="*" element={<Navigate to="/" />} />
