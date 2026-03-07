@@ -60,15 +60,14 @@ description: How to onboard a new white-label food truck client (Firebase + Verc
 
 ---
 
-## Step 2: Create Vercel Project
+## Step 2: Create Cloudflare Pages Project
 
-1. Go to [vercel.com](https://vercel.com) → **Add New → Project**
-2. Import from GitHub: `3dhuboz/hughesysque`
-3. **Do NOT deploy yet** — set env vars first
-
-### Set Environment Variables
-
-In **Project Settings → Environment Variables**, add all of these:
+1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) → **Pages → Create application → Connect to Git**
+2. Select GitHub repo: `3dhuboz/hughesysque`
+3. Set build settings:
+   - **Build command**: `cd client && npm install && npm run build`
+   - **Output directory**: `client/build`
+4. **Before deploying** — add Environment Variables:
 
 | Variable | Value |
 |----------|-------|
@@ -84,18 +83,17 @@ In **Project Settings → Environment Variables**, add all of these:
 | `REACT_APP_BRAND_TAGLINE` | `Smoke & Fire Since 2019` |
 | `REACT_APP_PRIMARY_COLOR` | `#f59e0b` (or client's brand colour) |
 
-1. Click **Deploy** — build takes ~2 minutes
+1. Click **Save and Deploy** — build takes ~2 minutes
 
 ---
 
 ## Step 3: Set Custom Domain (Optional)
 
-1. Vercel → Project → **Settings → Domains**
+1. Cloudflare Pages → Project → **Custom domains → Set up a custom domain**
 2. Add client's domain (e.g. `davesbq.com.au`)
-3. Set DNS at registrar:
-   - **A record**: `76.76.21.21` (Vercel)
-   - Or **CNAME**: `cname.vercel-dns.com`
-4. SSL auto-provisions within minutes
+3. If domain is on Cloudflare DNS: auto-configured instantly
+4. If domain is elsewhere: add CNAME pointing to `<project>.pages.dev`
+5. SSL auto-provisions within minutes
 
 ---
 
