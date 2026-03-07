@@ -146,10 +146,11 @@ export const StorefrontProvider = ({ children }) => {
   }, [authUser]);
 
   // ── Auth Actions ──
-  const login = async (role, email, password, name, rememberMe = true) => {
-    // For admin login, use the existing auth context
-    // This is handled by the Login page directly
-    throw new Error('Use the Login page for authentication');
+  const login = async (role, email, password, name) => {
+    if (role === 'signup') {
+      return await authRegister({ name, email, password });
+    }
+    return await authLogin(email, password);
   };
 
   const logout = () => { authLogout(); };

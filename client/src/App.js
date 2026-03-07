@@ -48,6 +48,11 @@ import StorefrontMenu from './pages/StorefrontMenu';
 import StorefrontOrder from './pages/StorefrontOrder';
 import StorefrontContact from './pages/StorefrontContact';
 import StorefrontEvents from './pages/StorefrontEvents';
+import StorefrontGallery from './pages/StorefrontGallery';
+import StorefrontRewards from './pages/StorefrontRewards';
+import StorefrontTracking from './pages/StorefrontTracking';
+import StorefrontLogin from './pages/StorefrontLogin';
+import StorefrontProfile from './pages/StorefrontProfile';
 import StorefrontLayout from './components/StorefrontLayout';
 import { StorefrontProvider } from './context/StorefrontContext';
 
@@ -102,13 +107,18 @@ const AppRoutes = () => {
 
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
-        {/* Public storefront — customer-facing menu & ordering */}
+        {/* Public storefront — customer-facing pages */}
         <Route path="/menu" element={<StorefrontMenu />} />
         <Route path="/order" element={<StorefrontOrder />} />
         <Route path="/contact" element={<StorefrontContact />} />
         <Route path="/events" element={<StorefrontEvents />} />
+        <Route path="/gallery" element={<StorefrontGallery />} />
+        <Route path="/rewards" element={<StorefrontRewards />} />
+        <Route path="/tracking" element={<StorefrontTracking />} />
+        <Route path="/login" element={<StorefrontLogin />} />
+        <Route path="/storefront-profile" element={<StorefrontProfile />} />
         <Route path="/storefront" element={<StorefrontMenu />} />
-        <Route path="*" element={<Navigate to="/dashboard" />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     );
   }
@@ -165,7 +175,8 @@ const AppRoutes = () => {
 const AppShell = () => {
   const { clientMode, brandName } = useClientConfig();
   const location = useLocation();
-  const isStorefront = ['/storefront', '/menu', '/order', '/contact', '/events'].includes(location.pathname) || (clientMode && location.pathname === '/');
+  const storefrontPaths = ['/', '/menu', '/order', '/contact', '/events', '/gallery', '/rewards', '/tracking', '/login', '/storefront-profile', '/storefront'];
+  const isStorefront = storefrontPaths.includes(location.pathname) || (clientMode && storefrontPaths.some(p => location.pathname.startsWith(p)));
 
   useEffect(() => {
     if (clientMode && brandName) {
