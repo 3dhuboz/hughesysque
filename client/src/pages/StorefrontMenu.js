@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStorefront } from '../context/StorefrontContext';
+import SmartHeroImg from '../components/SmartHeroImg';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, Package, Users, Calendar, X, Plus, Minus, Check, Truck, Info, Clock, Utensils, AlertCircle } from 'lucide-react';
 
@@ -236,7 +237,7 @@ const StorefrontMenu = () => {
           <div className="relative w-full md:w-1/2 min-h-[300px] md:min-h-full">
             <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-2 p-2 bg-black">
               <div className="row-span-2 relative overflow-hidden rounded-xl">
-                <img src={packImages[0]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="BBQ Platter" onError={handleImageError} />
+                <SmartHeroImg src={sv.menuPackHero1} fallback={packImages[0]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="BBQ Platter" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
               </div>
               <div className="relative overflow-hidden rounded-xl">
@@ -358,8 +359,8 @@ const StorefrontMenu = () => {
                               <span className="text-xs text-purple-400 font-bold flex items-center gap-1"><Users size={12} /> Great for groups</span>
                             ) : <span></span>}
                             <button className={`ml-auto px-5 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm font-bold uppercase tracking-wider ${recentlyAdded === itemId
-                                ? 'bg-green-600 text-white border border-green-500 scale-105'
-                                : item.isPack ? 'bg-purple-900/50 text-white border border-purple-500' : 'bg-white text-black hover:bg-gray-200'
+                              ? 'bg-green-600 text-white border border-green-500 scale-105'
+                              : item.isPack ? 'bg-purple-900/50 text-white border border-purple-500' : 'bg-white text-black hover:bg-gray-200'
                               }`}>
                               {recentlyAdded === itemId ? <><Check size={16} /> Added!</> : <><Plus size={16} /> Select</>}
                             </button>
