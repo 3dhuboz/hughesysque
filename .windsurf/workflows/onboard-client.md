@@ -1,15 +1,15 @@
 ---
-description: How to onboard a new white-label food truck client (Firebase + Vercel)
+description: How to onboard a new white-label food truck client (Firebase + Cloudflare Pages)
 ---
 
 # Onboard a New White-Label Food Truck Client
 
-**Architecture:** One GitHub repo → many Vercel projects. Each client gets their own Firebase project (free tier) + Vercel project (free tier). No servers to manage. New client = ~30 minutes.
+**Architecture:** One GitHub repo → many Cloudflare Pages projects. Each client gets their own Firebase project (free tier) + Cloudflare Pages project (free tier). No servers to manage. New client = ~30 minutes.
 
 ## Prerequisites
 
 - Access to [console.firebase.google.com](https://console.firebase.google.com)
-- Access to [vercel.com](https://vercel.com) (connected to GitHub repo `3dhuboz/hughesysque`)
+- Access to [dash.cloudflare.com](https://dash.cloudflare.com) (connected to GitHub repo `3dhuboz/hughesysque`)
 - Access to pennywiseit.com.au admin panel
 
 ---
@@ -117,20 +117,20 @@ Or use Firebase Console → **Firestore → menu collection** → add documents 
 ## Step 6: Track in Client Projects
 
 1. **pennywiseit.com.au → Admin → Client Projects** → create project
-2. Record: Vercel URL, Firebase project ID, custom domain, status
+2. Record: Cloudflare Pages URL (`<project>.pages.dev`), Firebase project ID, custom domain, status
 
 ---
 
 ## Quick Reference: Ongoing Management
 
-- **Code updates**: Push to `master` → **all client Vercel projects auto-redeploy** from the same repo
-- **Client-specific config**: Managed via Vercel env vars per project — no code changes needed
+- **Code updates**: Push to `master` → **all client Cloudflare Pages projects auto-redeploy** from the same repo
+- **Client-specific config**: Managed via Cloudflare env vars per project — no code changes needed
 - **Data**: Each client's Firestore is completely isolated — no cross-contamination possible
 - **Costs**: Firebase free tier covers ~50K reads/day and 20K writes/day — plenty for a food truck
-- **Scaling**: Vercel free tier handles ~100GB bandwidth/month per project
+- **Scaling**: Cloudflare Pages has **unlimited bandwidth** and **unlimited builds** on free tier
 
 ## Each New Client Costs
 
 - Firebase: **$0/month** (free tier)
-- Vercel: **$0/month** (free tier, up to ~10 projects)
+- Cloudflare Pages: **$0/month** (free tier, unlimited projects)
 - Total infrastructure per client: **$0**
