@@ -2172,6 +2172,8 @@ const FTDevTools = () => {
   const [geminiStatus, setGeminiStatus] = useState(null);
   const [lastPulse, setLastPulse] = useState(new Date());
   const hasGemini = !!process.env.REACT_APP_GEMINI_API_KEY;
+  const [diagnosticsResult, setDiagnosticsResult] = useState(null);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -2201,6 +2203,43 @@ const FTDevTools = () => {
     } catch (err) {
       setPwStatus({ ok: false, msg: err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' ? 'Current password is incorrect.' : err.message });
     } finally { setIsPwSaving(false); }
+  };
+
+  const handleSquareDisconnect = () => {
+    if (window.confirm('Disconnect Square? This will clear your App ID and Location ID.')) {
+      setDevSettings(d => ({ ...d, squareAppId: '', squareLocationId: '' }));
+      toast.success('Square disconnected. Click Save Changes to apply.');
+    }
+  };
+  const handleResetFirebase = () => {
+    if (window.confirm('Clear all Firebase configuration fields?')) {
+      setDevSettings(d => ({ ...d, firebaseProjectId: '', firebaseAuthDomain: '', firebaseApiKey: '', firebaseStorageBucket: '', firebaseMessagingSenderId: '', firebaseAppId: '' }));
+      toast('Firebase fields cleared.');
+    }
+  };
+  const handleUpdateFirebase = async () => {
+    await handleSave();
+    toast('Config saved. Reloading app...');
+    setTimeout(() => window.location.reload(), 1200);
+  };
+  const handleRunDiagnostics = async () => {
+    setIsDiagnosing(true); setDiagnosticsResult(null);
+    const results = [];
+    results.push({ label: 'Firestore DB', ok: !connectionError, detail: connectionError || 'Read/write access confirmed' });
+    const geminiRes = await callGemini('Reply with exactly: DIAG_OK');
+    results.push({ label: 'Gemini AI', ok: !!geminiRes, detail: geminiRes ? 'API key valid — AI responding' : hasGemini ? 'Key set but no response — check quota' : 'No API key set in CF Pages' });
+    results.push({ label: 'Network', ok: navigator.onLine, detail: navigator.onLine ? 'Online — HTTPS active' : 'Offline — check connection' });
+    results.push({ label: 'Square', ok: !!devSettings.squareAppId, detail: devSettings.squareAppId ? 'App ID configured' : 'Not configured' });
+    setDiagnosticsResult(results);
+    setIsDiagnosing(false);
+  };
+  const handleSendTestEmail = async () => {
+    if (!emailSettings.smtpHost || !emailSettings.smtpUser) { toast.error('Configure SMTP host and user first.'); return; }
+    const tid = toast.loading('Sending test email...');
+    try {
+      const res = await fetch('/api/v1/email/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ emailSettings }) });
+      res.ok ? toast.success(`Test email sent to ${emailSettings.adminEmail || emailSettings.fromEmail}!`, { id: tid }) : toast.error(`Server error ${res.status} — check SMTP settings.`, { id: tid });
+    } catch { toast.error('Could not reach email endpoint — ensure backend is running and SMTP is configured.', { id: tid }); }
   };
 
   return (
@@ -2238,8 +2277,8 @@ const FTDevTools = () => {
             className="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5">
             {isTestingGemini ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />} Test Connection
           </button>
-          <button className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5"><RefreshCw size={12} /> Reconnect with New Key</button>
-          <button className="bg-red-900 hover:bg-red-800 text-red-200 font-bold px-4 py-2 rounded-lg text-xs">Disconnect</button>
+          <button onClick={() => toast('To update your Gemini key: CF Pages → Settings → Environment variables → update REACT_APP_GEMINI_API_KEY → Redeploy.', { duration: 7000 })} className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5"><RefreshCw size={12} /> Reconnect with New Key</button>
+          <button onClick={() => toast('To disconnect Gemini: remove REACT_APP_GEMINI_API_KEY from CF Pages environment variables, then redeploy.', { duration: 7000 })} className="bg-red-900 hover:bg-red-800 text-red-200 font-bold px-4 py-2 rounded-lg text-xs">Disconnect</button>
         </div>
       </div>
 
@@ -2258,7 +2297,7 @@ const FTDevTools = () => {
                 <p className={`text-xs ${devSettings.squareAppId ? 'text-green-400' : 'text-gray-500'}`}>{devSettings.squareAppId ? '⊙ Connected — Live Mode' : 'Not connected'}</p>
               </div>
             </div>
-            {devSettings.squareAppId && <button className="text-xs bg-red-900 hover:bg-red-800 text-red-200 font-bold px-3 py-1.5 rounded">Disconnect</button>}
+            {devSettings.squareAppId && <button onClick={handleSquareDisconnect} className="text-xs bg-red-900 hover:bg-red-800 text-red-200 font-bold px-3 py-1.5 rounded">Disconnect</button>}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[{ key: 'squareAppId', label: 'APPLICATION ID', ph: 'sq0idp-...', pw: true }, { key: 'squareLocationId', label: 'LOCATION ID', ph: 'LEG88M0C3BZA...' }].map(({ key, label, ph, pw }) => (
@@ -2301,8 +2340,8 @@ const FTDevTools = () => {
           <div className="flex items-center justify-between mb-3">
             <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Firebase Configuration</label>
             <div className="flex gap-3 text-xs">
-              <button className="text-bbq-red hover:text-red-400">&gt;_ Run Deep Diagnostics</button>
-              <button className="text-gray-500 hover:text-gray-300">Reset to Default</button>
+              <button onClick={handleRunDiagnostics} disabled={isDiagnosing} className="text-bbq-red hover:text-red-400 flex items-center gap-1 disabled:opacity-50">{isDiagnosing && <Loader2 size={11} className="animate-spin" />}&gt;_ Run Deep Diagnostics</button>
+              <button onClick={handleResetFirebase} className="text-gray-500 hover:text-gray-300">Reset to Default</button>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -2321,7 +2360,19 @@ const FTDevTools = () => {
               </div>
             ))}
           </div>
-          <button className="w-full mt-3 bg-blue-700 hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm">Update Firebase Connection (Reloads App)</button>
+          <button onClick={handleUpdateFirebase} className="w-full mt-3 bg-blue-700 hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm">Update Firebase Connection (Reloads App)</button>
+          {diagnosticsResult && (
+            <div className="mt-3 space-y-2">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Diagnostics Results</p>
+              {diagnosticsResult.map((r, i) => (
+                <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg border text-xs ${r.ok ? 'bg-green-950/30 border-green-800/50' : 'bg-red-950/30 border-red-800/50'}`}>
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${r.ok ? 'bg-green-400' : 'bg-red-500'}`} />
+                  <span className={`font-bold w-24 shrink-0 ${r.ok ? 'text-green-300' : 'text-red-300'}`}>{r.label}</span>
+                  <span className="text-gray-400">{r.detail}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -2377,7 +2428,7 @@ const FTDevTools = () => {
                 <p className="font-bold">SiteGround GoGeek Guide</p>
                 <p className="text-gray-400 mt-1">Use SSL/TLS settings from SiteGround cPanel &gt; Email Accounts &gt; Connect Devices. Port is usually <strong className="text-white">465</strong>. The 'User' is your <strong className="text-white">full email address</strong>.</p>
               </div>
-              <button className="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2.5 rounded-lg text-sm">Send Test Email</button>
+              <button onClick={handleSendTestEmail} className="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2.5 rounded-lg text-sm">Send Test Email</button>
             </div>
           </div>
         )}
