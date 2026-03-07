@@ -41,30 +41,34 @@ const StorefrontLayout = ({ children }) => {
           </div>
         </Link>
 
-        <nav className="flex items-center gap-8 bg-black/40 px-8 py-3 rounded-full border border-white/5 backdrop-blur-md">
+        <nav className="flex items-center gap-6 bg-black/40 px-8 py-3 rounded-full border border-white/5 backdrop-blur-md">
           <Link to="/" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/')}`}>Home</Link>
           <Link to="/menu" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/menu')}`}>Menu</Link>
           <Link to="/events" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/events')}`}>Events</Link>
+          <Link to="/gallery" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/gallery')}`}>Gallery</Link>
           <Link to="/contact" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/contact')}`}>Contact</Link>
-          {user?.role === 'admin' ? (
+          {user?.role === 'admin' && (
             <Link to="/admin" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/admin')}`}>Dashboard</Link>
-          ) : (
-            <Link to="/dashboard" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/dashboard')}`}>My Account</Link>
           )}
         </nav>
 
         <div className="flex items-center gap-4">
           {user ? (
-            <div className="flex items-center gap-4">
-              <Link to="/profile" className="flex items-center gap-2 hover:bg-white/5 p-2 rounded-lg transition">
+            <div className="flex items-center gap-3">
+              <Link to="/storefront-profile" className="flex items-center gap-2 hover:bg-white/5 p-2 rounded-lg transition">
                 <div className="text-right hidden lg:block">
                   <p className="text-xs text-gray-400">Welcome,</p>
                   <p className="text-sm font-bold text-bbq-gold leading-none">{user.name?.split(' ')[0]}</p>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-bbq-ash flex items-center justify-center border border-gray-700">
-                  <UserIcon size={16} />
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-bbq-red to-orange-500 flex items-center justify-center text-white text-sm font-bold border border-gray-700">
+                  {(user.name || 'U').charAt(0).toUpperCase()}
                 </div>
               </Link>
+              {cart.length > 0 && (
+                <Link to="/order" className="bg-bbq-red text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 hover:bg-red-700 transition">
+                  <ShoppingBag size={14} /> {cart.length}
+                </Link>
+              )}
               <button onClick={logout} className="p-2 hover:text-red-500 transition" title="Logout"><LogOut size={20} /></button>
             </div>
           ) : (
@@ -124,6 +128,8 @@ const StorefrontLayout = ({ children }) => {
               <li><Link to="/" className="hover:text-white hover:translate-x-1 transition-all inline-block">Home</Link></li>
               <li><Link to="/menu" className="hover:text-white hover:translate-x-1 transition-all inline-block">Menu</Link></li>
               <li><Link to="/events" className="hover:text-white hover:translate-x-1 transition-all inline-block">Events</Link></li>
+              <li><Link to="/gallery" className="hover:text-white hover:translate-x-1 transition-all inline-block">Gallery</Link></li>
+              <li><Link to="/rewards" className="hover:text-white hover:translate-x-1 transition-all inline-block">Rewards</Link></li>
               <li><Link to="/contact" className="hover:text-white hover:translate-x-1 transition-all inline-block">Contact</Link></li>
             </ul>
           </div>
@@ -167,13 +173,9 @@ const StorefrontLayout = ({ children }) => {
         <NavItem to="/" icon={Flame} label="Home" />
         <NavItem to="/menu" icon={UtensilsCrossed} label="Menu" />
         <NavItem to="/events" icon={CalendarDays} label="Events" />
-        {user?.role === 'admin' ? (
-          <NavItem to="/admin" icon={LayoutDashboard} label="Admin" />
-        ) : (
-          <NavItem to="/dashboard" icon={CalendarDays} label="Account" />
-        )}
+        <NavItem to="/order" icon={ShoppingBag} label="Order" />
         {user ? (
-          <NavItem to="/profile" icon={UserIcon} label="Profile" />
+          <NavItem to="/storefront-profile" icon={UserIcon} label="Profile" />
         ) : (
           <NavItem to="/login" icon={UserIcon} label="Login" />
         )}
