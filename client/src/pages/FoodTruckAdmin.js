@@ -786,8 +786,13 @@ const FTMenuManager = () => {
 // ─── IMAGE UPLOAD FIELD ──────────────────────────────────────────────
 const ImageField = ({ label, value, onChange, hint, businessName }) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [imgState, setImgState] = useState('idle'); // idle | loading | loaded | error
-  useEffect(() => { setImgState(value ? 'loading' : 'idle'); }, [value]);
+  const [imgState, setImgState] = useState('idle'); // idle | loading | loaded | error | timeout
+  useEffect(() => {
+    if (!value) { setImgState('idle'); return; }
+    setImgState('loading');
+    const t = setTimeout(() => setImgState(s => s === 'loading' ? 'timeout' : s), 15000);
+    return () => clearTimeout(t);
+  }, [value]);
   const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
