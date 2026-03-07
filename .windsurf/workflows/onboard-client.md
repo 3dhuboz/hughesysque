@@ -1,131 +1,138 @@
 ---
-description: How to onboard a new white-label client with their own deployment
+description: How to onboard a new white-label food truck client (Firebase + Vercel)
 ---
 
-# Onboard a New White-Label Client
+# Onboard a New White-Label Food Truck Client
 
-This workflow walks through adding a new client (e.g. a friend who wants a white-labelled Food Truck app + SocialAI) with their own deployment, admin account, and branding — all tracked from pennywiseit.com.au.
+**Architecture:** One GitHub repo → many Vercel projects. Each client gets their own Firebase project (free tier) + Vercel project (free tier). No servers to manage. New client = ~30 minutes.
 
 ## Prerequisites
+
+- Access to [console.firebase.google.com](https://console.firebase.google.com)
+- Access to [vercel.com](https://vercel.com) (connected to GitHub repo `3dhuboz/hughesysque`)
 - Access to pennywiseit.com.au admin panel
-- Access to Render dashboard (https://dashboard.render.com)
-- Access to MongoDB Atlas (https://cloud.mongodb.com)
-- GitHub repo access (https://github.com/3dhuboz/Penny-Wise-IT)
 
 ---
 
-## Step 1: Create the Customer Account
+## Step 1: Create Firebase Project
 
-1. Login to **pennywiseit.com.au** as admin
-2. Go to **Admin → Customers → Add Customer**
-3. Fill in: First Name, Last Name, Email, Temp Password, Company, Phone
-4. Click **Create Customer**
+1. Go to [console.firebase.google.com](https://console.firebase.google.com) → **Add project**
+2. Name it: `client-name-foodtruck` (e.g. `daves-bbq`)
+3. Disable Google Analytics (not needed)
+4. Click **Create project**
 
-## Step 2: Issue App Licenses
+### Enable Authentication
 
-1. Go to **Admin → Customers**
-2. Find the new customer → click **Key icon** (Issue License)
-3. Select the app (e.g. "FoodTruc" or "SocialAI Studio")
-4. Select the plan (e.g. "Professional" or "Enterprise" for white-label)
-5. Click **Activate License**
-6. Repeat for each app the client needs
+1. **Build → Authentication → Get started**
+2. Enable **Email/Password** provider
+3. Create the admin account:
+   - Click **Add user**
+   - Email: client's email
+   - Password: strong temp password (client will change via Settings tab)
 
-## Step 3: Create a Client Project
+### Enable Firestore
 
-1. Go to **Admin → Client Projects → New Client Project**
-2. Select the customer from the dropdown
-3. Name the project (e.g. "Dave's Food Truck + SocialAI")
-4. Select the apps included
-5. Add any notes
-6. Click **Create Project** — a setup checklist is auto-generated
+1. **Build → Firestore Database → Create database**
+2. Choose **Start in production mode**
+3. Select region closest to client (e.g. `australia-southeast1`)
+4. Click **Enable**
 
-## Step 4: Create a Separate MongoDB Database
+### Deploy Security Rules
 
-1. Go to **MongoDB Atlas** → your cluster
-2. Create a new database (e.g. `client-daves-foodtruck`)
-3. Or create a new cluster if you want full isolation
-4. Copy the connection string — you'll need it for the Render env vars
+1. Copy contents of `firestore.rules` from this repo
+2. **Firestore → Rules tab** → paste and **Publish**
 
-## Step 5: Deploy on Render
+### Set Admin Role in Firestore
 
-1. Go to **Render Dashboard → New → Web Service**
-2. Connect to the **same GitHub repo** (`3dhuboz/Penny-Wise-IT`)
-3. Set the following:
-   - **Name**: `client-daves-foodtruck` (or similar)
-   - **Branch**: `main` (same codebase)
-   - **Build Command**: `cd client && npm install && npm run build && cd ../server && npm install`
-   - **Start Command**: `node server/index.js`
-   - **Environment**: Node
+1. **Firestore → Data → Start collection** → Collection ID: `users`
+2. Document ID: the admin's Firebase Auth UID (copy from Authentication → Users)
+3. Add fields:
+   - `name` (string): client's name
+   - `email` (string): client's email
+   - `role` (string): `admin`
+   - `stamps` (number): `0`
 
-4. Set **Environment Variables**:
+### Get Firebase Config
 
-| Variable | Value | Notes |
-|----------|-------|-------|
-| `NODE_ENV` | `production` | Required |
-| `MONGODB_URI` | `mongodb+srv://...client-daves-foodtruck...` | Client's own database |
-| `JWT_SECRET` | `unique-random-string-for-this-client` | Generate a unique one |
-| `ADMIN_EMAIL` | `dave@hisbusiness.com.au` | Client's admin email |
-| `ADMIN_PASSWORD` | `SecurePassword123!` | Client's admin password |
-| `GEMINI_API_KEY` | `your-gemini-key` | Admin-managed AI key |
-| `RUNWAY_API_KEY` | `your-runway-key` | If video features needed |
-| `GOOGLE_CLIENT_ID` | `your-google-client-id` | If Google login needed |
-| `SQUARE_ACCESS_TOKEN` | `client-specific-token` | If payments needed |
-| `SQUARE_LOCATION_ID` | `client-specific-location` | If payments needed |
-| `SQUARE_ENVIRONMENT` | `production` | Or `sandbox` for testing |
+1. **Project Settings (gear icon) → General → Your apps → Add app → Web**
+2. Register app name (e.g. `Dave's BBQ Web`)
+3. Copy the `firebaseConfig` object — you'll need all 6 values
 
-5. Click **Create Web Service**
-6. Wait for the first deploy to complete (~5-10 min)
+---
 
-## Step 6: Set Custom Domain (Optional)
+## Step 2: Create Vercel Project
 
-1. In Render → your client's service → **Settings → Custom Domains**
-2. Add the client's domain (e.g. `app.davesfoodtruck.com.au`)
-3. Follow Render's DNS instructions:
-   - Add a CNAME record pointing to the Render URL
-   - SSL is auto-provisioned by Render
+1. Go to [vercel.com](https://vercel.com) → **Add New → Project**
+2. Import from GitHub: `3dhuboz/hughesysque`
+3. **Do NOT deploy yet** — set env vars first
 
-## Step 7: Configure White-Label Branding
+### Set Environment Variables
 
-1. Login to the **client's deployment** as their admin
-2. Update branding through the app settings (logo, colors, name)
-3. OR update the `whiteLabel` config in the subscription via your admin panel
+In **Project Settings → Environment Variables**, add all of these:
 
-## Step 8: Test Everything
+| Variable | Value |
+|----------|-------|
+| `REACT_APP_FIREBASE_API_KEY` | from Firebase config |
+| `REACT_APP_FIREBASE_AUTH_DOMAIN` | from Firebase config |
+| `REACT_APP_FIREBASE_PROJECT_ID` | from Firebase config |
+| `REACT_APP_FIREBASE_STORAGE_BUCKET` | from Firebase config |
+| `REACT_APP_FIREBASE_MESSAGING_SENDER_ID` | from Firebase config |
+| `REACT_APP_FIREBASE_APP_ID` | from Firebase config |
+| `REACT_APP_CLIENT_MODE` | `true` |
+| `REACT_APP_ENABLED_APPS` | `foodtruck` |
+| `REACT_APP_BRAND_NAME` | `Dave's BBQ` |
+| `REACT_APP_BRAND_TAGLINE` | `Smoke & Fire Since 2019` |
+| `REACT_APP_PRIMARY_COLOR` | `#f59e0b` (or client's brand colour) |
 
-1. Visit the client's Render URL or custom domain
-2. Login with the ADMIN_EMAIL/ADMIN_PASSWORD you set
-3. Test all features: SocialAI, content generation, calendar, etc.
-4. Use the force-reset endpoint if login doesn't work:
-   `https://CLIENT-URL/api/auth/force-reset?pw=THE_PASSWORD`
+1. Click **Deploy** — build takes ~2 minutes
 
-## Step 9: Hand Off to Client
+---
 
-1. Send the client their login credentials (email + password)
-2. Walk them through the key features
-3. Create their first invoice via **Admin → Invoicing**
+## Step 3: Set Custom Domain (Optional)
 
-## Step 10: Track in Client Projects
+1. Vercel → Project → **Settings → Domains**
+2. Add client's domain (e.g. `davesbq.com.au`)
+3. Set DNS at registrar:
+   - **A record**: `76.76.21.21` (Vercel)
+   - Or **CNAME**: `cname.vercel-dns.com`
+4. SSL auto-provisions within minutes
 
-1. Back on **pennywiseit.com.au → Admin → Client Projects**
-2. Open the project → fill in deployment info (Render URL, domain, status)
-3. Check off each setup step as completed
-4. The project auto-moves to "Active" when all steps are done
+---
+
+## Step 4: Seed Initial Menu (Optional)
+
+Login to the client's site as admin → **Admin → Food Truck → Menu Manager** → add their menu items.
+
+Or use Firebase Console → **Firestore → menu collection** → add documents manually.
+
+---
+
+## Step 5: Test & Hand Off
+
+1. Visit the live URL → verify storefront loads with correct branding
+2. Login with admin credentials → test Orders, Planner, Menu, Settings tabs
+3. Change admin password via **Settings → Admin Password**
+4. Send client: URL + email + temp password
+
+---
+
+## Step 6: Track in Client Projects
+
+1. **pennywiseit.com.au → Admin → Client Projects** → create project
+2. Record: Vercel URL, Firebase project ID, custom domain, status
 
 ---
 
 ## Quick Reference: Ongoing Management
 
-- **Code updates**: Push to `main` → ALL client deploys auto-rebuild from the same repo
-- **Client-specific config**: Managed via Render env vars per service
-- **Billing**: Track via Admin → Invoicing → create monthly invoices per client
-- **Support**: Clients can submit tickets via their own deployment
-- **Monitoring**: Check Render dashboard for service health per client
+- **Code updates**: Push to `master` → **all client Vercel projects auto-redeploy** from the same repo
+- **Client-specific config**: Managed via Vercel env vars per project — no code changes needed
+- **Data**: Each client's Firestore is completely isolated — no cross-contamination possible
+- **Costs**: Firebase free tier covers ~50K reads/day and 20K writes/day — plenty for a food truck
+- **Scaling**: Vercel free tier handles ~100GB bandwidth/month per project
 
-## Future Scale (10+ clients)
+## Each New Client Costs
 
-When you hit 10+ clients, consider migrating to **multi-tenant architecture**:
-- Single Render service serves all clients
-- Tenant detected by domain/subdomain
-- All data isolated by `tenantId` field
-- One deploy, one database, shared infrastructure
-- Cascade can help you build this when you're ready
+- Firebase: **$0/month** (free tier)
+- Vercel: **$0/month** (free tier, up to ~10 projects)
+- Total infrastructure per client: **$0**
