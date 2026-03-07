@@ -33,6 +33,9 @@
     "mongodb-memory-server": "^11.0.1",
     "nodemon": "^3.0.1"
   },
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "keywords": [
     "web hosting",
     "app development",
