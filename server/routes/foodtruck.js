@@ -31,6 +31,86 @@ router.get('/public/cookdays', async (req, res) => {
   }
 });
 
+// POST public order — customer places an order (no auth required)
+router.post('/public/orders', async (req, res) => {
+  try {
+    const User = require('../models/User');
+    // Find the admin/owner to assign this order to
+    const admin = await User.findOne({ role: 'admin' });
+    if (!admin) return res.status(500).json({ message: 'No admin account configured' });
+
+    const orderData = {
+      owner: admin._id,
+      customer: {
+        name: req.body.customerName || req.body.customer?.name || 'Guest',
+        email: req.body.customerEmail || req.body.customer?.email || '',
+        phone: req.body.customerPhone || req.body.customer?.phone || '',
+      },
+      items: (req.body.items || []).map(i => ({
+        menuItem: i.item?._id || i.menuItem,
+        name: i.item?.name || i.name,
+        quantity: i.quantity || 1,
+        unitPrice: i.item?.price || i.unitPrice || 0,
+        options: i.options || [],
+        subtotal: (i.item?.price || i.unitPrice || 0) * (i.quantity || 1),
+        notes: i.notes || '',
+      })),
+      orderType: req.body.fulfillmentMethod === 'DELIVERY' ? 'delivery' : 'pickup',
+      status: 'pending',
+      pickupDate: req.body.cookDay ? new Date(req.body.cookDay) : undefined,
+      pickupTime: req.body.pickupTime || '',
+      deliveryAddress: req.body.deliveryAddress || '',
+      notes: req.body.notes || `Temp: ${req.body.temperature || 'HOT'}`,
+      payment: {
+        method: req.body.paymentIntentId ? 'square' : 'cash',
+        status: 'unpaid',
+      },
+    };
+
+    // Calculate totals
+    let subtotal = 0;
+    for (const item of orderData.items) {
+      subtotal += item.subtotal;
+    }
+    orderData.subtotal = subtotal;
+    orderData.tax = Math.round(subtotal * 0.1 * 100) / 100;
+    const deliveryFee = req.body.deliveryFee || 0;
+    orderData.total = Math.round((subtotal + orderData.tax + deliveryFee) * 100) / 100;
+
+    const order = new FoodOrder(orderData);
+    await order.save();
+    res.status(201).json(order);
+  } catch (err) {
+    console.error('[Public Order] Error:', err);
+    res.status(400).json({ message: 'Failed to create order', error: err.message });
+  }
+});
+
+// GET public settings — brand info for storefront display
+router.get('/public/settings', async (req, res) => {
+  try {
+    const SiteSettings = require('../models/SiteSettings');
+    const settings = await SiteSettings.getSettings();
+    res.json({
+      businessName: settings.businessName || settings.brandName || '',
+      businessAddress: settings.businessAddress || '',
+      logoUrl: settings.brandLogoUrl || '',
+      businessPhone: settings.businessPhone || '',
+      businessEmail: settings.businessEmail || '',
+      businessFacebook: settings.businessFacebook || '',
+      businessInstagram: settings.businessInstagram || '',
+    });
+  } catch (err) {
+    // Return empty defaults if settings model doesn't exist yet
+    res.json({});
+  }
+});
+
+// GET public gallery — placeholder for future gallery feature
+router.get('/public/gallery', async (req, res) => {
+  res.json([]);
+});
+
 // ═══════════════════════════════════════════
 // MENU ITEMS
 // ═══════════════════════════════════════════
