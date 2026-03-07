@@ -93,7 +93,7 @@ const ItemDetailsModal = ({ item, onClose, onAddToCart }) => {
                     <div className="flex justify-between items-end mb-3 border-b border-white/10 pb-1">
                       <h4 className="font-bold text-bbq-gold uppercase text-sm tracking-wider">{group.name}</h4>
                       <span className={`text-xs font-bold ${remaining === 0 ? 'text-green-500' : 'text-gray-400'}`}>
-                        {remaining === 0 ? <span className="flex items-center gap-1"><Check size={12}/> Complete</span> : `Choose ${remaining} more`}
+                        {remaining === 0 ? <span className="flex items-center gap-1"><Check size={12} /> Complete</span> : `Choose ${remaining} more`}
                       </span>
                     </div>
                     <div className="grid grid-cols-1 gap-2">
@@ -122,9 +122,9 @@ const ItemDetailsModal = ({ item, onClose, onAddToCart }) => {
         <div className="p-6 bg-black/40 border-t border-white/10">
           <div className="flex gap-4">
             <div className="flex items-center bg-gray-800 rounded-xl p-1 border border-gray-600">
-              <button onClick={handleDecrement} className="w-10 h-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition"><Minus size={18}/></button>
+              <button onClick={handleDecrement} className="w-10 h-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition"><Minus size={18} /></button>
               <div className="w-12 text-center font-bold text-white text-lg">{qty}</div>
-              <button onClick={handleIncrement} className="w-10 h-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition"><Plus size={18}/></button>
+              <button onClick={handleIncrement} className="w-10 h-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition"><Plus size={18} /></button>
             </div>
             <button onClick={handleAdd} disabled={!isPackComplete}
               className="flex-1 bg-bbq-red text-white font-bold text-lg rounded-xl hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2">
@@ -143,7 +143,7 @@ const StorefrontMenu = () => {
   const orderEvents = calendarEvents
     .filter(evt => {
       if (evt.type !== 'ORDER_PICKUP') return false;
-      if (new Date(evt.date) < new Date(new Date().setHours(0,0,0,0))) return false;
+      if (new Date(evt.date) < new Date(new Date().setHours(0, 0, 0, 0))) return false;
       if (isDatePastCutoff(evt.date)) return false;
       return true;
     })
@@ -205,10 +205,11 @@ const StorefrontMenu = () => {
 
   const getCatId = (cat) => `cat-${(cat || 'unknown').replace(/\s+/g, '-')}`;
 
+  const sv = settings.siteVisuals || {};
   const packImages = [
-    "https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1593030668930-813f11244a1c?auto=format&fit=crop&w=800&q=80",
+    sv.menuPackHero1 || "https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80",
+    sv.menuPackHero2 || "https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80",
+    sv.menuPackHero3 || "https://images.unsplash.com/photo-1593030668930-813f11244a1c?auto=format&fit=crop&w=800&q=80",
   ];
 
   return (
@@ -222,7 +223,7 @@ const StorefrontMenu = () => {
               Best Value
             </div>
             <h2 className="text-5xl md:text-7xl font-display font-bold text-white mb-4 leading-none drop-shadow-xl">
-              FEED THE <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">WHOLE MOB</span>
+              FEED THE <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">WHOLE MOB</span>
             </h2>
             <p className="text-gray-200 text-lg md:text-xl font-medium max-w-lg mb-8 leading-relaxed">
               Save time and money with our curated packs. Meats, sides, and drinks bundled for the ultimate feast.
@@ -263,9 +264,9 @@ const StorefrontMenu = () => {
               <div className="text-white font-bold text-lg leading-none flex items-center gap-2">
                 {selectedEvent ? (
                   <>
-                    {new Date(selectedEvent.date).toLocaleDateString('en-AU', {weekday:'long', month:'short', day:'numeric'})}
+                    {new Date(selectedEvent.date).toLocaleDateString('en-AU', { weekday: 'long', month: 'short', day: 'numeric' })}
                     <button onClick={() => setSelectedOrderDate(null)} className="bg-gray-800 rounded-full p-0.5 hover:bg-gray-600 transition" title="Clear Date">
-                      <X size={12}/>
+                      <X size={12} />
                     </button>
                   </>
                 ) : 'Viewing Full Menu'}
@@ -276,7 +277,7 @@ const StorefrontMenu = () => {
             {orderEvents.map(evt => (
               <button key={evt.id} onClick={() => handleDateSelect(evt.date)}
                 className={`whitespace-nowrap px-4 py-2 rounded-lg font-bold text-sm transition border ${selectedOrderDate === evt.date ? 'bg-white text-black border-white shadow-lg transform scale-105' : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500 hover:text-white'}`}>
-                {new Date(evt.date).toLocaleDateString('en-AU', {month:'short', day:'numeric'})}
+                {new Date(evt.date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}
                 <span className="text-[10px] ml-1 opacity-70 block">{evt.location}</span>
               </button>
             ))}
@@ -285,7 +286,7 @@ const StorefrontMenu = () => {
 
         {/* CUTOFF WARNING */}
         <div className="bg-red-900/30 border border-red-800 p-3 rounded-lg flex items-center gap-3 mx-auto max-w-2xl">
-          <AlertCircle className="text-red-500 shrink-0" size={20}/>
+          <AlertCircle className="text-red-500 shrink-0" size={20} />
           <p className="text-red-200 text-xs font-bold leading-relaxed">
             IMPORTANT: Orders close strictly at 9:00 AM the day BEFORE cooking to ensure stock availability. Don't miss out!
           </p>
@@ -294,7 +295,7 @@ const StorefrontMenu = () => {
         {!selectedOrderDate && (
           <div className="bg-blue-900/20 border border-blue-800/50 p-4 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-500/20 p-2 rounded-full text-blue-400 shrink-0"><ShoppingBag size={20}/></div>
+              <div className="bg-blue-500/20 p-2 rounded-full text-blue-400 shrink-0"><ShoppingBag size={20} /></div>
               <div>
                 <p className="text-white font-bold text-sm">Browsing Full Menu</p>
                 <p className="text-xs text-blue-300">Select a date above to order food. Pantry items can be ordered anytime.</p>
@@ -334,12 +335,12 @@ const StorefrontMenu = () => {
                         )}
                         {['Rubs & Sauces', 'Merch'].includes(item.category) && (
                           <div className="absolute top-2 left-2 bg-bbq-gold text-black text-[10px] font-bold px-2 py-1 rounded shadow-lg z-20 flex items-center gap-1">
-                            <Truck size={10}/> SHIPPABLE
+                            <Truck size={10} /> SHIPPABLE
                           </div>
                         )}
                         {item.availabilityType === 'specific_date' && (
                           <div className="absolute bottom-2 left-2 bg-black/80 text-bbq-gold text-[10px] font-bold px-2 py-1 rounded border border-bbq-gold z-20" style={{ backdropFilter: 'blur(8px)' }}>
-                            {item.specificDate ? new Date(item.specificDate).toLocaleDateString('en-AU', {month:'short', day:'numeric'}) : 'Special'} ONLY
+                            {item.specificDate ? new Date(item.specificDate).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' }) : 'Special'} ONLY
                           </div>
                         )}
                       </div>
@@ -354,14 +355,13 @@ const StorefrontMenu = () => {
                         {user?.role !== 'ADMIN' && (
                           <div className="mt-auto flex justify-between items-center border-t border-white/5 pt-4">
                             {item.isPack ? (
-                              <span className="text-xs text-purple-400 font-bold flex items-center gap-1"><Users size={12}/> Great for groups</span>
+                              <span className="text-xs text-purple-400 font-bold flex items-center gap-1"><Users size={12} /> Great for groups</span>
                             ) : <span></span>}
-                            <button className={`ml-auto px-5 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm font-bold uppercase tracking-wider ${
-                              recentlyAdded === itemId
+                            <button className={`ml-auto px-5 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm font-bold uppercase tracking-wider ${recentlyAdded === itemId
                                 ? 'bg-green-600 text-white border border-green-500 scale-105'
                                 : item.isPack ? 'bg-purple-900/50 text-white border border-purple-500' : 'bg-white text-black hover:bg-gray-200'
-                            }`}>
-                              {recentlyAdded === itemId ? <><Check size={16}/> Added!</> : <><Plus size={16} /> Select</>}
+                              }`}>
+                              {recentlyAdded === itemId ? <><Check size={16} /> Added!</> : <><Plus size={16} /> Select</>}
                             </button>
                           </div>
                         )}
@@ -380,15 +380,15 @@ const StorefrontMenu = () => {
         <div className="sticky top-24 space-y-4">
           <div className="bg-gradient-to-br from-gray-900 to-black p-5 rounded-xl border border-gray-700 shadow-xl">
             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <Clock size={14} className="text-bbq-gold"/> Next Collection
+              <Clock size={14} className="text-bbq-gold" /> Next Collection
             </h4>
             {selectedEvent ? (() => {
               const pickupDate = new Date(selectedEvent.date);
               pickupDate.setDate(pickupDate.getDate() + 1);
               return (
                 <div>
-                  <p className="text-white font-display text-2xl font-bold">{pickupDate.toLocaleDateString('en-AU', {weekday: 'long'})}</p>
-                  <p className="text-bbq-gold font-bold">{pickupDate.toLocaleDateString('en-AU', {month:'long', day:'numeric'})}</p>
+                  <p className="text-white font-display text-2xl font-bold">{pickupDate.toLocaleDateString('en-AU', { weekday: 'long' })}</p>
+                  <p className="text-bbq-gold font-bold">{pickupDate.toLocaleDateString('en-AU', { month: 'long', day: 'numeric' })}</p>
                   <p className="text-xs text-gray-500 mt-1">{selectedEvent.location}</p>
                 </div>
               );
@@ -398,8 +398,8 @@ const StorefrontMenu = () => {
               pickupDate.setDate(pickupDate.getDate() + 1);
               return (
                 <div>
-                  <p className="text-white font-display text-2xl font-bold">{pickupDate.toLocaleDateString('en-AU', {weekday: 'long'})}</p>
-                  <p className="text-bbq-gold font-bold">{pickupDate.toLocaleDateString('en-AU', {month:'long', day:'numeric'})}</p>
+                  <p className="text-white font-display text-2xl font-bold">{pickupDate.toLocaleDateString('en-AU', { weekday: 'long' })}</p>
+                  <p className="text-bbq-gold font-bold">{pickupDate.toLocaleDateString('en-AU', { month: 'long', day: 'numeric' })}</p>
                   <p className="text-xs text-gray-500 mt-1">{nextEvt.location}</p>
                   <button onClick={() => handleDateSelect(nextEvt.date)}
                     className="mt-3 text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 rounded border border-gray-600 w-full">
@@ -413,7 +413,7 @@ const StorefrontMenu = () => {
           <div className="bg-bbq-charcoal rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
             <div className="p-4 bg-black/40 border-b border-gray-700 flex justify-between items-center">
               <h3 className="font-bold text-white flex items-center gap-2">
-                <ShoppingBag size={18} className="text-bbq-red"/> Your Tray
+                <ShoppingBag size={18} className="text-bbq-red" /> Your Tray
               </h3>
               <span className="bg-white text-black text-xs font-bold px-2 py-0.5 rounded-full">{cart.reduce((a, b) => a + b.quantity, 0)}</span>
             </div>
@@ -459,10 +459,10 @@ const StorefrontMenu = () => {
           {!selectedOrderDate && orderEvents.length > 0 && cart.length === 0 && (
             <div className="bg-black/80 border border-gray-700 p-3 rounded-xl shadow-xl flex items-center justify-between pointer-events-auto" style={{ backdropFilter: 'blur(12px)' }}>
               <div className="flex items-center gap-3">
-                <Calendar size={20} className="text-bbq-gold"/>
+                <Calendar size={20} className="text-bbq-gold" />
                 <div>
                   <p className="text-xs text-gray-400 uppercase font-bold">Next Cook</p>
-                  <p className="text-white font-bold text-sm">{new Date(orderEvents[0].date).toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short'})}</p>
+                  <p className="text-white font-bold text-sm">{new Date(orderEvents[0].date).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
                 </div>
               </div>
               <button onClick={() => handleDateSelect(orderEvents[0].date)} className="text-xs bg-white text-black px-3 py-1.5 rounded font-bold">Order Now</button>
