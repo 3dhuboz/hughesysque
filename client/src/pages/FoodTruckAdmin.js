@@ -128,7 +128,7 @@ const OrderManager = () => {
           <h3 className="text-xl font-bold text-white">Order Management</h3>
           {pending.length > 0 && (
             <span className="text-xs bg-yellow-900/50 text-yellow-200 px-2 py-1 rounded border border-yellow-700 flex items-center gap-1 mt-1 w-fit">
-              <AlertTriangle size={12}/> {pending.length} pending request{pending.length > 1 ? 's' : ''}
+              <AlertTriangle size={12} /> {pending.length} pending request{pending.length > 1 ? 's' : ''}
             </span>
           )}
         </div>
@@ -139,7 +139,7 @@ const OrderManager = () => {
             {statusOptions.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
           </select>
           <button onClick={handleCreateManual} className="bg-bbq-red text-white px-4 py-2 rounded font-bold flex items-center gap-2 hover:bg-red-700 text-sm">
-            <Plus size={16}/> Manual Order
+            <Plus size={16} /> Manual Order
           </button>
         </div>
       </div>
@@ -181,17 +181,17 @@ const OrderManager = () => {
                     <span className="text-bbq-gold font-bold text-lg">${(order.total || 0).toFixed(2)}</span>
                     {isPending && (
                       <>
-                        <button onClick={() => handleApprove(order)} className="bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1"><Check size={14}/> Approve</button>
+                        <button onClick={() => handleApprove(order)} className="bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1"><Check size={14} /> Approve</button>
                         <button onClick={() => handleDecline(order)} className="bg-red-900/50 hover:bg-red-700 text-red-200 px-3 py-1.5 rounded text-xs font-bold">Decline</button>
                       </>
                     )}
                     {isAwaitingPayment && (
-                      <button onClick={() => handleMarkPaid(order)} className="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1"><DollarSign size={14}/> Mark Paid</button>
+                      <button onClick={() => handleMarkPaid(order)} className="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1"><DollarSign size={14} /> Mark Paid</button>
                     )}
                     {isPaid && order.status !== 'ready' && (
                       <button onClick={() => handleMarkReady(order)} className="bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold">Mark Ready</button>
                     )}
-                    <button onClick={() => handleEditClick(order)} className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition"><Edit2 size={16}/></button>
+                    <button onClick={() => handleEditClick(order)} className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition"><Edit2 size={16} /></button>
                   </div>
                 </div>
               </div>
@@ -206,21 +206,21 @@ const OrderManager = () => {
           <div className="bg-bbq-charcoal border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
             <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-900/50">
               <h3 className="text-lg font-bold text-white">{orders.find(o => (o._id || o.id) === (editingOrder._id || editingOrder.id)) ? 'Edit Order' : 'Create Manual Order'}</h3>
-              <button onClick={() => setEditingOrder(null)} className="p-1.5 hover:bg-white/10 rounded-full"><X size={18}/></button>
+              <button onClick={() => setEditingOrder(null)} className="p-1.5 hover:bg-white/10 rounded-full"><X size={18} /></button>
             </div>
             <div className="p-5 overflow-y-auto flex-1 space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[['customerName','Customer Name','text'],['customerEmail','Email','email'],['customerPhone','Phone','text']].map(([key,label,type]) => (
+                {[['customerName', 'Customer Name', 'text'], ['customerEmail', 'Email', 'email'], ['customerPhone', 'Phone', 'text']].map(([key, label, type]) => (
                   <div key={key}>
                     <label className="text-xs text-gray-400 uppercase font-bold block mb-1">{label}</label>
-                    <input type={type} value={editingOrder[key] || editingOrder.customer?.[key.replace('customer','')] || ''}
-                      onChange={e => setEditingOrder({...editingOrder, [key]: e.target.value})}
+                    <input type={type} value={editingOrder[key] || editingOrder.customer?.[key.replace('customer', '')] || ''}
+                      onChange={e => setEditingOrder({ ...editingOrder, [key]: e.target.value })}
                       className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm" />
                   </div>
                 ))}
                 <div>
                   <label className="text-xs text-gray-400 uppercase font-bold block mb-1">Status</label>
-                  <select value={editingOrder.status} onChange={e => setEditingOrder({...editingOrder, status: e.target.value})}
+                  <select value={editingOrder.status} onChange={e => setEditingOrder({ ...editingOrder, status: e.target.value })}
                     className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm">
                     {statusOptions.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
                   </select>
@@ -228,22 +228,22 @@ const OrderManager = () => {
                 <div>
                   <label className="text-xs text-gray-400 uppercase font-bold block mb-1">Cook Date</label>
                   <input type="date" value={(editingOrder.cookDay || editingOrder.pickupDate || '').split('T')[0]}
-                    onChange={e => setEditingOrder({...editingOrder, cookDay: e.target.value})}
+                    onChange={e => setEditingOrder({ ...editingOrder, cookDay: e.target.value })}
                     className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 uppercase font-bold block mb-1">Pickup Time</label>
-                  <input value={editingOrder.pickupTime || ''} onChange={e => setEditingOrder({...editingOrder, pickupTime: e.target.value})}
+                  <input value={editingOrder.pickupTime || ''} onChange={e => setEditingOrder({ ...editingOrder, pickupTime: e.target.value })}
                     className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 uppercase font-bold block mb-1">Courier</label>
-                  <input value={editingOrder.courier || ''} onChange={e => setEditingOrder({...editingOrder, courier: e.target.value})}
+                  <input value={editingOrder.courier || ''} onChange={e => setEditingOrder({ ...editingOrder, courier: e.target.value })}
                     placeholder="Australia Post" className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 uppercase font-bold block mb-1">Tracking #</label>
-                  <input value={editingOrder.trackingNumber || ''} onChange={e => setEditingOrder({...editingOrder, trackingNumber: e.target.value})}
+                  <input value={editingOrder.trackingNumber || ''} onChange={e => setEditingOrder({ ...editingOrder, trackingNumber: e.target.value })}
                     className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm font-mono" />
                 </div>
               </div>
@@ -270,13 +270,13 @@ const OrderManager = () => {
                   ))}
                   <div className="p-3 bg-gray-800 border-t border-gray-700 space-y-2">
                     <div className="flex gap-3 text-xs mb-2">
-                      <label className="flex items-center gap-1 cursor-pointer"><input type="radio" checked={!isCustomItem} onChange={() => setIsCustomItem(false)}/> Menu Item</label>
-                      <label className="flex items-center gap-1 cursor-pointer"><input type="radio" checked={isCustomItem} onChange={() => setIsCustomItem(true)}/> Custom</label>
+                      <label className="flex items-center gap-1 cursor-pointer"><input type="radio" checked={!isCustomItem} onChange={() => setIsCustomItem(false)} /> Menu Item</label>
+                      <label className="flex items-center gap-1 cursor-pointer"><input type="radio" checked={isCustomItem} onChange={() => setIsCustomItem(true)} /> Custom</label>
                     </div>
                     {isCustomItem ? (
                       <div className="flex gap-2">
-                        <input placeholder="Name" value={customItemName} onChange={e => setCustomItemName(e.target.value)} className="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white text-xs"/>
-                        <input type="number" placeholder="$0.00" value={customItemPrice} onChange={e => setCustomItemPrice(e.target.value)} className="w-20 bg-gray-900 border border-gray-600 rounded p-2 text-white text-xs"/>
+                        <input placeholder="Name" value={customItemName} onChange={e => setCustomItemName(e.target.value)} className="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white text-xs" />
+                        <input type="number" placeholder="$0.00" value={customItemPrice} onChange={e => setCustomItemPrice(e.target.value)} className="w-20 bg-gray-900 border border-gray-600 rounded p-2 text-white text-xs" />
                         <button onClick={handleAddItem} disabled={!customItemName || !customItemPrice} className="bg-blue-600 text-white px-3 rounded text-xs font-bold disabled:opacity-50">Add</button>
                       </div>
                     ) : (
@@ -296,7 +296,7 @@ const OrderManager = () => {
               <span className="text-xl font-bold text-white">Total: <span className="text-bbq-gold">${(editingOrder.total || 0).toFixed(2)}</span></span>
               <div className="flex gap-2">
                 <button onClick={() => setEditingOrder(null)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
-                <button onClick={handleSaveEdit} className="px-5 py-2 bg-bbq-red text-white font-bold rounded flex items-center gap-2 hover:bg-red-700 text-sm"><Save size={16}/> Save</button>
+                <button onClick={handleSaveEdit} className="px-5 py-2 bg-bbq-red text-white font-bold rounded flex items-center gap-2 hover:bg-red-700 text-sm"><Save size={16} /> Save</button>
               </div>
             </div>
           </div>
@@ -344,7 +344,7 @@ const FTPlanner = () => {
           <p className="text-gray-400 text-sm">Manage cook days, public events, and blocked dates.</p>
         </div>
         <button onClick={() => openAddModal()} className="bg-bbq-red px-3 py-1.5 rounded text-sm font-bold flex items-center gap-1 hover:bg-red-700">
-          <Plus size={14}/> Add Event
+          <Plus size={14} /> Add Event
         </button>
       </div>
 
@@ -355,20 +355,20 @@ const FTPlanner = () => {
       </div>
 
       <div className="flex justify-between items-center bg-gray-900 p-3 rounded-t-xl border border-gray-800">
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-2 hover:bg-gray-800 rounded"><ChevronLeft size={18}/></button>
+        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-2 hover:bg-gray-800 rounded"><ChevronLeft size={18} /></button>
         <h2 className="text-lg font-bold font-display uppercase tracking-wide text-white">{monthName}</h2>
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-2 hover:bg-gray-800 rounded"><ChevronRight size={18}/></button>
+        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-2 hover:bg-gray-800 rounded"><ChevronRight size={18} /></button>
       </div>
 
       <div className="grid grid-cols-7 gap-px bg-gray-800 border border-gray-800 rounded-b-xl overflow-hidden">
-        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
           <div key={d} className="bg-gray-900 p-2 text-center text-xs font-bold text-gray-500 uppercase">{d}</div>
         ))}
         {days.map((date, idx) => {
           if (!date) return <div key={`e-${idx}`} className="bg-bbq-charcoal/50 min-h-[80px]"></div>;
           const dateStr = date.toISOString().split('T')[0];
           const evts = calendarEvents.filter(e => e.date === dateStr);
-          const isPast = date < new Date(new Date().setHours(0,0,0,0));
+          const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
           return (
             <div key={dateStr} onClick={() => !isPast && openAddModal(dateStr)}
               className={`min-h-[80px] p-1.5 bg-bbq-charcoal transition relative cursor-pointer group ${isPast ? 'opacity-40' : 'hover:bg-gray-700'}`}>
@@ -377,12 +377,11 @@ const FTPlanner = () => {
               </span>
               <div className="space-y-0.5 mt-1">
                 {evts.map(evt => (
-                  <div key={evt.id} onClick={(e) => { e.stopPropagation(); setEditingEvent({...evt}); setIsModalOpen(true); }}
-                    className={`text-[10px] p-0.5 rounded truncate border-l-2 cursor-pointer ${
-                      evt.type === 'BLOCKED' ? 'bg-red-900/40 border-red-500 text-red-200' :
-                      evt.type === 'ORDER_PICKUP' ? 'bg-blue-900/40 border-blue-500 text-blue-200' :
-                      'bg-green-900/40 border-green-500 text-green-200'}`}>
-                    {evt.type === 'ORDER_PICKUP' && <ShoppingBag size={8} className="inline mr-0.5"/>}
+                  <div key={evt.id} onClick={(e) => { e.stopPropagation(); setEditingEvent({ ...evt }); setIsModalOpen(true); }}
+                    className={`text-[10px] p-0.5 rounded truncate border-l-2 cursor-pointer ${evt.type === 'BLOCKED' ? 'bg-red-900/40 border-red-500 text-red-200' :
+                        evt.type === 'ORDER_PICKUP' ? 'bg-blue-900/40 border-blue-500 text-blue-200' :
+                          'bg-green-900/40 border-green-500 text-green-200'}`}>
+                    {evt.type === 'ORDER_PICKUP' && <ShoppingBag size={8} className="inline mr-0.5" />}
                     {evt.title}
                   </div>
                 ))}
@@ -397,18 +396,18 @@ const FTPlanner = () => {
           <div className="bg-bbq-charcoal border border-gray-700 rounded-xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-4 border-b border-gray-700 sticky top-0 bg-bbq-charcoal">
               <h3 className="text-lg font-bold text-white">{editingEvent.id ? 'Edit Event' : 'Add Event'}</h3>
-              <button onClick={() => setIsModalOpen(false)}><X size={18} className="text-gray-400 hover:text-white"/></button>
+              <button onClick={() => setIsModalOpen(false)}><X size={18} className="text-gray-400 hover:text-white" /></button>
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-400 font-bold mb-1">Date</label>
-                  <input type="date" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})}
-                    className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm"/>
+                  <input type="date" value={editingEvent.date} onChange={e => setEditingEvent({ ...editingEvent, date: e.target.value })}
+                    className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-400 font-bold mb-1">Type</label>
-                  <select value={editingEvent.type} onChange={e => setEditingEvent({...editingEvent, type: e.target.value})}
+                  <select value={editingEvent.type} onChange={e => setEditingEvent({ ...editingEvent, type: e.target.value })}
                     className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm">
                     <option value="BLOCKED">Blocked / Closed</option>
                     <option value="ORDER_PICKUP">Cook Day (Orders)</option>
@@ -418,8 +417,8 @@ const FTPlanner = () => {
               </div>
               <div>
                 <label className="block text-xs text-gray-400 font-bold mb-1">Title</label>
-                <input value={editingEvent.title} onChange={e => setEditingEvent({...editingEvent, title: e.target.value})}
-                  placeholder="e.g. Friday Cook Up" className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm"/>
+                <input value={editingEvent.title} onChange={e => setEditingEvent({ ...editingEvent, title: e.target.value })}
+                  placeholder="e.g. Friday Cook Up" className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
               </div>
               {editingEvent.type === 'ORDER_PICKUP' && (
                 <div className="bg-blue-900/20 p-3 rounded border border-blue-800 space-y-3">
@@ -427,19 +426,19 @@ const FTPlanner = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-400 font-bold mb-1">Start</label>
-                      <input type="time" value={editingEvent.startTime || ''} onChange={e => setEditingEvent({...editingEvent, startTime: e.target.value})}
-                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm"/>
+                      <input type="time" value={editingEvent.startTime || ''} onChange={e => setEditingEvent({ ...editingEvent, startTime: e.target.value })}
+                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-400 font-bold mb-1">End</label>
-                      <input type="time" value={editingEvent.endTime || ''} onChange={e => setEditingEvent({...editingEvent, endTime: e.target.value})}
-                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm"/>
+                      <input type="time" value={editingEvent.endTime || ''} onChange={e => setEditingEvent({ ...editingEvent, endTime: e.target.value })}
+                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs text-gray-400 font-bold mb-1">Location</label>
-                    <input value={editingEvent.location || ''} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})}
-                      placeholder="e.g. West End HQ" className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm"/>
+                    <input value={editingEvent.location || ''} onChange={e => setEditingEvent({ ...editingEvent, location: e.target.value })}
+                      placeholder="e.g. West End HQ" className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
                   </div>
                 </div>
               )}
@@ -448,30 +447,30 @@ const FTPlanner = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-400 font-bold mb-1">Location</label>
-                      <input value={editingEvent.location || ''} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})}
-                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm"/>
+                      <input value={editingEvent.location || ''} onChange={e => setEditingEvent({ ...editingEvent, location: e.target.value })}
+                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-400 font-bold mb-1">Display Time</label>
-                      <input value={editingEvent.time || ''} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})}
-                        placeholder="12pm - 8pm" className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm"/>
+                      <input value={editingEvent.time || ''} onChange={e => setEditingEvent({ ...editingEvent, time: e.target.value })}
+                        placeholder="12pm - 8pm" className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs text-gray-400 font-bold mb-1">Description</label>
-                    <textarea value={editingEvent.description || ''} onChange={e => setEditingEvent({...editingEvent, description: e.target.value})}
-                      rows={3} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm resize-none"/>
+                    <textarea value={editingEvent.description || ''} onChange={e => setEditingEvent({ ...editingEvent, description: e.target.value })}
+                      rows={3} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm resize-none" />
                   </div>
                 </div>
               )}
               <div className="flex justify-between items-center pt-2 border-t border-gray-700">
                 {editingEvent.id ? (
                   <button onClick={() => { if (window.confirm('Delete event?')) { removeCalendarEvent(editingEvent.id); setIsModalOpen(false); } }}
-                    className="text-red-500 hover:text-red-400 text-sm flex items-center gap-1"><Trash2 size={14}/> Delete</button>
-                ) : <div/>}
+                    className="text-red-500 hover:text-red-400 text-sm flex items-center gap-1"><Trash2 size={14} /> Delete</button>
+                ) : <div />}
                 <div className="flex gap-2">
                   <button onClick={() => setIsModalOpen(false)} className="px-3 py-1.5 text-gray-400 hover:text-white text-sm">Cancel</button>
-                  <button onClick={handleSave} className="px-4 py-1.5 bg-bbq-red rounded text-white font-bold text-sm flex items-center gap-1"><Save size={14}/> Save</button>
+                  <button onClick={handleSave} className="px-4 py-1.5 bg-bbq-red rounded text-white font-bold text-sm flex items-center gap-1"><Save size={14} /> Save</button>
                 </div>
               </div>
             </div>
@@ -497,7 +496,7 @@ const FTMenuManager = () => {
     return acc;
   }, {});
 
-  const CATEGORIES = ['Meats','Burgers','Sides','Hot Sides','Cold Sides','Platters','Family Packs','Bulk Meats','Drinks','Bakery','Rubs & Sauces','Service','Merch'];
+  const CATEGORIES = ['Meats', 'Burgers', 'Sides', 'Hot Sides', 'Cold Sides', 'Platters', 'Family Packs', 'Bulk Meats', 'Drinks', 'Bakery', 'Rubs & Sauces', 'Service', 'Merch'];
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -527,8 +526,8 @@ const FTMenuManager = () => {
     <div className="space-y-5">
       <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-3">
         <button onClick={() => setShowGuide(!showGuide)} className="w-full flex justify-between items-center text-blue-200 font-bold text-sm">
-          <span className="flex items-center gap-2"><HelpCircle size={16}/> Menu Management Guide</span>
-          {showGuide ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
+          <span className="flex items-center gap-2"><HelpCircle size={16} /> Menu Management Guide</span>
+          {showGuide ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
         {showGuide && (
           <div className="mt-3 text-xs text-gray-300 space-y-2">
@@ -544,7 +543,7 @@ const FTMenuManager = () => {
         <h3 className="text-xl font-bold text-white">Menu Items ({menu.length})</h3>
         <button onClick={() => { setIsEditing(true); setEditItem({ availabilityType: 'everyday', isPack: false, packGroups: [], available: true }); }}
           className="bg-bbq-red px-4 py-2 rounded text-sm font-bold flex items-center gap-2 hover:bg-red-700">
-          <Plus size={16}/> Add Item
+          <Plus size={16} /> Add Item
         </button>
       </div>
 
@@ -553,37 +552,37 @@ const FTMenuManager = () => {
           <h4 className="font-bold text-lg text-white">{(editItem._id || editItem.id) ? 'Edit Item' : 'New Item'}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              <input placeholder="Item Name*" value={editItem.name || ''} onChange={e => setEditItem({...editItem, name: e.target.value})} required
-                className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm"/>
+              <input placeholder="Item Name*" value={editItem.name || ''} onChange={e => setEditItem({ ...editItem, name: e.target.value })} required
+                className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm" />
               <div className="flex gap-2">
-                <input type="number" placeholder="Price*" step="0.01" value={editItem.price || ''} onChange={e => setEditItem({...editItem, price: parseFloat(e.target.value)})} required
-                  className="bg-gray-800 border border-gray-600 rounded p-2 text-white flex-1 text-sm"/>
-                <select value={editItem.category || 'Meats'} onChange={e => setEditItem({...editItem, category: e.target.value})}
+                <input type="number" placeholder="Price*" step="0.01" value={editItem.price || ''} onChange={e => setEditItem({ ...editItem, price: parseFloat(e.target.value) })} required
+                  className="bg-gray-800 border border-gray-600 rounded p-2 text-white flex-1 text-sm" />
+                <select value={editItem.category || 'Meats'} onChange={e => setEditItem({ ...editItem, category: e.target.value })}
                   className="bg-gray-800 border border-gray-600 rounded p-2 text-white flex-1 text-sm">
                   {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
             <div>
-              <input placeholder="Image URL" value={editItem.image || ''} onChange={e => setEditItem({...editItem, image: e.target.value})}
-                className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm mb-2"/>
-              {editItem.image && <div className="w-full h-24 rounded overflow-hidden border border-gray-700"><img src={editItem.image} alt="Preview" className="w-full h-full object-cover"/></div>}
+              <input placeholder="Image URL" value={editItem.image || ''} onChange={e => setEditItem({ ...editItem, image: e.target.value })}
+                className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm mb-2" />
+              {editItem.image && <div className="w-full h-24 rounded overflow-hidden border border-gray-700"><img src={editItem.image} alt="Preview" className="w-full h-full object-cover" /></div>}
             </div>
           </div>
-          <textarea placeholder="Description" value={editItem.description || ''} onChange={e => setEditItem({...editItem, description: e.target.value})}
-            rows={2} className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm resize-none"/>
+          <textarea placeholder="Description" value={editItem.description || ''} onChange={e => setEditItem({ ...editItem, description: e.target.value })}
+            rows={2} className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm resize-none" />
 
           {/* Catering Toggle */}
           <div className="bg-black/20 p-3 rounded border border-gray-700">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={editItem.availableForCatering || false} onChange={e => setEditItem({...editItem, availableForCatering: e.target.checked})} className="rounded text-bbq-red"/>
+              <input type="checkbox" checked={editItem.availableForCatering || false} onChange={e => setEditItem({ ...editItem, availableForCatering: e.target.checked })} className="rounded text-bbq-red" />
               <span className="font-bold text-white text-sm">Available for Catering & Build Your Own</span>
             </label>
             {editItem.availableForCatering && (
               <div className="mt-3 pl-4 border-l-2 border-bbq-red space-y-2">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Catering Category</label>
-                  <select value={editItem.cateringCategory || 'Meat'} onChange={e => setEditItem({...editItem, cateringCategory: e.target.value})}
+                  <select value={editItem.cateringCategory || 'Meat'} onChange={e => setEditItem({ ...editItem, cateringCategory: e.target.value })}
                     className="bg-gray-900 border border-gray-600 rounded p-1.5 text-white text-xs w-full">
                     <option value="Meat">Meat (counts towards Meat limit)</option>
                     <option value="Side">Side (counts towards Side limit)</option>
@@ -592,8 +591,8 @@ const FTMenuManager = () => {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Min Order Qty (MOQ)</label>
-                  <input type="number" min="1" value={editItem.moq || ''} onChange={e => setEditItem({...editItem, moq: parseInt(e.target.value) || 1})}
-                    className="bg-gray-900 border border-gray-600 rounded p-1.5 text-white text-xs w-24" placeholder="e.g. 10"/>
+                  <input type="number" min="1" value={editItem.moq || ''} onChange={e => setEditItem({ ...editItem, moq: parseInt(e.target.value) || 1 })}
+                    className="bg-gray-900 border border-gray-600 rounded p-1.5 text-white text-xs w-24" placeholder="e.g. 10" />
                 </div>
               </div>
             )}
@@ -602,8 +601,8 @@ const FTMenuManager = () => {
           {/* Pack Toggle */}
           <div className="bg-black/20 p-3 rounded border border-gray-700">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={editItem.isPack || false} onChange={e => setEditItem({...editItem, isPack: e.target.checked})} className="rounded text-bbq-red"/>
-              <span className="font-bold text-white text-sm flex items-center gap-1"><Package size={14}/> This is a Pack (requires selections)</span>
+              <input type="checkbox" checked={editItem.isPack || false} onChange={e => setEditItem({ ...editItem, isPack: e.target.checked })} className="rounded text-bbq-red" />
+              <span className="font-bold text-white text-sm flex items-center gap-1"><Package size={14} /> This is a Pack (requires selections)</span>
             </label>
             {editItem.isPack && (
               <div className="space-y-2 mt-3 pl-4 border-l-2 border-bbq-red">
@@ -611,22 +610,22 @@ const FTMenuManager = () => {
                   <div key={idx} className="bg-gray-800 p-3 rounded border border-gray-700">
                     <div className="flex gap-2 items-center mb-2">
                       <input placeholder="Group Name" value={group.name} onChange={e => updatePackGroup(idx, 'name', e.target.value)}
-                        className="bg-gray-700 border border-gray-600 rounded p-1.5 text-white text-xs flex-1"/>
+                        className="bg-gray-700 border border-gray-600 rounded p-1.5 text-white text-xs flex-1" />
                       <div className="flex items-center gap-1 bg-gray-700 px-2 rounded border border-gray-600">
                         <span className="text-[10px] text-gray-400">Limit:</span>
                         <input type="number" value={group.limit} onChange={e => updatePackGroup(idx, 'limit', parseInt(e.target.value))}
-                          className="bg-transparent w-8 p-1 text-white text-xs text-center outline-none"/>
+                          className="bg-transparent w-8 p-1 text-white text-xs text-center outline-none" />
                       </div>
-                      <button type="button" onClick={() => removePackGroup(idx)} className="text-red-400 hover:text-red-300"><Trash2 size={14}/></button>
+                      <button type="button" onClick={() => removePackGroup(idx)} className="text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
                     </div>
                     <div className="flex flex-wrap gap-1 mb-2">
                       {(group.options || []).map(opt => (
                         <span key={opt} className="bg-bbq-red text-white text-xs px-2 py-0.5 rounded flex items-center gap-1">
-                          {opt} <button type="button" onClick={() => toggleItemInGroup(idx, opt)}><X size={10}/></button>
+                          {opt} <button type="button" onClick={() => toggleItemInGroup(idx, opt)}><X size={10} /></button>
                         </span>
                       ))}
                       <button type="button" onClick={() => setActiveGroupIndex(activeGroupIndex === idx ? null : idx)}
-                        className="bg-gray-700 text-gray-300 hover:text-white text-xs px-2 py-0.5 rounded flex items-center gap-1"><Plus size={10}/> Add Items</button>
+                        className="bg-gray-700 text-gray-300 hover:text-white text-xs px-2 py-0.5 rounded flex items-center gap-1"><Plus size={10} /> Add Items</button>
                     </div>
                     {activeGroupIndex === idx && (
                       <div className="bg-gray-900 border border-gray-600 rounded p-3 max-h-40 overflow-y-auto">
@@ -639,7 +638,7 @@ const FTMenuManager = () => {
                                 return (
                                   <div key={m._id || m.id} onClick={() => toggleItemInGroup(idx, m.name)}
                                     className={`flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer text-xs ${isSelected ? 'bg-green-900/30 text-green-300' : 'hover:bg-gray-800 text-gray-400'}`}>
-                                    {isSelected ? <CheckSquare size={10}/> : <Square size={10}/>}
+                                    {isSelected ? <CheckSquare size={10} /> : <Square size={10} />}
                                     <span className="truncate">{m.name}</span>
                                   </div>
                                 );
@@ -661,11 +660,11 @@ const FTMenuManager = () => {
             <label className="block text-sm font-bold mb-2 text-white">Availability</label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer text-sm">
-                <input type="radio" name="avail" checked={editItem.availabilityType === 'everyday'} onChange={() => setEditItem({...editItem, availabilityType: 'everyday'})} className="text-bbq-red"/>
+                <input type="radio" name="avail" checked={editItem.availabilityType === 'everyday'} onChange={() => setEditItem({ ...editItem, availabilityType: 'everyday' })} className="text-bbq-red" />
                 Everyday Menu
               </label>
               <label className="flex items-center gap-2 cursor-pointer text-sm">
-                <input type="radio" name="avail" checked={editItem.availabilityType === 'specific_date'} onChange={() => setEditItem({...editItem, availabilityType: 'specific_date'})} className="text-bbq-red"/>
+                <input type="radio" name="avail" checked={editItem.availabilityType === 'specific_date'} onChange={() => setEditItem({ ...editItem, availabilityType: 'specific_date' })} className="text-bbq-red" />
                 Specific Date Only
               </label>
             </div>
@@ -681,7 +680,7 @@ const FTMenuManager = () => {
                         let newDates = [...currentDates];
                         if (e.target.checked) newDates.push(evt.date); else newDates = newDates.filter(d => d !== evt.date);
                         setEditItem({ ...editItem, specificDates: newDates });
-                      }} className="rounded text-bbq-red"/>
+                      }} className="rounded text-bbq-red" />
                       <span className="text-xs text-white">{new Date(evt.date + 'T12:00:00').toLocaleDateString()} — {evt.location} ({evt.title})</span>
                     </label>
                   );
@@ -704,9 +703,9 @@ const FTMenuManager = () => {
             <div key={id} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-gray-600 transition">
               <div className="flex items-center gap-3 min-w-0">
                 {item.image ? (
-                  <img src={item.image} alt={item.name} className="w-10 h-10 rounded object-cover border border-gray-700 shrink-0"/>
+                  <img src={item.image} alt={item.name} className="w-10 h-10 rounded object-cover border border-gray-700 shrink-0" />
                 ) : (
-                  <div className="w-10 h-10 rounded bg-gray-700 flex items-center justify-center shrink-0"><Utensils size={16} className="text-gray-500"/></div>
+                  <div className="w-10 h-10 rounded bg-gray-700 flex items-center justify-center shrink-0"><Utensils size={16} className="text-gray-500" /></div>
                 )}
                 <div className="min-w-0">
                   <div className="font-bold text-white text-sm flex items-center gap-1 flex-wrap">
@@ -721,7 +720,7 @@ const FTMenuManager = () => {
                   )}
                 </div>
               </div>
-              <button onClick={() => { setIsEditing(true); setEditItem({...item, packGroups: item.packGroups || []}); }} className="p-2 text-gray-400 hover:text-white shrink-0"><Edit2 size={16}/></button>
+              <button onClick={() => { setIsEditing(true); setEditItem({ ...item, packGroups: item.packGroups || [] }); }} className="p-2 text-gray-400 hover:text-white shrink-0"><Edit2 size={16} /></button>
             </div>
           );
         })}
@@ -737,6 +736,9 @@ const FTSettingsManager = () => {
   const [rewardsForm, setRewardsForm] = useState({ ...(settings.rewards || {}) });
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
+  const [pwStatus, setPwStatus] = useState(null);
+  const [isPwSaving, setIsPwSaving] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -759,16 +761,16 @@ const FTSettingsManager = () => {
         ].map(({ key, label, placeholder, type }) => (
           <div key={key}>
             <label className="block text-xs text-gray-400 font-bold mb-1">{label}</label>
-            <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm({...form, [key]: e.target.value})}
-              placeholder={placeholder} className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm"/>
+            <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm({ ...form, [key]: e.target.value })}
+              placeholder={placeholder} className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm" />
           </div>
         ))}
       </div>
 
       <div className="space-y-4 border-t border-gray-800 pt-6">
-        <h4 className="font-bold text-gray-300 uppercase text-xs tracking-widest flex items-center gap-2"><Star size={14} className="text-bbq-gold"/> Golden Ticket Rewards</h4>
+        <h4 className="font-bold text-gray-300 uppercase text-xs tracking-widest flex items-center gap-2"><Star size={14} className="text-bbq-gold" /> Golden Ticket Rewards</h4>
         <label className="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" checked={rewardsForm.enabled || false} onChange={e => setRewardsForm({...rewardsForm, enabled: e.target.checked})} className="w-5 h-5 rounded text-bbq-red"/>
+          <input type="checkbox" checked={rewardsForm.enabled || false} onChange={e => setRewardsForm({ ...rewardsForm, enabled: e.target.checked })} className="w-5 h-5 rounded text-bbq-red" />
           <span className="font-bold text-white">Enable Rewards Program</span>
         </label>
         {rewardsForm.enabled && (
@@ -780,14 +782,14 @@ const FTSettingsManager = () => {
             ].map(({ key, label, placeholder, type }) => (
               <div key={key}>
                 <label className="block text-xs text-gray-400 font-bold mb-1">{label}</label>
-                <input type={type || 'text'} value={rewardsForm[key] || ''} onChange={e => setRewardsForm({...rewardsForm, [key]: e.target.value})}
-                  placeholder={placeholder} className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm"/>
+                <input type={type || 'text'} value={rewardsForm[key] || ''} onChange={e => setRewardsForm({ ...rewardsForm, [key]: e.target.value })}
+                  placeholder={placeholder} className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm" />
               </div>
             ))}
             <div>
               <label className="block text-xs text-gray-400 font-bold mb-1">Stamps to fill a ticket</label>
-              <input type="number" min="5" max="20" value={rewardsForm.maxStamps || 10} onChange={e => setRewardsForm({...rewardsForm, maxStamps: parseInt(e.target.value)})}
-                className="w-24 bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm text-center"/>
+              <input type="number" min="5" max="20" value={rewardsForm.maxStamps || 10} onChange={e => setRewardsForm({ ...rewardsForm, maxStamps: parseInt(e.target.value) })}
+                className="w-24 bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm text-center" />
             </div>
           </div>
         )}
@@ -796,7 +798,7 @@ const FTSettingsManager = () => {
       <div className="space-y-3 border-t border-gray-800 pt-6">
         <h4 className="font-bold text-gray-300 uppercase text-xs tracking-widest">Display</h4>
         <label className="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" checked={form.maintenanceMode || false} onChange={e => setForm({...form, maintenanceMode: e.target.checked})} className="w-5 h-5 rounded text-bbq-red"/>
+          <input type="checkbox" checked={form.maintenanceMode || false} onChange={e => setForm({ ...form, maintenanceMode: e.target.checked })} className="w-5 h-5 rounded text-bbq-red" />
           <div>
             <span className="font-bold text-white">Maintenance Mode</span>
             <p className="text-xs text-gray-500">Hide storefront from public when enabled.</p>
@@ -807,10 +809,10 @@ const FTSettingsManager = () => {
       <div className="flex items-center gap-4 pt-4 border-t border-gray-800">
         <button onClick={handleSave} disabled={isSaving}
           className="bg-bbq-red text-white px-6 py-2 rounded font-bold hover:bg-red-700 disabled:opacity-50 flex items-center gap-2">
-          {isSaving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>}
+          {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
           {isSaving ? 'Saving...' : 'Save Settings'}
         </button>
-        {saved && <span className="text-green-400 text-sm font-bold flex items-center gap-1"><Check size={14}/> Saved!</span>}
+        {saved && <span className="text-green-400 text-sm font-bold flex items-center gap-1"><Check size={14} /> Saved!</span>}
       </div>
     </div>
   );
@@ -835,9 +837,9 @@ const FoodTruckAdmin = () => {
           <h2 className="text-3xl font-display font-bold text-white">{brandName} Admin</h2>
           <div className="flex items-center gap-2 mt-1">
             {connectionError ? (
-              <span className="text-xs bg-red-900/50 text-red-200 px-2 py-1 rounded border border-red-500 flex items-center gap-1"><Wifi size={12}/> Offline</span>
+              <span className="text-xs bg-red-900/50 text-red-200 px-2 py-1 rounded border border-red-500 flex items-center gap-1"><Wifi size={12} /> Offline</span>
             ) : (
-              <span className="text-xs bg-green-900/50 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1"><Cloud size={12}/> Connected</span>
+              <span className="text-xs bg-green-900/50 text-green-200 px-2 py-1 rounded border border-green-500 flex items-center gap-1"><Cloud size={12} /> Connected</span>
             )}
           </div>
         </div>
@@ -845,7 +847,7 @@ const FoodTruckAdmin = () => {
           {TABS.map(({ id, icon: Icon, label, badge }) => (
             <button key={id} onClick={() => setActiveTab(id)}
               className={`px-4 py-2 rounded-md flex items-center gap-2 transition text-sm font-medium whitespace-nowrap relative ${activeTab === id ? 'bg-bbq-red text-white' : 'text-gray-400 hover:text-white'}`}>
-              <Icon size={16}/> {label}
+              <Icon size={16} /> {label}
               {badge > 0 && (
                 <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">{badge}</span>
               )}
