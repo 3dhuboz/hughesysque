@@ -185,7 +185,7 @@ const StorefrontCatering = () => {
       {/* Hero */}
       <div className="relative h-[35vh] min-h-[260px] rounded-2xl overflow-hidden shadow-2xl mb-8">
         <div className="absolute inset-0 bg-black/60 z-10" />
-        <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1950&q=80"
+        <img src={(settings.siteVisuals?.diyPageHero) || "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1950&q=80"}
           className="absolute inset-0 w-full h-full object-cover" alt="Catering" />
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-6">
           <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight uppercase">
@@ -200,12 +200,12 @@ const StorefrontCatering = () => {
       {/* Host Rewards Banner */}
       <div className="max-w-5xl mx-auto mb-8">
         <div className="bg-gradient-to-r from-yellow-900/40 via-bbq-charcoal to-yellow-900/40 border border-bbq-gold/30 p-4 rounded-xl flex items-center justify-center gap-4 text-center">
-          <Ticket className="text-bbq-gold shrink-0" size={22}/>
+          <Ticket className="text-bbq-gold shrink-0" size={22} />
           <div>
             <h4 className="text-white font-bold uppercase tracking-wider text-sm">Host Rewards Program</h4>
             <p className="text-gray-400 text-xs">Spend over <strong>$1,000</strong> on catering and receive a <strong>10% Discount</strong> on your next order!</p>
           </div>
-          <Ticket className="text-bbq-gold shrink-0" size={22}/>
+          <Ticket className="text-bbq-gold shrink-0" size={22} />
         </div>
       </div>
 
@@ -220,7 +220,7 @@ const StorefrontCatering = () => {
               <React.Fragment key={num}>
                 <div className="flex flex-col items-center">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${active ? 'bg-bbq-red text-white shadow-[0_0_15px_rgba(217,56,30,0.4)]' : 'bg-gray-800 text-gray-500'}`}>
-                    {active && num < step ? <Check size={16}/> : num}
+                    {active && num < step ? <Check size={16} /> : num}
                   </div>
                   <span className={`text-xs mt-1 font-bold uppercase tracking-wide ${current ? 'text-white' : 'text-gray-600'}`}>{label}</span>
                 </div>
@@ -244,7 +244,7 @@ const StorefrontCatering = () => {
                 <div>
                   <label className="block text-gray-400 mb-2 text-sm font-bold">Event Date</label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-3.5 text-bbq-red" size={18}/>
+                    <Calendar className="absolute left-3 top-3.5 text-bbq-red" size={18} />
                     <input type="date" min={new Date().toISOString().split('T')[0]} value={selectedDate}
                       onChange={e => { setSelectedDate(e.target.value); setIsAvailable(null); }}
                       className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none" />
@@ -253,10 +253,10 @@ const StorefrontCatering = () => {
                 <div>
                   <label className="block text-gray-400 mb-2 text-sm font-bold">Eat Time</label>
                   <div className="relative">
-                    <Clock className="absolute left-3 top-3.5 text-bbq-red" size={18}/>
+                    <Clock className="absolute left-3 top-3.5 text-bbq-red" size={18} />
                     <select value={pickupTime} onChange={e => setPickupTime(e.target.value)}
                       className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none appearance-none">
-                      {['11:00 AM','12:00 PM','01:00 PM','02:00 PM','03:00 PM','04:00 PM','05:00 PM','06:00 PM','07:00 PM'].map(t => (
+                      {['11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM'].map(t => (
                         <option key={t}>{t}</option>
                       ))}
                     </select>
@@ -265,7 +265,7 @@ const StorefrontCatering = () => {
                 <div>
                   <label className="block text-gray-400 mb-2 text-sm font-bold">Number of Guests</label>
                   <div className="relative">
-                    <Users className="absolute left-3 top-3.5 text-bbq-red" size={18}/>
+                    <Users className="absolute left-3 top-3.5 text-bbq-red" size={18} />
                     <input type="number" min="10" value={guestCount} onChange={e => setGuestCount(parseInt(e.target.value) || 10)}
                       className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none" />
                     <span className="absolute right-4 top-3.5 text-xs text-gray-500">Min 10 pax</span>
@@ -280,7 +280,7 @@ const StorefrontCatering = () => {
                     {[['PICKUP', ChefHat, 'Pickup (Free)'], ['DELIVERY', Truck, `Delivery (+$${DELIVERY_FEE})`]].map(([val, Icon, label]) => (
                       <button key={val} onClick={() => setFulfillment(val)}
                         className={`p-3 rounded-lg border text-sm font-bold flex flex-col items-center gap-1 transition ${fulfillment === val ? 'bg-bbq-red text-white border-red-500' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                        <Icon size={18}/> {label}
+                        <Icon size={18} /> {label}
                       </button>
                     ))}
                   </div>
@@ -290,11 +290,11 @@ const StorefrontCatering = () => {
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={() => setTemperature('HOT')}
                       className={`p-3 rounded-lg border text-sm font-bold flex flex-col items-center gap-1 transition ${temperature === 'HOT' ? 'bg-orange-900/50 text-orange-200 border-orange-500' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                      <Flame size={18}/> Ready to Eat
+                      <Flame size={18} /> Ready to Eat
                     </button>
                     <button onClick={() => setTemperature('COLD')}
                       className={`p-3 rounded-lg border text-sm font-bold flex flex-col items-center gap-1 transition ${temperature === 'COLD' ? 'bg-blue-900/50 text-blue-200 border-blue-500' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                      <Snowflake size={18}/> Cold (Reheat)
+                      <Snowflake size={18} /> Cold (Reheat)
                     </button>
                   </div>
                 </div>
@@ -305,7 +305,7 @@ const StorefrontCatering = () => {
               <div className="mt-6">
                 <label className="block text-gray-400 mb-2 text-sm font-bold">Delivery Address</label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3.5 text-bbq-red" size={18}/>
+                  <MapPin className="absolute left-3 top-3.5 text-bbq-red" size={18} />
                   <input value={deliveryAddress} onChange={e => setDeliveryAddress(e.target.value)}
                     placeholder="123 Example St, Suburb..."
                     className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none" />
@@ -316,12 +316,12 @@ const StorefrontCatering = () => {
             <button onClick={checkDate}
               disabled={!selectedDate || !pickupTime || guestCount < 10 || (fulfillment === 'DELIVERY' && !deliveryAddress)}
               className="w-full bg-white text-black font-bold py-4 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition shadow-lg mt-8 text-lg flex items-center justify-center gap-2">
-              Next: Choose Menu <ArrowRight size={20}/>
+              Next: Choose Menu <ArrowRight size={20} />
             </button>
 
             {isAvailable === false && (
               <div className="mt-4 p-4 bg-red-900/30 border border-red-600 text-red-200 rounded-lg flex items-center justify-center gap-2">
-                <AlertCircle size={18}/> Sorry, we are fully booked on this date. Please choose another.
+                <AlertCircle size={18} /> Sorry, we are fully booked on this date. Please choose another.
               </div>
             )}
           </div>
@@ -373,7 +373,7 @@ const StorefrontCatering = () => {
                         <h3 className={`text-3xl font-display font-bold text-white mb-2 uppercase tracking-wide ${titleHover} transition-colors`}>{title}</h3>
                         <p className="text-gray-300 text-sm mb-6">{desc}</p>
                         <span className={`${btnColor} font-bold flex items-center gap-2 uppercase tracking-wide text-sm group-hover:translate-x-2 transition-transform duration-300`}>
-                          {btnLabel} <ArrowRight size={14}/>
+                          {btnLabel} <ArrowRight size={14} />
                         </span>
                       </div>
                     </div>
@@ -388,7 +388,7 @@ const StorefrontCatering = () => {
             {selectionMode === 'PACKAGES' && (
               <div>
                 <div className="flex items-center justify-between mb-8">
-                  <button onClick={() => setSelectionMode('CHOICE')} className="text-gray-400 hover:text-white flex items-center gap-2 font-bold text-sm transition"><ArrowLeft size={16}/> Back</button>
+                  <button onClick={() => setSelectionMode('CHOICE')} className="text-gray-400 hover:text-white flex items-center gap-2 font-bold text-sm transition"><ArrowLeft size={16} /> Back</button>
                   <h2 className="text-2xl font-bold text-white">Select a Package</h2>
                   <div className="w-16"></div>
                 </div>
@@ -410,18 +410,18 @@ const StorefrontCatering = () => {
                         <p className="text-gray-400 text-sm mb-4">{pkg.description}</p>
                         <div className="flex flex-wrap gap-3 mb-5">
                           <div className="bg-black/30 px-3 py-1.5 rounded text-xs font-bold text-gray-300 flex items-center gap-2">
-                            <CheckCircle size={12} className="text-green-500"/> Min {pkg.minPax} pax
+                            <CheckCircle size={12} className="text-green-500" /> Min {pkg.minPax} pax
                           </div>
                           <div className="bg-black/30 px-3 py-1.5 rounded text-xs font-bold text-gray-300 flex items-center gap-2">
-                            <CheckCircle size={12} className="text-green-500"/> {pkg.meatLimit} Meat choices
+                            <CheckCircle size={12} className="text-green-500" /> {pkg.meatLimit} Meat choices
                           </div>
                           <div className="bg-black/30 px-3 py-1.5 rounded text-xs font-bold text-gray-300 flex items-center gap-2">
-                            <CheckCircle size={12} className="text-green-500"/> {pkg.sideLimit} Side choices
+                            <CheckCircle size={12} className="text-green-500" /> {pkg.sideLimit} Side choices
                           </div>
                         </div>
                         <button onClick={() => selectPackage(pkg.id)}
                           className="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-bbq-gold transition flex justify-center items-center gap-2 uppercase tracking-wide text-sm">
-                          Select Package <ArrowRight size={16}/>
+                          Select Package <ArrowRight size={16} />
                         </button>
                       </div>
                     </div>
@@ -434,7 +434,7 @@ const StorefrontCatering = () => {
             {isPackageConfigOpen && selectedPackageId === 'pkg_custom' && (
               <div className="max-w-4xl mx-auto">
                 <div className="flex items-center justify-between mb-6">
-                  <button onClick={() => { setIsPackageConfigOpen(false); setSelectionMode('CHOICE'); }} className="text-gray-400 hover:text-white flex items-center gap-2 font-bold text-sm"><ArrowLeft size={16}/> Back</button>
+                  <button onClick={() => { setIsPackageConfigOpen(false); setSelectionMode('CHOICE'); }} className="text-gray-400 hover:text-white flex items-center gap-2 font-bold text-sm"><ArrowLeft size={16} /> Back</button>
                   <h2 className="text-2xl font-bold text-white">Build Your Order</h2>
                   <div className="bg-black/40 px-4 py-2 rounded-lg border border-gray-700">
                     <span className="text-xs text-gray-500">Custom Total</span>
@@ -463,12 +463,12 @@ const StorefrontCatering = () => {
                           <div className="flex items-center gap-3 shrink-0">
                             <button onClick={() => updateCustomCart(id, -1, item.cateringMinQty || 1)}
                               className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition">
-                              <Minus size={14}/>
+                              <Minus size={14} />
                             </button>
                             <span className="w-6 text-center font-bold text-white">{qty}</span>
                             <button onClick={() => updateCustomCart(id, 1, item.cateringMinQty || 1)}
                               className="w-8 h-8 rounded-full bg-gray-800 hover:bg-bbq-red flex items-center justify-center transition">
-                              <Plus size={14}/>
+                              <Plus size={14} />
                             </button>
                           </div>
                         </div>
@@ -479,7 +479,7 @@ const StorefrontCatering = () => {
                 {Object.keys(customCart).length > 0 && (
                   <button onClick={() => setStep(3)}
                     className="w-full bg-white text-black font-bold py-4 rounded-xl hover:bg-gray-200 transition shadow-lg mt-8 text-lg flex items-center justify-center gap-2">
-                    Review Order <ArrowRight size={20}/>
+                    Review Order <ArrowRight size={20} />
                   </button>
                 )}
               </div>
@@ -538,7 +538,7 @@ const StorefrontCatering = () => {
                 <button onClick={handleSubmitRequest} disabled={isSubmitting}
                   className="w-full bg-gradient-to-r from-bbq-red to-red-700 text-white font-bold py-4 rounded-xl hover:shadow-[0_0_20px_rgba(217,56,30,0.4)] transition-all disabled:opacity-50 text-lg flex items-center justify-center gap-2">
                   {isSubmitting ? 'Sending Request...' : 'Send Catering Request'}
-                  {!isSubmitting && <ArrowRight size={20}/>}
+                  {!isSubmitting && <ArrowRight size={20} />}
                 </button>
                 <button onClick={() => setStep(2)} className="w-full text-gray-500 hover:text-white text-sm underline transition">
                   ← Back to Menu Selection
