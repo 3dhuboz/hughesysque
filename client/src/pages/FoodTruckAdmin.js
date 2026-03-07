@@ -1586,8 +1586,14 @@ const CateringManager = () => {
                   {isGenerating === 'desc' ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
                 </button>
               </div>
-              <input placeholder="Image URL" value={editPkg.image || ''} onChange={e => setEditPkg({ ...editPkg, image: e.target.value })}
-                className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm" />
+              <div className="flex gap-2">
+                <input placeholder="Image URL" value={editPkg.image || ''} onChange={e => setEditPkg({ ...editPkg, image: e.target.value })}
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm" />
+                <button type="button" onClick={() => handleAiGenerate('image')} disabled={!!isGenerating} title="Generate image with AI"
+                  className="p-2 bg-purple-900/60 border border-purple-700 rounded hover:bg-purple-800 shrink-0 disabled:opacity-50">
+                  {isGenerating === 'image' ? <Loader2 size={14} className="animate-spin text-purple-300" /> : <Sparkles size={14} className="text-purple-300" />}
+                </button>
+              </div>
               {editPkg.image && (
                 <div className="h-24 rounded overflow-hidden border border-gray-700">
                   <img src={editPkg.image} className="w-full h-full object-cover" alt="Preview" />
