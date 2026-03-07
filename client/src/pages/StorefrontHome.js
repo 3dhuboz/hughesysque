@@ -2,11 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, Flame, ChefHat, Utensils, MapPin, Calendar, Star, Truck } from 'lucide-react';
 import { useClientConfig } from '../context/ClientConfigContext';
+import { useStorefront } from '../context/StorefrontContext';
 import api from '../api';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80';
 const HERO_CATERING = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1200&q=80';
 const HERO_COOK = 'https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=1200&q=80';
+const PROMOTER_IMG = 'https://images.unsplash.com/photo-1533174072545-e8d4aa97edf9?auto=format&fit=crop&w=1950&q=80';
+const CARD_SCHEDULE = 'https://images.unsplash.com/photo-1565123409695-7b5ef63a2efb?auto=format&fit=crop&w=800&q=80';
+const CARD_MENU = 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&w=800&q=80';
 
 const fallbackImages = [
   "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=600&h=600&q=80",
@@ -21,11 +25,13 @@ const fallbackImages = [
 
 const StorefrontHome = () => {
   const { brandName, brandTagline, primaryColor } = useClientConfig();
+  const { settings } = useStorefront();
   const [cookDays, setCookDays] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
 
-  const name = brandName || 'Hughesys Que';
+  const name = settings.businessName || brandName || 'Hughesys Que';
   const tagline = brandTagline || 'Quality Street Food';
+  const sv = settings.siteVisuals || {};
 
   useEffect(() => {
     Promise.all([
@@ -38,7 +44,7 @@ const StorefrontHome = () => {
   }, []);
 
   const nextCookDay = cookDays
-    .filter(d => new Date(d.date) >= new Date(new Date().setHours(0,0,0,0)))
+    .filter(d => new Date(d.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
     .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
 
   const handleImageError = (e) => { e.target.src = PLACEHOLDER_IMG; };
@@ -57,7 +63,7 @@ const StorefrontHome = () => {
           <div className="absolute inset-0">
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/80 z-10" />
             <img
-              src={HERO_CATERING}
+              src={sv.cateringHero || HERO_CATERING}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
               alt="Catering Feast"
               onError={handleImageError}
@@ -68,7 +74,7 @@ const StorefrontHome = () => {
               Private & Corporate Events
             </div>
             <h2 className="text-5xl md:text-7xl font-display font-bold text-white mb-4 leading-[0.9] drop-shadow-2xl">
-              FEAST <br/> LIKE A <span className="text-transparent bg-clip-text bg-gradient-to-r from-bbq-gold to-yellow-200">KING</span>
+              FEAST <br /> LIKE A <span className="text-transparent bg-clip-text bg-gradient-to-r from-bbq-gold to-yellow-200">KING</span>
             </h2>
             <p className="text-gray-200 text-lg md:text-xl font-medium max-w-md mb-8 leading-relaxed">
               From backyard birthdays to corporate blowouts. We bring the smoker, the meat, and the vibe to you.
@@ -85,7 +91,7 @@ const StorefrontHome = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-bbq-red/40 to-transparent mix-blend-overlay z-10" />
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/90 z-20" />
             <img
-              src={HERO_COOK}
+              src={sv.cookMenuHero || HERO_COOK}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 contrast-125"
               alt="Smoker and BBQ"
               onError={handleImageError}
@@ -99,10 +105,10 @@ const StorefrontHome = () => {
               <Flame className="text-red-500 animate-bounce" fill="currentColor" />
             </div>
             <h2 className="text-5xl md:text-7xl font-display font-bold text-white mb-6 leading-[0.9] drop-shadow-2xl">
-              TASTE <br/> THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">SMOKE</span>
+              TASTE <br /> THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">SMOKE</span>
             </h2>
             <div className="w-full bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-white/10 mb-8 transform group-hover:-translate-y-2 transition-transform duration-500"
-                 style={{ WebkitBackdropFilter: 'blur(12px)' }}>
+              style={{ WebkitBackdropFilter: 'blur(12px)' }}>
               {nextCookDay ? (
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
@@ -117,7 +123,7 @@ const StorefrontHome = () => {
                   <div className="text-right">
                     {nextCookDay.location && (
                       <div className="flex items-center justify-end gap-2 text-red-400 mb-1">
-                        <MapPin size={16}/> <span className="text-xs font-bold uppercase">{nextCookDay.location}</span>
+                        <MapPin size={16} /> <span className="text-xs font-bold uppercase">{nextCookDay.location}</span>
                       </div>
                     )}
                     <div className="inline-block bg-white/10 rounded px-2 py-1 text-xs text-gray-300">
@@ -145,7 +151,7 @@ const StorefrontHome = () => {
           <Flame size={200} />
         </div>
         <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-8">
-          WE DON'T DO <span className="text-bbq-red italic">FAST</span> FOOD. <br/>
+          WE DON'T DO <span className="text-bbq-red italic">FAST</span> FOOD. <br />
           WE DO <span className="text-bbq-gold italic">GOOD</span> FOOD.
         </h2>
         <p className="text-gray-400 text-lg md:text-xl leading-relaxed font-light max-w-3xl mx-auto">
@@ -172,7 +178,7 @@ const StorefrontHome = () => {
         <Link to="/order" className="relative h-64 rounded-2xl overflow-hidden group border border-white/10 hover:border-bbq-red/50 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
           <img
-            src="https://images.unsplash.com/photo-1565123409695-7b5ef63a2efb?auto=format&fit=crop&w=800&q=80"
+            src={sv.eventsHero || CARD_SCHEDULE}
             alt="Events"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700"
             onError={handleImageError}
@@ -192,7 +198,7 @@ const StorefrontHome = () => {
         <Link to="/order" className="relative h-64 rounded-2xl overflow-hidden group border border-white/10 hover:border-bbq-red/50 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
           <img
-            src="https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&w=800&q=80"
+            src={sv.menuHero || CARD_MENU}
             alt="Menu"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700"
             onError={handleImageError}
@@ -214,7 +220,7 @@ const StorefrontHome = () => {
       <section className="relative w-full h-[500px] overflow-hidden flex items-center justify-center my-12 group">
         <div
           className="absolute inset-0 bg-fixed bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1533174072545-e8d4aa97edf9?auto=format&fit=crop&w=1950&q=80')" }}
+          style={{ backgroundImage: `url('${sv.promoterSection || PROMOTER_IMG}')` }}
         ></div>
         <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition duration-700"></div>
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
