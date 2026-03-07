@@ -1849,7 +1849,7 @@ const SocialCommandCenter = () => {
   const [scheduledPosts, setScheduledPosts] = useState([]);
   const [fbConnected, setFbConnected] = useState(settings.facebookConnected || false);
   const [calMonth, setCalMonth] = useState(new Date());
-  const hasGemini = !!process.env.REACT_APP_GEMINI_API_KEY;
+  const hasGemini = !!(_geminiKeyOverride || process.env.REACT_APP_GEMINI_API_KEY || settings.geminiApiKey);
   const socialStats = settings.socialStats || {};
   const [showFbConfig, setShowFbConfig] = useState(false);
   const [fbPageId, setFbPageId] = useState(settings.fbPageId || '');
@@ -2177,7 +2177,7 @@ const FTDevTools = () => {
   const [newKeyInput, setNewKeyInput] = useState('');
   const [isSavingKey, setIsSavingKey] = useState(false);
   const [lastPulse, setLastPulse] = useState(new Date());
-  const hasGemini = !!process.env.REACT_APP_GEMINI_API_KEY;
+  const hasGemini = !!(_geminiKeyOverride || process.env.REACT_APP_GEMINI_API_KEY || settings.geminiApiKey);
   const [diagnosticsResult, setDiagnosticsResult] = useState(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
 
