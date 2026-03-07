@@ -2263,7 +2263,7 @@ Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption"
 const FTDevTools = () => {
   const { connectionError, settings, updateSettings } = useStorefront();
   const [devSettings, setDevSettings] = useState({
-    squareAppId: '', squareLocationId: '',
+    squareAppId: '', squareLocationId: '', squareAccessToken: '',
     firebaseProjectId: '', firebaseAuthDomain: '', firebaseApiKey: '',
     firebaseStorageBucket: '', firebaseMessagingSenderId: '', firebaseAppId: '',
     ...(settings.devSettings || {}),
@@ -2360,7 +2360,7 @@ const FTDevTools = () => {
       const res = await fetch('/api/v1/square/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appId: devSettings.squareAppId, locationId: devSettings.squareLocationId }),
+        body: JSON.stringify({ appId: devSettings.squareAppId, locationId: devSettings.squareLocationId, accessToken: devSettings.squareAccessToken }),
       });
       if (res.ok) {
         setSquareStatus({ ok: true, msg: 'Connection verified — payments ready.' });
@@ -2529,7 +2529,7 @@ const FTDevTools = () => {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {[{ key: 'squareAppId', label: 'APPLICATION ID', ph: 'sq0idp-...', pw: true }, { key: 'squareLocationId', label: 'LOCATION ID', ph: 'LEG88M0C3BZA...' }].map(({ key, label, ph, pw }) => (
+            {[{ key: 'squareAppId', label: 'APPLICATION ID', ph: 'sq0idp-...', pw: false }, { key: 'squareLocationId', label: 'LOCATION ID', ph: 'LEG88M0C3BZA...' }, { key: 'squareAccessToken', label: 'ACCESS TOKEN (for API test)', ph: 'EAAAl...', pw: true }].map(({ key, label, ph, pw }) => (
               <div key={key}>
                 <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</label>
                 <div className="flex gap-2">
@@ -2539,6 +2539,10 @@ const FTDevTools = () => {
                 </div>
               </div>
             ))}
+            <div className="col-span-full bg-green-950/20 border border-green-800/30 rounded-lg p-3 text-xs text-green-300">
+              <p className="font-bold">Square Developer Setup</p>
+              <p className="text-gray-400 mt-1">Get your keys from <a href="https://developer.squareup.com/apps" target="_blank" rel="noreferrer" className="text-green-400 hover:underline">developer.squareup.com/apps</a>. Use <strong className="text-white">Sandbox</strong> credentials for testing (App ID starts with <code>sandbox-sq0idp-</code>). The Access Token is required for live API verification.</p>
+            </div>
           </div>
         </div>
       </div>
