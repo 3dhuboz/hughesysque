@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     });
     return unsub;
-  }, [];
+  }, []);
 
   const login = async (email, password) => {
     // Dev backdoor — hardcoded, not in Firebase
