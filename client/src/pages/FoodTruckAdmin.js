@@ -831,14 +831,35 @@ const ImageField = ({ label, value, onChange, hint, businessName }) => {
           </div>
         )}
         {value && imgState === 'loading' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/60">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-900/80 z-10">
             <Loader2 size={18} className="animate-spin text-gray-500" />
+            <span className="text-[10px] text-gray-600">Loading preview…</span>
+          </div>
+        )}
+        {value && imgState === 'timeout' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-900/90 z-10 p-3 text-center">
+            <Clock size={16} className="text-yellow-500/70" />
+            <span className="text-[10px] text-yellow-500/80 leading-tight">AI images take time to generate.<br />The URL is saved — click View to check it.</span>
+            <div className="flex gap-2 mt-1">
+              <a href={value} target="_blank" rel="noreferrer"
+                className="text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2.5 py-1 rounded flex items-center gap-1">
+                <Eye size={10} /> View
+              </a>
+              <button onClick={() => setImgState('loading')}
+                className="text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2.5 py-1 rounded flex items-center gap-1">
+                <RefreshCw size={10} /> Retry
+              </button>
+            </div>
           </div>
         )}
         {value && imgState === 'error' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-red-500/60">
-            <AlertTriangle size={18} />
-            <span className="text-[10px]">Could not load preview</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-900/90 z-10 p-3 text-center">
+            <AlertTriangle size={16} className="text-red-500/60" />
+            <span className="text-[10px] text-red-400/70">Could not load preview</span>
+            <a href={value} target="_blank" rel="noreferrer"
+              className="text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2.5 py-1 rounded flex items-center gap-1">
+              <Eye size={10} /> Open URL
+            </a>
           </div>
         )}
         {value && (
