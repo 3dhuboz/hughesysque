@@ -11,7 +11,7 @@ import {
   Search, UserCheck, AlertCircle, Smartphone, Wand2, Sparkles, Copy,
   ClipboardList, Thermometer, Clock, BookOpen, MessageSquare, Bot, User as UserIcon, Send, Code2,
   RefreshCw, BarChart2, Database, Activity, CreditCard, Mail, TrendingUp, Eye, Zap, Server,
-  Share2, Globe, ImagePlus, Lock, UploadCloud, FileText, Palette, Link, ChevronDown as ChevronDownIcon
+  Share2, Globe, ImagePlus, Lock, UploadCloud, FileText, Palette, Link
 } from 'lucide-react';
 
 // ─── ORDER MANAGER ───────────────────────────────────────────────────
