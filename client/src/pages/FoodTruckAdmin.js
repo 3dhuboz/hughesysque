@@ -821,6 +821,38 @@ const FTSettingsManager = () => {
         </label>
       </div>
 
+      <div className="space-y-4 border-t border-gray-800 pt-6">
+        <h4 className="font-bold text-gray-300 uppercase text-xs tracking-widest flex items-center gap-2">
+          <AlertTriangle size={14} className="text-yellow-500" /> Admin Password
+        </h4>
+        <div className="bg-yellow-900/20 border border-yellow-800 rounded-lg p-3 text-xs text-yellow-200">
+          Change from the default password before going live.
+        </div>
+        <form onSubmit={handleChangePassword} className="space-y-3">
+          {[
+            { key: 'currentPassword', label: 'Current Password' },
+            { key: 'newPassword', label: 'New Password (min 8 chars)' },
+            { key: 'confirm', label: 'Confirm New Password' },
+          ].map(({ key, label }) => (
+            <div key={key}>
+              <label className="block text-xs text-gray-400 font-bold mb-1">{label}</label>
+              <input type="password" value={pwForm[key]} onChange={e => setPwForm({ ...pwForm, [key]: e.target.value })}
+                required className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm" />
+            </div>
+          ))}
+          {pwStatus && (
+            <p className={`text-sm font-bold flex items-center gap-1 ${pwStatus.ok ? 'text-green-400' : 'text-red-400'}`}>
+              {pwStatus.ok ? <Check size={14} /> : <AlertTriangle size={14} />} {pwStatus.msg}
+            </p>
+          )}
+          <button type="submit" disabled={isPwSaving}
+            className="bg-yellow-700 hover:bg-yellow-600 text-white px-5 py-2 rounded font-bold text-sm disabled:opacity-50 flex items-center gap-2">
+            {isPwSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            {isPwSaving ? 'Saving...' : 'Change Password'}
+          </button>
+        </form>
+      </div>
+
       <div className="flex items-center gap-4 pt-4 border-t border-gray-800">
         <button onClick={handleSave} disabled={isSaving}
           className="bg-bbq-red text-white px-6 py-2 rounded font-bold hover:bg-red-700 disabled:opacity-50 flex items-center gap-2">
