@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useStorefront } from '../context/StorefrontContext';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
+import toast from 'react-hot-toast';
 import {
   CalendarCheck, CalendarDays, Utensils, Settings, Plus, Edit2, Trash2, X, Save,
   ChevronLeft, ChevronRight, ShoppingBag, Truck, Package, Check, AlertTriangle,
   DollarSign, Loader2, Image as ImageIcon, ChevronDown, ChevronUp, HelpCircle,
-  CheckSquare, Square, Flame, Cloud, Wifi, Users, Star, Gift
+  CheckSquare, Square, Flame, Cloud, Wifi, Users, Star, Gift,
+  Search, UserCheck, AlertCircle, Smartphone, Wand2, Sparkles, Copy,
+  ClipboardList, Thermometer, Clock, BookOpen, MessageSquare, Bot, User as UserIcon, Send
 } from 'lucide-react';
 
 // ─── ORDER MANAGER ───────────────────────────────────────────────────
