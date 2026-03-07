@@ -802,12 +802,19 @@ const ImageField = ({ label, value, onChange, hint, businessName }) => {
     const t = setTimeout(() => setImgState(s => s === 'loading' ? 'slow' : s), 20000);
     return () => clearTimeout(t);
   }, [value]);
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onChange(reader.result);
-    reader.readAsDataURL(file);
+    setImgState('loading');
+    try {
+      const path = `siteVisuals/${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_')}`;
+      const url = await uploadToStorage(file, path);
+      onChange(url);
+    } catch (err) {
+      console.error('Upload failed:', err);
+      toast.error('Upload failed — check Firebase Storage rules.');
+      setImgState('error');
+    }
   };
   const handleAIGenerate = async () => {
     setIsGenerating(true);
