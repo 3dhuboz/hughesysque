@@ -63,7 +63,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/" element={<Navigate to="/dashboard" />} />
+        <Route path="/" element={enabledApps.includes('foodtruck') ? <Storefront /> : <Navigate to="/dashboard" />} />
 
         {/* Client dashboard & profile */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -181,7 +181,7 @@ const AppShell = () => {
       <div className="app">
         <Navbar />
         <main className="main-content">
-            <AppRoutes />
+          <AppRoutes />
         </main>
         <Footer />
         {!clientMode && <PennyAgent />}
@@ -197,13 +197,13 @@ const AppShell = () => {
 function App() {
   return (
     <ErrorBoundary>
-    <ClientConfigProvider>
-    <AuthProvider>
-      <Router>
-        <AppShell />
-      </Router>
-    </AuthProvider>
-    </ClientConfigProvider>
+      <ClientConfigProvider>
+        <AuthProvider>
+          <Router>
+            <AppShell />
+          </Router>
+        </AuthProvider>
+      </ClientConfigProvider>
     </ErrorBoundary>
   );
 }
