@@ -91,8 +91,8 @@ export const StorefrontProvider = ({ children }) => {
         setMenu(menuData);
         try { localStorage.setItem('hq_menu', JSON.stringify(menuData.map(i => ({ ...i, image: '' })))); } catch { }
 
-        // Map cook days to CalendarEvent format
-        const events = (cookRes.data || []).map(d => ({
+        // Map cook days to CalendarEvent format for public display
+        const cookEvents = (cookRes.data || []).map(d => ({
           id: d._id || d.id,
           date: d.date,
           type: 'ORDER_PICKUP',
@@ -102,7 +102,20 @@ export const StorefrontProvider = ({ children }) => {
           startTime: d.timeStart,
           endTime: d.timeEnd,
         }));
-        setCalendarEvents(events);
+
+        // Also load public events (blocked, pop-ups)
+        try {
+          const pubEvtsRes = await api.get('/foodtruck/public/events');
+          const pubEvts = (pubEvtsRes.data || []).map(e => ({ ...e, id: e._id || e.id }));
+          // Merge: prefer full CalendarEvent over cook day entry for same date
+          const merged = [...pubEvts];
+          cookEvents.forEach(ce => {
+            if (!merged.find(e => e.date === ce.date && e.type === 'ORDER_PICKUP')) merged.push(ce);
+          });
+          setCalendarEvents(merged);
+        } catch {
+          setCalendarEvents(cookEvents);
+        }
 
         // Fetch public settings
         try {
@@ -133,7 +146,7 @@ export const StorefrontProvider = ({ children }) => {
     fetchData();
   }, []);
 
-  // Fetch orders when user is logged in
+  // Fetch orders + full calendar events when user is logged in
   useEffect(() => {
     if (!authUser) { setOrders([]); return; }
     const fetchOrders = async () => {
@@ -143,6 +156,18 @@ export const StorefrontProvider = ({ children }) => {
       } catch { }
     };
     fetchOrders();
+
+    // Load full calendar events (including BLOCKED/PUBLIC_EVENT) for admin Planner
+    if (authUser.role === 'admin') {
+      const fetchEvents = async () => {
+        try {
+          const res = await api.get('/foodtruck/events');
+          const evts = (res.data || []).map(e => ({ ...e, id: e._id || e.id }));
+          if (evts.length > 0) setCalendarEvents(evts);
+        } catch { }
+      };
+      fetchEvents();
+    }
   }, [authUser]);
 
   // ── Auth Actions ──
