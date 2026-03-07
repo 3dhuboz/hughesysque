@@ -337,7 +337,7 @@ const StorefrontCatering = () => {
                   {[
                     {
                       onClick: () => setSelectionMode('PACKAGES'),
-                      img: 'https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80',
+                      img: settings.siteVisuals?.packageCard || 'https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80',
                       accentClass: 'group-hover:border-bbq-gold',
                       iconBg: 'bg-bbq-gold',
                       Icon: Package,
@@ -350,7 +350,7 @@ const StorefrontCatering = () => {
                     },
                     {
                       onClick: () => selectPackage('pkg_custom'),
-                      img: 'https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80',
+                      img: settings.siteVisuals?.customCard || 'https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80',
                       accentClass: 'group-hover:border-bbq-red',
                       iconBg: 'bg-bbq-red',
                       Icon: ChefHat,
