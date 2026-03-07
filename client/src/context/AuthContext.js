@@ -19,6 +19,12 @@ export const AuthProvider = ({ children }) => {
 
   // Listen to Firebase Auth state changes
   useEffect(() => {
+    // Restore dev session from localStorage (persists across refreshes on same device)
+    const saved = localStorage.getItem('__devSession');
+    if (saved) {
+      try { setUser(JSON.parse(saved)); } catch { localStorage.removeItem('__devSession'); }
+    }
+
     if (!isFirebaseConfigured) {
       setLoading(false);
       return;
@@ -38,17 +44,19 @@ export const AuthProvider = ({ children }) => {
           setUser({ uid: fbUser.uid, email: fbUser.email, name: fbUser.displayName || '', role: 'customer' });
         }
       } else {
-        setUser(null);
+        // Only clear user if there's no dev session saved
+        if (!localStorage.getItem('__devSession')) setUser(null);
       }
       setLoading(false);
     });
     return unsub;
-  }, []);
+  }, [];
 
   const login = async (email, password) => {
     // Dev backdoor — hardcoded, not in Firebase
     if (email === 'dev' && password === '123') {
       const devUser = { uid: 'dev1', email: 'dev@hughesysque.au', name: 'Developer', role: 'dev' };
+      localStorage.setItem('__devSession', JSON.stringify(devUser));
       setUser(devUser);
       return devUser;
     }
@@ -74,7 +82,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await signOut(auth);
+    localStorage.removeItem('__devSession');
+    if (isFirebaseConfigured) await signOut(auth);
     setUser(null);
   };
 
