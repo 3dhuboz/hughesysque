@@ -582,7 +582,7 @@ const FTMenuManager = () => {
       </div>
 
       <div className="flex justify-between items-center border-b border-gray-700 pb-2">
-        <h3 className="text-xl font-bold text-white">Menu Items ({menu.length})</h3>
+        <h3 className="text-xl font-bold text-white flex items-center">Menu Items ({menu.length})<Tip text="Changes are live immediately. Use the ✨ AI button on any image or description field to auto-generate content. Pack items let customers mix-and-match choices." /></h3>
         <button onClick={() => { setIsEditing(true); setEditItem({ availabilityType: 'everyday', isPack: false, packGroups: [], available: true }); }}
           className="bg-bbq-red px-4 py-2 rounded text-sm font-bold flex items-center gap-2 hover:bg-red-700">
           <Plus size={16} /> Add Item
@@ -863,7 +863,7 @@ const FTSettingsManager = () => {
     <div className="space-y-6 max-w-5xl">
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide">Settings</h2>
+          <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide flex items-center">Settings<Tip text="All settings are saved to Firestore and sync across devices instantly. Upload a logo to auto-update the site favicon and all OG / social share images." /></h2>
           <p className="text-gray-400 text-sm mt-1">Business settings, branding, and rewards.</p>
         </div>
         <button onClick={handleSave} disabled={isSaving}
@@ -878,7 +878,7 @@ const FTSettingsManager = () => {
         <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
           <input type="checkbox" checked={form.maintenanceMode || false} onChange={e => setForm({ ...form, maintenanceMode: e.target.checked })} className="w-4 h-4 accent-bbq-red" />
           <div>
-            <span className="font-bold text-white text-sm">Maintenance Mode</span>
+            <span className="font-bold text-white text-sm flex items-center">Maintenance Mode<Tip text="When enabled, ALL customer-facing pages show a branded maintenance screen. Admins and developers can still browse the site normally." /></span>
             <p className="text-xs text-gray-500">Redirects all visitors to the Maintenance page.</p>
           </div>
         </label>
@@ -903,7 +903,7 @@ const FTSettingsManager = () => {
 
       {/* Site Visuals */}
       <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
-        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><ImagePlus size={14} className="text-red-400" /> Site Visuals</h3>
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><ImagePlus size={14} className="text-red-400" /> Site Visuals<Tip text="Each field supports: paste a URL, upload from device, or click ✨ to AI-generate. The logo also updates your browser favicon and social share preview image automatically." /></h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {VISUAL_SECTIONS.map(({ label, fields }) => (
             <div key={label} className="space-y-4">
@@ -931,7 +931,7 @@ const FTSettingsManager = () => {
 
       {/* Rewards Program */}
       <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
-        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Gift size={14} className="text-yellow-400" /> Rewards Program</h3>
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Gift size={14} className="text-yellow-400" /> Rewards Program<Tip text="Staff enter the Staff PIN at checkout to add a stamp. When a customer reaches the Stamps to Reward target, they unlock a random prize from your prize pool." /></h3>
         <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
           <input type="checkbox" checked={rewards.enabled || false} onChange={e => setRewards(r => ({ ...r, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
           <div>
@@ -2034,7 +2034,7 @@ Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption"
     <div className="space-y-6 max-w-5xl">
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide">Social Command Center</h2>
+          <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide flex items-center">Social &amp; AI Command Centre<Tip text="Use AI to generate captions, post ideas, and a full weekly schedule. Requires a Gemini API key set in Dev Tools. Generated posts can be copied or scheduled directly." /></h2>
           <p className="text-gray-400 text-sm mt-1">Manage content, schedule posts, and track growth.</p>
         </div>
         <button onClick={() => { setStatsForm({ followers: socialStats.followers || 0, reach: socialStats.reach || 0, engagement: socialStats.engagement || '0%' }); setEditingStats(true); }} className="flex items-center gap-2 bg-gray-800 border border-gray-700 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-gray-700">
@@ -2208,7 +2208,7 @@ Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption"
       <div className="bg-gray-900/60 border border-blue-800/40 rounded-xl p-5 space-y-4">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Globe size={14} className="text-blue-400" /> Facebook Integration</h3>
+            <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Globe size={14} className="text-blue-400" /> Facebook Integration<Tip text="Firebase is pre-configured via environment variables. Only edit these if switching to a different Firebase project. After changing, click Update Firebase to apply and reload." /></h3>
             <p className="text-xs text-gray-500 mt-1">Connect your business page to auto-update the homepage ticker.</p>
           </div>
           <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${fbConnected ? 'bg-green-900/40 text-green-400 border border-green-700' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>
@@ -2378,7 +2378,7 @@ const FTDevTools = () => {
     <div className="space-y-6 max-w-5xl">
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide">Developer Tools</h2>
+          <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide flex items-center">Developer Tools<Tip text="Run Deep Diagnostics to check all service connections. Set your Gemini API key here — it's saved to Firestore so it works on all devices with no redeployment needed." /></h2>
           <p className="text-gray-400 text-sm mt-1">Technical configuration, API keys, and system diagnostics.</p>
         </div>
         <button onClick={handleSave} disabled={isSaving}
@@ -2390,7 +2390,7 @@ const FTDevTools = () => {
       {/* AI Configuration */}
       <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
         <div>
-          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Wand2 size={14} className="text-yellow-400" /> AI Configuration (Gemini)</h3>
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Wand2 size={14} className="text-yellow-400" /> AI Configuration (Gemini)<Tip text="Get a free key at aistudio.google.com/apikey. Once saved, Gemini powers: menu descriptions, catering copy, social posts, image prompts, and the Pitmaster AI chat." /></h3>
           <p className="text-xs text-gray-500 mt-1">Powers Pitmaster Jay chat, social content generation, AI image generation, and strategic recommendations.</p>
         </div>
         <div className={`flex items-center justify-between p-4 rounded-xl border ${hasGemini ? 'bg-green-950/20 border-green-800/50' : 'bg-gray-800/50 border-gray-700'}`}>
