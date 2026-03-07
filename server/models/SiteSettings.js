@@ -61,10 +61,23 @@ const siteSettingsSchema = new mongoose.Schema({
   domainMarkup: { type: Number, default: 0 },
   domainNotes: { type: String, default: '' },
 
+  // Food Truck / Storefront
+  businessAddress: { type: String, default: '' },
+  maintenanceMode: { type: Boolean, default: false },
+  rewards: {
+    enabled: { type: Boolean, default: false },
+    programName: { type: String, default: 'Loyalty Rewards' },
+    staffPin: { type: String, default: '1234' },
+    maxStamps: { type: Number, default: 10 },
+    rewardTitle: { type: String, default: 'Free Item' },
+    rewardImage: { type: String, default: '' },
+    possiblePrizes: [{ type: String }],
+  },
+
 }, { timestamps: true });
 
 // Static method to get or create the singleton
-siteSettingsSchema.statics.getSettings = async function() {
+siteSettingsSchema.statics.getSettings = async function () {
   let settings = await this.findOne({ _singleton: 'site-settings' });
   if (!settings) {
     settings = await this.create({
