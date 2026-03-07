@@ -228,9 +228,14 @@ const OrderManager = () => {
                 <div>
                   <label className="text-xs text-gray-400 uppercase font-bold block mb-1">Status</label>
                   <select value={editingOrder.status} onChange={e => setEditingOrder({ ...editingOrder, status: e.target.value })}
-                    className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm">
+                    className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm pr-10"
+                  >
                     {statusOptions.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
                   </select>
+                  <button type="button" onClick={handleAiDesc} disabled={isAiDesc} title="Generate description with AI"
+                    className="absolute top-2 right-2 p-1 bg-purple-900/60 border border-purple-700 rounded hover:bg-purple-800 disabled:opacity-50">
+                    {isAiDesc ? <Loader2 size={12} className="animate-spin text-purple-300" /> : <Sparkles size={12} className="text-purple-300" />}
+                  </button>
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 uppercase font-bold block mb-1">Cook Date</label>
@@ -490,11 +495,34 @@ const FTPlanner = () => {
 
 // ─── MENU MANAGER ────────────────────────────────────────────────────
 const FTMenuManager = () => {
-  const { menu, addMenuItem, updateMenuItem, calendarEvents } = useStorefront();
+  const { menu, addMenuItem, updateMenuItem, calendarEvents, brandName } = useStorefront();
   const [isEditing, setIsEditing] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [editItem, setEditItem] = useState({ availabilityType: 'everyday', isPack: false, packGroups: [], available: true });
   const [activeGroupIndex, setActiveGroupIndex] = useState(null);
+  const [isAiImg, setIsAiImg] = useState(false);
+  const [isAiDesc, setIsAiDesc] = useState(false);
+
+  const handleAiImage = async () => {
+    if (!editItem.name) { toast.error('Enter item name first.'); return; }
+    setIsAiImg(true);
+    const url = await generateImage(`${editItem.name} ${editItem.category || ''} BBQ dish, food photography`, brandName);
+    setEditItem(p => ({ ...p, image: url }));
+    setIsAiImg(false);
+    toast.success('AI image generated!');
+  };
+
+  const handleAiDesc = async () => {
+    if (!editItem.name) { toast.error('Enter item name first.'); return; }
+    setIsAiDesc(true);
+    const result = await callGemini(
+      `Write a 1-2 sentence appetizing menu item description for "${editItem.name}" (${editItem.category || 'BBQ'}) at ${brandName || 'Hughesys Que'} BBQ food truck. Keep it under 60 words, mouth-watering and casual.`,
+      'You are a BBQ restaurant copywriter. Return only the description text, no quotes.'
+    );
+    if (result && typeof result === 'string') setEditItem(p => ({ ...p, description: result.trim() }));
+    else toast.error('AI unavailable — set your Gemini key in Dev Tools.');
+    setIsAiDesc(false);
+  };
 
   const orderDays = calendarEvents.filter(e => e.type === 'ORDER_PICKUP' && new Date(e.date) >= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
   const itemsByCategory = menu.reduce((acc, item) => {
@@ -571,135 +599,142 @@ const FTMenuManager = () => {
               </div>
             </div>
             <div>
-              <input placeholder="Image URL" value={editItem.image || ''} onChange={e => setEditItem({ ...editItem, image: e.target.value })}
-                className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm mb-2" />
+              <div className="flex gap-2 mb-2">
+                <input placeholder="Image URL" value={editItem.image || ''} onChange={e => setEditItem({ ...editItem, image: e.target.value })}
+                  className="flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm" />
+                <button type="button" onClick={handleAiImage} disabled={isAiImg} title="Generate image with AI"
+                  className="p-2 bg-purple-900/60 border border-purple-700 rounded hover:bg-purple-800 shrink-0 disabled:opacity-50">
+                  {isAiImg ? <Loader2 size={14} className="animate-spin text-purple-300" /> : <Sparkles size={14} className="text-purple-300" />}
+                </button>
+              </div>
               {editItem.image && <div className="w-full h-24 rounded overflow-hidden border border-gray-700"><img src={editItem.image} alt="Preview" className="w-full h-full object-cover" /></div>}
             </div>
           </div>
-          <textarea placeholder="Description" value={editItem.description || ''} onChange={e => setEditItem({ ...editItem, description: e.target.value })}
-            rows={2} className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm resize-none" />
+          <div className="relative">
+            <textarea placeholder="Description" value={editItem.description || ''} onChange={e => setEditItem({ ...editItem, description: e.target.value })}
+              rows={2} className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm resize-none" />
 
-          {/* Catering Toggle */}
-          <div className="bg-black/20 p-3 rounded border border-gray-700">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={editItem.availableForCatering || false} onChange={e => setEditItem({ ...editItem, availableForCatering: e.target.checked })} className="rounded text-bbq-red" />
-              <span className="font-bold text-white text-sm">Available for Catering & Build Your Own</span>
-            </label>
-            {editItem.availableForCatering && (
-              <div className="mt-3 pl-4 border-l-2 border-bbq-red space-y-2">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Catering Category</label>
-                  <select value={editItem.cateringCategory || 'Meat'} onChange={e => setEditItem({ ...editItem, cateringCategory: e.target.value })}
-                    className="bg-gray-900 border border-gray-600 rounded p-1.5 text-white text-xs w-full">
-                    <option value="Meat">Meat (counts towards Meat limit)</option>
-                    <option value="Side">Side (counts towards Side limit)</option>
-                    <option value="Extra">Extra / Add-on</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Min Order Qty (MOQ)</label>
-                  <input type="number" min="1" value={editItem.moq || ''} onChange={e => setEditItem({ ...editItem, moq: parseInt(e.target.value) || 1 })}
-                    className="bg-gray-900 border border-gray-600 rounded p-1.5 text-white text-xs w-24" placeholder="e.g. 10" />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Pack Toggle */}
-          <div className="bg-black/20 p-3 rounded border border-gray-700">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={editItem.isPack || false} onChange={e => setEditItem({ ...editItem, isPack: e.target.checked })} className="rounded text-bbq-red" />
-              <span className="font-bold text-white text-sm flex items-center gap-1"><Package size={14} /> This is a Pack (requires selections)</span>
-            </label>
-            {editItem.isPack && (
-              <div className="space-y-2 mt-3 pl-4 border-l-2 border-bbq-red">
-                {(editItem.packGroups || []).map((group, idx) => (
-                  <div key={idx} className="bg-gray-800 p-3 rounded border border-gray-700">
-                    <div className="flex gap-2 items-center mb-2">
-                      <input placeholder="Group Name" value={group.name} onChange={e => updatePackGroup(idx, 'name', e.target.value)}
-                        className="bg-gray-700 border border-gray-600 rounded p-1.5 text-white text-xs flex-1" />
-                      <div className="flex items-center gap-1 bg-gray-700 px-2 rounded border border-gray-600">
-                        <span className="text-[10px] text-gray-400">Limit:</span>
-                        <input type="number" value={group.limit} onChange={e => updatePackGroup(idx, 'limit', parseInt(e.target.value))}
-                          className="bg-transparent w-8 p-1 text-white text-xs text-center outline-none" />
-                      </div>
-                      <button type="button" onClick={() => removePackGroup(idx)} className="text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
-                    </div>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {(group.options || []).map(opt => (
-                        <span key={opt} className="bg-bbq-red text-white text-xs px-2 py-0.5 rounded flex items-center gap-1">
-                          {opt} <button type="button" onClick={() => toggleItemInGroup(idx, opt)}><X size={10} /></button>
-                        </span>
-                      ))}
-                      <button type="button" onClick={() => setActiveGroupIndex(activeGroupIndex === idx ? null : idx)}
-                        className="bg-gray-700 text-gray-300 hover:text-white text-xs px-2 py-0.5 rounded flex items-center gap-1"><Plus size={10} /> Add Items</button>
-                    </div>
-                    {activeGroupIndex === idx && (
-                      <div className="bg-gray-900 border border-gray-600 rounded p-3 max-h-40 overflow-y-auto">
-                        {Object.entries(itemsByCategory).map(([cat, items]) => (
-                          <div key={cat}>
-                            <div className="text-[10px] font-bold text-bbq-gold uppercase bg-black/20 px-2 py-0.5 mb-1 rounded">{cat}</div>
-                            <div className="grid grid-cols-2 gap-1">
-                              {items.map(m => {
-                                const isSelected = (group.options || []).includes(m.name);
-                                return (
-                                  <div key={m._id || m.id} onClick={() => toggleItemInGroup(idx, m.name)}
-                                    className={`flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer text-xs ${isSelected ? 'bg-green-900/30 text-green-300' : 'hover:bg-gray-800 text-gray-400'}`}>
-                                    {isSelected ? <CheckSquare size={10} /> : <Square size={10} />}
-                                    <span className="truncate">{m.name}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+            {/* Catering Toggle */}
+            <div className="bg-black/20 p-3 rounded border border-gray-700">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={editItem.availableForCatering || false} onChange={e => setEditItem({ ...editItem, availableForCatering: e.target.checked })} className="rounded text-bbq-red" />
+                <span className="font-bold text-white text-sm">Available for Catering & Build Your Own</span>
+              </label>
+              {editItem.availableForCatering && (
+                <div className="mt-3 pl-4 border-l-2 border-bbq-red space-y-2">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Catering Category</label>
+                    <select value={editItem.cateringCategory || 'Meat'} onChange={e => setEditItem({ ...editItem, cateringCategory: e.target.value })}
+                      className="bg-gray-900 border border-gray-600 rounded p-1.5 text-white text-xs w-full">
+                      <option value="Meat">Meat (counts towards Meat limit)</option>
+                      <option value="Side">Side (counts towards Side limit)</option>
+                      <option value="Extra">Extra / Add-on</option>
+                    </select>
                   </div>
-                ))}
-                <button type="button" onClick={addPackGroup} className="w-full py-1.5 border border-dashed border-gray-600 rounded text-xs font-bold text-bbq-gold hover:bg-gray-800">+ Add Choice Group</button>
-              </div>
-            )}
-          </div>
-
-          {/* Availability */}
-          <div className="bg-black/20 p-3 rounded border border-gray-700">
-            <label className="block text-sm font-bold mb-2 text-white">Availability</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer text-sm">
-                <input type="radio" name="avail" checked={editItem.availabilityType === 'everyday'} onChange={() => setEditItem({ ...editItem, availabilityType: 'everyday' })} className="text-bbq-red" />
-                Everyday Menu
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm">
-                <input type="radio" name="avail" checked={editItem.availabilityType === 'specific_date'} onChange={() => setEditItem({ ...editItem, availabilityType: 'specific_date' })} className="text-bbq-red" />
-                Specific Date Only
-              </label>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Min Order Qty (MOQ)</label>
+                    <input type="number" min="1" value={editItem.moq || ''} onChange={e => setEditItem({ ...editItem, moq: parseInt(e.target.value) || 1 })}
+                      className="bg-gray-900 border border-gray-600 rounded p-1.5 text-white text-xs w-24" placeholder="e.g. 10" />
+                  </div>
+                </div>
+              )}
             </div>
-            {editItem.availabilityType === 'specific_date' && (
-              <div className="mt-2 max-h-32 overflow-y-auto border border-gray-700 rounded p-2 bg-gray-800 space-y-1">
-                {orderDays.length === 0 ? (
-                  <p className="text-xs text-gray-500 italic">No cook days scheduled in Planner.</p>
-                ) : orderDays.map(evt => {
-                  const currentDates = editItem.specificDates || (editItem.specificDate ? [editItem.specificDate] : []);
-                  return (
-                    <label key={evt.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
-                      <input type="checkbox" checked={currentDates.includes(evt.date)} onChange={e => {
-                        let newDates = [...currentDates];
-                        if (e.target.checked) newDates.push(evt.date); else newDates = newDates.filter(d => d !== evt.date);
-                        setEditItem({ ...editItem, specificDates: newDates });
-                      }} className="rounded text-bbq-red" />
-                      <span className="text-xs text-white">{new Date(evt.date + 'T12:00:00').toLocaleDateString()} — {evt.location} ({evt.title})</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-          </div>
 
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
-            <button type="submit" className="px-5 py-2 bg-bbq-red rounded font-bold text-sm text-white">Save Item</button>
-          </div>
+            {/* Pack Toggle */}
+            <div className="bg-black/20 p-3 rounded border border-gray-700">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={editItem.isPack || false} onChange={e => setEditItem({ ...editItem, isPack: e.target.checked })} className="rounded text-bbq-red" />
+                <span className="font-bold text-white text-sm flex items-center gap-1"><Package size={14} /> This is a Pack (requires selections)</span>
+              </label>
+              {editItem.isPack && (
+                <div className="space-y-2 mt-3 pl-4 border-l-2 border-bbq-red">
+                  {(editItem.packGroups || []).map((group, idx) => (
+                    <div key={idx} className="bg-gray-800 p-3 rounded border border-gray-700">
+                      <div className="flex gap-2 items-center mb-2">
+                        <input placeholder="Group Name" value={group.name} onChange={e => updatePackGroup(idx, 'name', e.target.value)}
+                          className="bg-gray-700 border border-gray-600 rounded p-1.5 text-white text-xs flex-1" />
+                        <div className="flex items-center gap-1 bg-gray-700 px-2 rounded border border-gray-600">
+                          <span className="text-[10px] text-gray-400">Limit:</span>
+                          <input type="number" value={group.limit} onChange={e => updatePackGroup(idx, 'limit', parseInt(e.target.value))}
+                            className="bg-transparent w-8 p-1 text-white text-xs text-center outline-none" />
+                        </div>
+                        <button type="button" onClick={() => removePackGroup(idx)} className="text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {(group.options || []).map(opt => (
+                          <span key={opt} className="bg-bbq-red text-white text-xs px-2 py-0.5 rounded flex items-center gap-1">
+                            {opt} <button type="button" onClick={() => toggleItemInGroup(idx, opt)}><X size={10} /></button>
+                          </span>
+                        ))}
+                        <button type="button" onClick={() => setActiveGroupIndex(activeGroupIndex === idx ? null : idx)}
+                          className="bg-gray-700 text-gray-300 hover:text-white text-xs px-2 py-0.5 rounded flex items-center gap-1"><Plus size={10} /> Add Items</button>
+                      </div>
+                      {activeGroupIndex === idx && (
+                        <div className="bg-gray-900 border border-gray-600 rounded p-3 max-h-40 overflow-y-auto">
+                          {Object.entries(itemsByCategory).map(([cat, items]) => (
+                            <div key={cat}>
+                              <div className="text-[10px] font-bold text-bbq-gold uppercase bg-black/20 px-2 py-0.5 mb-1 rounded">{cat}</div>
+                              <div className="grid grid-cols-2 gap-1">
+                                {items.map(m => {
+                                  const isSelected = (group.options || []).includes(m.name);
+                                  return (
+                                    <div key={m._id || m.id} onClick={() => toggleItemInGroup(idx, m.name)}
+                                      className={`flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer text-xs ${isSelected ? 'bg-green-900/30 text-green-300' : 'hover:bg-gray-800 text-gray-400'}`}>
+                                      {isSelected ? <CheckSquare size={10} /> : <Square size={10} />}
+                                      <span className="truncate">{m.name}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" onClick={addPackGroup} className="w-full py-1.5 border border-dashed border-gray-600 rounded text-xs font-bold text-bbq-gold hover:bg-gray-800">+ Add Choice Group</button>
+                </div>
+              )}
+            </div>
+
+            {/* Availability */}
+            <div className="bg-black/20 p-3 rounded border border-gray-700">
+              <label className="block text-sm font-bold mb-2 text-white">Availability</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input type="radio" name="avail" checked={editItem.availabilityType === 'everyday'} onChange={() => setEditItem({ ...editItem, availabilityType: 'everyday' })} className="text-bbq-red" />
+                  Everyday Menu
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input type="radio" name="avail" checked={editItem.availabilityType === 'specific_date'} onChange={() => setEditItem({ ...editItem, availabilityType: 'specific_date' })} className="text-bbq-red" />
+                  Specific Date Only
+                </label>
+              </div>
+              {editItem.availabilityType === 'specific_date' && (
+                <div className="mt-2 max-h-32 overflow-y-auto border border-gray-700 rounded p-2 bg-gray-800 space-y-1">
+                  {orderDays.length === 0 ? (
+                    <p className="text-xs text-gray-500 italic">No cook days scheduled in Planner.</p>
+                  ) : orderDays.map(evt => {
+                    const currentDates = editItem.specificDates || (editItem.specificDate ? [editItem.specificDate] : []);
+                    return (
+                      <label key={evt.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                        <input type="checkbox" checked={currentDates.includes(evt.date)} onChange={e => {
+                          let newDates = [...currentDates];
+                          if (e.target.checked) newDates.push(evt.date); else newDates = newDates.filter(d => d !== evt.date);
+                          setEditItem({ ...editItem, specificDates: newDates });
+                        }} className="rounded text-bbq-red" />
+                        <span className="text-xs text-white">{new Date(evt.date + 'T12:00:00').toLocaleDateString()} — {evt.location} ({evt.title})</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+              <button type="submit" className="px-5 py-2 bg-bbq-red rounded font-bold text-sm text-white">Save Item</button>
+            </div>
         </form>
       )}
 
@@ -1449,7 +1484,11 @@ const CateringManager = () => {
       const result = await callGemini(
         `Write a 2-sentence appetizing catering package description for "${editPkg.name}" with ${editPkg.meatLimit || 2} meat choices and ${editPkg.sideLimit || 2} sides. Keep it under 100 words, BBQ food truck style.`,
       );
-      if (result) setEditPkg(p => ({ ...p, description: result.trim() }));
+      if (result && typeof result === 'string') setEditPkg(p => ({ ...p, description: result.trim() }));
+    } else if (type === 'image') {
+      const url = await generateImage(`${editPkg.name} BBQ catering package, food spread, premium catering`);
+      setEditPkg(p => ({ ...p, image: url }));
+      toast.success('AI image generated!');
     }
     setIsGenerating(null);
   };
