@@ -737,7 +737,8 @@ const FTMenuManager = () => {
 };
 
 // ─── IMAGE UPLOAD FIELD ──────────────────────────────────────────────
-const ImageField = ({ label, value, onChange }) => {
+const ImageField = ({ label, value, onChange, hint, businessName }) => {
+  const [isGenerating, setIsGenerating] = useState(false);
   const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -745,16 +746,27 @@ const ImageField = ({ label, value, onChange }) => {
     reader.onload = () => onChange(reader.result);
     reader.readAsDataURL(file);
   };
+  const handleAIGenerate = async () => {
+    setIsGenerating(true);
+    const url = await generateImage(hint || label, businessName);
+    onChange(url);
+    setIsGenerating(false);
+    toast.success('AI image generated!');
+  };
   return (
     <div className="space-y-1">
       <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">{label}</label>
       <div className="flex gap-1.5 items-center">
         <input value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Paste a URL..."
           className="flex-1 bg-gray-900 border border-gray-700 rounded p-2 text-[11px] text-gray-400 font-mono truncate focus:outline-none focus:border-gray-500" />
-        <label className="cursor-pointer p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700 shrink-0">
+        <label className="cursor-pointer p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700 shrink-0" title="Upload image">
           <UploadCloud size={13} className="text-gray-400" />
           <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
         </label>
+        <button type="button" onClick={handleAIGenerate} disabled={isGenerating}
+          title="Generate with AI" className="p-2 bg-purple-900/60 border border-purple-700 rounded hover:bg-purple-800 shrink-0 disabled:opacity-50">
+          {isGenerating ? <Loader2 size={13} className="animate-spin text-purple-300" /> : <Sparkles size={13} className="text-purple-300" />}
+        </button>
         {value && <button type="button" onClick={() => onChange('')} className="p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700 shrink-0"><X size={13} className="text-gray-400" /></button>}
       </div>
       {value && <img src={value} alt={label} className="w-full h-24 object-cover rounded border border-gray-700" onError={e => e.target.style.display = 'none'} />}
@@ -850,7 +862,7 @@ const FTSettingsManager = () => {
             <div key={label} className="space-y-4">
               <h4 className="font-bold text-white text-sm">{label}</h4>
               {fields.map(({ key, label: fl }) => (
-                <ImageField key={key} label={fl} value={visuals[key] || ''} onChange={v => setVisuals(p => ({ ...p, [key]: v }))} />
+                <ImageField key={key} label={fl} value={visuals[key] || ''} onChange={v => setVisuals(p => ({ ...p, [key]: v }))} hint={fl.toLowerCase()} businessName={form.businessName || brandName} />
               ))}
             </div>
           ))}
@@ -1035,6 +1047,19 @@ const callGemini = async (prompt, system) => {
     }
     return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
   } catch (e) { console.warn('[Gemini]', e.message); return null; }
+};
+
+// ─── AI IMAGE GENERATOR ─────────────────────────────────────────────
+// Uses Gemini to craft a vivid prompt, then Pollinations.ai (free, no key) to render it
+const generateImage = async (hint, businessName = 'Hughesys Que') => {
+  let imagePrompt = `${businessName} BBQ food truck — ${hint}, professional food photography, moody dark background, cinematic lighting`;
+  const geminiResult = await callGemini(
+    `Write a concise Midjourney/DALL-E image prompt (max 25 words) for: "${hint}" for "${businessName}" BBQ food truck. Focus on visual elements, lighting, and style. Return ONLY the prompt text.`,
+    'You are a food photography art director. Return only the prompt, no quotes or explanation.'
+  );
+  if (geminiResult && typeof geminiResult === 'string') imagePrompt = geminiResult.trim();
+  const seed = Math.floor(Math.random() * 9999);
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=1200&height=630&nologo=true&seed=${seed}`;
 };
 
 // ─── CUSTOMER MANAGER ────────────────────────────────────────────────
