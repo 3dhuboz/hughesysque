@@ -1,7 +1,7 @@
 {
-  "short_name": "PennyWise",
-  "name": "Penny Wise I.T — App Hub",
-  "description": "Your business app hub — hosting, social AI, marketplace apps, and more. Install for quick desktop access.",
+  "short_name": "Hughesys Que",
+  "name": "Hughesys Que — Quality Street Food",
+  "description": "Hughesys Que — Quality Street Food. Order online for pickup or catering.",
   "icons": [
     {
       "src": "logo.png",
@@ -16,11 +16,14 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/my-apps",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#0a0a1a",
   "background_color": "#0a0a1a",
   "orientation": "any",
   "scope": "/",
-  "categories": ["business", "productivity"]
+  "categories": [
+    "business",
+    "productivity"
+  ]
 }
