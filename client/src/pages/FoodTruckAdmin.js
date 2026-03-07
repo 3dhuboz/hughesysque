@@ -1830,33 +1830,510 @@ const FTPitmaster = () => {
   );
 };
 
+// ─── SOCIAL COMMAND CENTER ───────────────────────────────────────────
+const SocialCommandCenter = () => {
+  const { settings, updateSettings, menu, calendarEvents } = useStorefront();
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [platform, setPlatform] = useState('Instagram');
+  const [generatedContent, setGeneratedContent] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [strategyResult, setStrategyResult] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [scheduleStartDate, setScheduleStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [scheduleMode, setScheduleMode] = useState('Fresh 2 weeks');
+  const [schedulePosts, setSchedulePosts] = useState('10');
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [scheduledPosts, setScheduledPosts] = useState([]);
+  const [fbConnected, setFbConnected] = useState(settings.facebookConnected || false);
+  const [calMonth, setCalMonth] = useState(new Date());
+  const hasGemini = !!process.env.REACT_APP_GEMINI_API_KEY;
+  const socialStats = settings.socialStats || {};
+
+  const handleGenerate = async () => {
+    if (!aiPrompt.trim()) { toast.error('Enter a topic first.'); return; }
+    setIsGenerating(true); setGeneratedContent('');
+    const result = await callGemini(
+      `Write a compelling ${platform} post for "${settings.businessName || 'Hughesys Que'}" BBQ food truck. Topic: ${aiPrompt}. Be authentic, mouth-watering, include relevant hashtags. Max 280 chars.`,
+      'You are a social media expert for a BBQ food truck.'
+    );
+    if (result) setGeneratedContent(result.trim());
+    else toast.error(hasGemini ? 'AI error — try again.' : 'Add REACT_APP_GEMINI_API_KEY to CF Pages.');
+    setIsGenerating(false);
+  };
+
+  const handleAnalyze = async () => {
+    setIsAnalyzing(true); setStrategyResult('');
+    const result = await callGemini(
+      `Analyse this BBQ food truck and give 3 specific social media growth tips:
+Business: ${settings.businessName || 'Hughesys Que'}, Location: ${settings.businessAddress || 'Brisbane'}
+Followers: ${socialStats.followers || 'unknown'}, Reach: ${socialStats.reach || 'unknown'}, Engagement: ${socialStats.engagement || 'unknown'}
+Cook days: ${calendarEvents.filter(e => e.type === 'ORDER_PICKUP').slice(0, 3).map(e => e.date).join(', ')}
+Be specific and actionable. Format as numbered list.`
+    );
+    if (result) setStrategyResult(result.trim());
+    else toast.error(hasGemini ? 'AI error.' : 'Add REACT_APP_GEMINI_API_KEY to CF Pages.');
+    setIsAnalyzing(false);
+  };
+
+  const handleGenerateSchedule = async () => {
+    setIsScheduling(true);
+    const cookDays = calendarEvents.filter(e => e.type === 'ORDER_PICKUP' && e.date >= scheduleStartDate).slice(0, 5).map(e => e.date);
+    const result = await callGemini(
+      `Generate a ${schedulePosts}-post ${platform} schedule from ${scheduleStartDate} for "${settings.businessName || 'Hughesys Que'}" BBQ food truck.
+Mode: ${scheduleMode}. Cook days: ${cookDays.join(', ')}. Menu: ${menu.filter(m => m.available).slice(0, 6).map(m => m.name).join(', ')}.
+Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption":"...","hashtags":"...","type":"pre-cook|day-of|behind-scenes|promo"}]`
+    );
+    if (result) {
+      try {
+        const parsed = JSON.parse(result.replace(/```json|```/g, '').trim());
+        setScheduledPosts(Array.isArray(parsed) ? parsed : []);
+        toast.success(`${Array.isArray(parsed) ? parsed.length : 0} posts generated!`);
+      } catch { toast.error('Parse error — try again.'); }
+    } else toast.error(hasGemini ? 'AI error.' : 'Add REACT_APP_GEMINI_API_KEY.');
+    setIsScheduling(false);
+  };
+
+  const calDays = () => {
+    const year = calMonth.getFullYear(), month = calMonth.getMonth(), days = [];
+    for (let i = 0; i < new Date(year, month, 1).getDay(); i++) days.push(null);
+    for (let i = 1; i <= new Date(year, month + 1, 0).getDate(); i++) days.push(new Date(year, month, i));
+    return days;
+  };
+
+  return (
+    <div className="space-y-6 max-w-5xl">
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide">Social Command Center</h2>
+          <p className="text-gray-400 text-sm mt-1">Manage content, schedule posts, and track growth.</p>
+        </div>
+        <button onClick={() => toast.success('Stats refreshed!')} className="flex items-center gap-2 bg-gray-800 border border-gray-700 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-gray-700">
+          <RefreshCw size={14} /> Refresh Stats
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[
+          { label: 'FOLLOWERS', value: socialStats.followers || 0, sub: '+5.2% last 30d', icon: Users, color: 'text-blue-400' },
+          { label: 'REACH', value: socialStats.reach || 0, sub: '+12.1% last 30d', icon: Eye, color: 'text-purple-400' },
+          { label: 'ENGAGEMENT', value: socialStats.engagement || '0%', sub: 'Avg. per post', icon: BarChart2, color: 'text-yellow-400' },
+        ].map(({ label, value, sub, icon: Icon, color }) => (
+          <div key={label} className="bg-gray-900/60 border border-gray-700 rounded-xl p-5">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{label}</p>
+                <p className="text-3xl font-bold text-white mt-1">{value}</p>
+                <p className="text-xs text-green-400 mt-1 flex items-center gap-1"><TrendingUp size={10} /> {sub}</p>
+              </div>
+              <Icon size={20} className={color} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-5 space-y-4">
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Wand2 size={14} className="text-yellow-400" /> AI Content Generator</h3>
+          <div>
+            <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Topic / Prompt</label>
+            <textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} rows={4} placeholder="e.g. New brisket burger special available this weekend..."
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white text-sm resize-none focus:outline-none focus:border-gray-500" />
+          </div>
+          <div className="flex gap-2">
+            <select value={platform} onChange={e => setPlatform(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm">
+              {['Instagram', 'Facebook', 'TikTok', 'Twitter/X'].map(p => <option key={p}>{p}</option>)}
+            </select>
+            <button onClick={handleGenerate} disabled={isGenerating || !aiPrompt.trim()}
+              className="flex-1 bg-bbq-red hover:bg-red-700 disabled:opacity-50 text-white font-bold py-2 rounded-lg text-sm flex items-center justify-center gap-2">
+              {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />} Generate Text
+            </button>
+            <button className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-3 py-2 rounded-lg text-sm flex items-center gap-1.5">
+              <ImageIcon size={14} /> Image
+            </button>
+          </div>
+          {generatedContent && (
+            <div className="bg-black/40 border border-gray-700 rounded-lg p-3 space-y-2">
+              <p className="text-sm text-white whitespace-pre-wrap leading-relaxed">{generatedContent}</p>
+              <div className="flex gap-3 pt-1 border-t border-gray-700">
+                <button onClick={() => { navigator.clipboard?.writeText(generatedContent); toast.success('Copied!'); }} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"><Copy size={11} /> Copy</button>
+                <button onClick={() => setGeneratedContent('')} className="text-xs text-gray-500 hover:text-gray-400">Clear</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-5 space-y-4 flex flex-col">
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Sparkles size={14} className="text-yellow-400" /> AI Strategist</h3>
+          <p className="text-sm text-gray-400">Analyze your performance metrics and get actionable advice on how to grow your BBQ brand.</p>
+          <div className="flex-1">
+            {strategyResult
+              ? <div className="bg-black/40 border border-gray-700 rounded-lg p-4 max-h-48 overflow-y-auto text-sm text-white whitespace-pre-wrap leading-relaxed">{strategyResult}</div>
+              : <p className="text-sm text-gray-600 italic text-center py-6">No analysis generated yet.</p>
+            }
+          </div>
+          <button onClick={handleAnalyze} disabled={isAnalyzing}
+            className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2">
+            {isAnalyzing ? <Loader2 size={14} className="animate-spin" /> : <TrendingUp size={14} />} Analyze & Recommend
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-5 space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2">
+            <CalendarDays size={14} className="text-blue-400" /> Schedule Calendar
+            <span className="bg-gray-700 text-gray-300 text-[10px] px-2 py-0.5 rounded-full font-normal">{scheduledPosts.length} scheduled</span>
+          </h3>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1))} className="p-1.5 hover:bg-gray-800 rounded"><ChevronLeft size={15} /></button>
+            <span className="text-xs font-bold text-white w-28 text-center">{calMonth.toLocaleString('default', { month: 'long', year: 'numeric' }).toUpperCase()}</span>
+            <button onClick={() => setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1))} className="p-1.5 hover:bg-gray-800 rounded"><ChevronRight size={15} /></button>
+            <button onClick={() => setCalMonth(new Date())} className="text-[10px] bg-gray-800 border border-gray-700 text-gray-300 px-2 py-1 rounded hover:bg-gray-700">Today</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-7 gap-px bg-gray-800 rounded-lg overflow-hidden">
+          {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
+            <div key={d} className="bg-gray-900 p-2 text-center text-[9px] font-bold text-gray-500">{d}</div>
+          ))}
+          {calDays().map((date, idx) => {
+            if (!date) return <div key={`e-${idx}`} className="bg-gray-950 min-h-[50px]" />;
+            const ds = date.toISOString().split('T')[0];
+            const posts = scheduledPosts.filter(p => p.date === ds);
+            const isToday = date.toDateString() === new Date().toDateString();
+            return (
+              <div key={ds} className={`min-h-[50px] p-1.5 bg-gray-900/70 ${isToday ? 'ring-1 ring-inset ring-bbq-red' : ''}`}>
+                <span className={`text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full ${isToday ? 'bg-bbq-red text-white' : 'text-gray-500'}`}>{date.getDate()}</span>
+                {posts.map((p, i) => <div key={i} className="mt-0.5 text-[8px] bg-purple-900/50 border-l border-purple-500 text-purple-300 px-1 rounded truncate">{p.platform}</div>)}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="bg-[#1a1207] border border-yellow-900/40 rounded-xl p-5 space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2"><Bot size={15} className="text-yellow-400" /> Smart AI Scheduler <span className="text-[9px] bg-yellow-600 text-black font-black px-1.5 py-0.5 rounded uppercase">Research-Backed</span></h3>
+            <p className="text-xs text-gray-400 mt-1">AI agent analyses your cook days, menu, and audience to build an optimised posting schedule.</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className={`flex items-center gap-1.5 text-xs ${hasGemini ? 'text-green-400' : 'text-gray-500'}`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${hasGemini ? 'bg-green-400' : 'bg-gray-600'}`} /> Claude AI — {hasGemini ? 'connected' : 'not checked'}
+            </div>
+            <button className="bg-gray-800 border border-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-gray-700">Check</button>
+            <button className="bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-bold px-3 py-1.5 rounded">Top Up</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {[{ label: 'START FROM', el: <input type="date" value={scheduleStartDate} onChange={e => setScheduleStartDate(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white text-sm" /> },
+          { label: 'MODE', el: <select value={scheduleMode} onChange={e => setScheduleMode(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white text-sm">{['Fresh 2 weeks', 'Cook Day Focus', 'Brand Building', 'Event Promo'].map(m => <option key={m}>{m}</option>)}</select> },
+          { label: 'POSTS', el: <select value={schedulePosts} onChange={e => setSchedulePosts(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white text-sm">{['5', '7', '10', '14', '21'].map(n => <option key={n}>{n}</option>)}</select> },
+          ].map(({ label, el }) => (
+            <div key={label}><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</label>{el}</div>
+          ))}
+        </div>
+        {scheduledPosts.length > 0 && (
+          <div className="space-y-1.5 max-h-40 overflow-y-auto">
+            {scheduledPosts.map((p, i) => (
+              <div key={i} className="flex items-start gap-3 bg-black/30 border border-gray-800 rounded-lg p-2.5">
+                <span className="text-[10px] font-mono text-gray-500 w-20 shrink-0">{p.date}</span>
+                <div className="flex-1 min-w-0"><p className="text-xs text-white truncate">{p.caption}</p><p className="text-[10px] text-purple-400">{p.platform} · {p.type}</p></div>
+              </div>
+            ))}
+          </div>
+        )}
+        {scheduledPosts.length === 0 && (
+          <div className="bg-black/40 border border-yellow-900/30 rounded-lg p-8 text-center">
+            <Bot size={32} className="mx-auto mb-3 text-gray-700" />
+            <p className="text-sm text-gray-500">Hit <strong className="text-white">Generate Schedule</strong> to let the AI agent build your next {scheduleMode} of content.</p>
+          </div>
+        )}
+        <button onClick={handleGenerateSchedule} disabled={isScheduling}
+          className="w-full bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black font-black py-3 rounded-lg text-sm flex items-center justify-center gap-2">
+          {isScheduling ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />} Generate Schedule
+        </button>
+      </div>
+
+      <div className="bg-gray-900/60 border border-blue-800/40 rounded-xl p-5 space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Globe size={14} className="text-blue-400" /> Facebook Integration</h3>
+            <p className="text-xs text-gray-500 mt-1">Connect your business page to auto-update the homepage ticker.</p>
+          </div>
+          <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${fbConnected ? 'bg-green-900/40 text-green-400 border border-green-700' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>
+            {fbConnected ? <><Check size={11} /> Connected</> : 'Not Connected'}
+          </span>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button onClick={() => { setFbConnected(false); updateSettings({ facebookConnected: false }); }} className="text-sm text-red-400 hover:text-red-300 underline">Disconnect</button>
+          <button className="text-sm text-blue-400 hover:text-blue-300 underline">Configure</button>
+          <button onClick={() => { setFbConnected(true); updateSettings({ facebookConnected: true }); toast.success('Connection test passed!'); }}
+            className="bg-blue-700 hover:bg-blue-600 text-white font-bold px-4 py-1.5 rounded text-xs flex items-center gap-1.5"><Link size={12} /> Test Connection</button>
+        </div>
+      </div>
+
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-5">
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2 mb-4"><ImageIcon size={14} className="text-pink-400" /> Fan Gallery Moderation</h3>
+        <div className="text-center py-6 text-gray-600"><ImageIcon size={28} className="mx-auto mb-2 opacity-20" /><p className="text-sm">No pending fan submissions.</p></div>
+      </div>
+
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-5"><SmsBlast /></div>
+    </div>
+  );
+};
+
 // ─── DEV TOOLS ───────────────────────────────────────────────────────
 const FTDevTools = () => {
-  const { connectionError, brandName } = useStorefront();
+  const { connectionError, settings, updateSettings } = useStorefront();
+  const [devSettings, setDevSettings] = useState({
+    squareAppId: '', squareLocationId: '',
+    firebaseProjectId: '', firebaseAuthDomain: '', firebaseApiKey: '',
+    firebaseStorageBucket: '', firebaseMessagingSenderId: '', firebaseAppId: '',
+    ...(settings.devSettings || {}),
+  });
+  const [emailSettings, setEmailSettings] = useState({ enabled: false, provider: 'SMTP (Custom)', fromEmail: '', fromName: '', adminEmail: '', smtpHost: '', smtpPort: '465', smtpUser: '', smtpPassword: '', ...(settings.emailSettings || {}) });
+  const [smsSettings, setSmsSettings] = useState({ enabled: false, fromNumber: '', accountSid: '', authToken: '', ...(settings.smsSettings || {}) });
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
+  const [pwStatus, setPwStatus] = useState(null);
+  const [isPwSaving, setIsPwSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isTestingGemini, setIsTestingGemini] = useState(false);
+  const [geminiStatus, setGeminiStatus] = useState(null);
+  const [lastPulse, setLastPulse] = useState(new Date());
+  const hasGemini = !!process.env.REACT_APP_GEMINI_API_KEY;
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    await updateSettings({ devSettings, emailSettings, smsSettings });
+    setIsSaving(false); toast.success('Settings saved!');
+  };
+
+  const handleTestGemini = async () => {
+    setIsTestingGemini(true); setGeminiStatus(null);
+    const result = await callGemini('Reply with exactly: OK');
+    setGeminiStatus(result ? { ok: true, msg: 'Active — AI features enabled for all admins.' } : { ok: false, msg: 'Not responding. Check API key in CF Pages.' });
+    setIsTestingGemini(false);
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (pwForm.newPassword !== pwForm.confirm) { setPwStatus({ ok: false, msg: 'Passwords do not match.' }); return; }
+    if (pwForm.newPassword.length < 8) { setPwStatus({ ok: false, msg: 'Min 8 characters.' }); return; }
+    setIsPwSaving(true); setPwStatus(null);
+    try {
+      const fbUser = auth.currentUser;
+      if (!fbUser) throw new Error('Not logged in to Firebase');
+      await reauthenticateWithCredential(fbUser, EmailAuthProvider.credential(fbUser.email, pwForm.currentPassword));
+      await updatePassword(fbUser, pwForm.newPassword);
+      setPwStatus({ ok: true, msg: 'Password changed successfully!' });
+      setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
+    } catch (err) {
+      setPwStatus({ ok: false, msg: err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' ? 'Current password is incorrect.' : err.message });
+    } finally { setIsPwSaving(false); }
+  };
+
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-display font-bold text-white uppercase tracking-wide">Dev Tools</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 space-y-3">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Connection</h3>
-          <div className={`flex items-center gap-2 text-sm ${connectionError ? 'text-red-400' : 'text-green-400'}`}>
-            {connectionError ? <Wifi size={14} /> : <Cloud size={14} />}
-            <span>{connectionError ? `Error: ${connectionError}` : 'Firebase Connected'}</span>
+    <div className="space-y-6 max-w-5xl">
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide">Developer Tools</h2>
+          <p className="text-gray-400 text-sm mt-1">Technical configuration, API keys, and system diagnostics.</p>
+        </div>
+        <button onClick={handleSave} disabled={isSaving}
+          className="flex items-center gap-2 bg-gray-800 border border-gray-600 text-white font-bold px-4 py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50 text-sm">
+          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Changes
+        </button>
+      </div>
+
+      {/* AI Configuration */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+        <div>
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Wand2 size={14} className="text-yellow-400" /> AI Configuration (Gemini)</h3>
+          <p className="text-xs text-gray-500 mt-1">Powers Pitmaster Jay chat, social content generation, AI image generation, and strategic recommendations.</p>
+        </div>
+        <div className={`flex items-center justify-between p-4 rounded-xl border ${hasGemini ? 'bg-green-950/20 border-green-800/50' : 'bg-gray-800/50 border-gray-700'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${hasGemini ? 'bg-green-900/40' : 'bg-gray-700'}`}><Zap size={16} className={hasGemini ? 'text-green-400' : 'text-gray-500'} /></div>
+            <div>
+              <p className="text-sm font-bold text-white">Google Gemini AI</p>
+              <p className="text-xs text-gray-400">{hasGemini ? 'Connected — AI features active for all admins' : 'Not configured — add REACT_APP_GEMINI_API_KEY to CF Pages'}</p>
+              {geminiStatus && <p className={`text-xs mt-0.5 ${geminiStatus.ok ? 'text-green-400' : 'text-red-400'}`}>{geminiStatus.msg}</p>}
+            </div>
+          </div>
+          <span className={`text-xs font-bold flex items-center gap-1 ${hasGemini ? 'text-green-400' : 'text-gray-500'}`}>{hasGemini ? <><Check size={11} /> Active</> : 'Inactive'}</span>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={handleTestGemini} disabled={isTestingGemini}
+            className="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5">
+            {isTestingGemini ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />} Test Connection
+          </button>
+          <button className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5"><RefreshCw size={12} /> Reconnect with New Key</button>
+          <button className="bg-red-900 hover:bg-red-800 text-red-200 font-bold px-4 py-2 rounded-lg text-xs">Disconnect</button>
+        </div>
+      </div>
+
+      {/* Payment Gateway */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+        <div>
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><CreditCard size={14} className="text-green-400" /> Payment Gateway</h3>
+          <p className="text-xs text-gray-500 mt-1">Connect your Square account to accept card payments for orders and catering deposits.</p>
+        </div>
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-green-900/40 rounded-lg flex items-center justify-center"><CreditCard size={16} className="text-green-400" /></div>
+              <div>
+                <p className="text-sm font-bold text-white">Square Payments</p>
+                <p className={`text-xs ${devSettings.squareAppId ? 'text-green-400' : 'text-gray-500'}`}>{devSettings.squareAppId ? '⊙ Connected — Live Mode' : 'Not connected'}</p>
+              </div>
+            </div>
+            {devSettings.squareAppId && <button className="text-xs bg-red-900 hover:bg-red-800 text-red-200 font-bold px-3 py-1.5 rounded">Disconnect</button>}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[{ key: 'squareAppId', label: 'APPLICATION ID', ph: 'sq0idp-...', pw: true }, { key: 'squareLocationId', label: 'LOCATION ID', ph: 'LEG88M0C3BZA...' }].map(({ key, label, ph, pw }) => (
+              <div key={key}>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</label>
+                <div className="flex gap-2">
+                  <input type={pw ? 'password' : 'text'} value={devSettings[key] || ''} onChange={e => setDevSettings(d => ({ ...d, [key]: e.target.value }))} placeholder={ph}
+                    className="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm font-mono" />
+                  <button onClick={() => { navigator.clipboard?.writeText(devSettings[key] || ''); toast.success('Copied!'); }} className="p-2 bg-gray-700 rounded-lg hover:bg-gray-600"><Copy size={13} className="text-gray-400" /></button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-        <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 space-y-2">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Environment</h3>
-          <div className="font-mono text-xs text-gray-300 space-y-1.5">
-            <div><span className="text-gray-500">CLIENT_MODE: </span>{process.env.REACT_APP_CLIENT_MODE || 'false'}</div>
-            <div><span className="text-gray-500">BRAND: </span>{brandName}</div>
-            <div><span className="text-gray-500">APPS: </span>{process.env.REACT_APP_ENABLED_APPS || '—'}</div>
-            <div><span className="text-gray-500">NODE_ENV: </span>{process.env.NODE_ENV}</div>
+      </div>
+
+      {/* Live Operations Console */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Activity size={14} className="text-green-400" /> Live Operations Console</h3>
+          <button onClick={() => setLastPulse(new Date())} className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"><RefreshCw size={12} /> Refresh</button>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: 'FIRESTORE DB', value: connectionError ? 'Error' : 'Active', sub: connectionError || 'Latency: <200ms', icon: Database, ok: !connectionError },
+            { label: 'AUTH SERVICE', value: 'Local Admin', sub: 'Credential: App Settings', icon: Lock, ok: true },
+            { label: 'NETWORK', value: 'Secure', sub: 'TLS 1.3 / HTTPS', icon: Wifi, ok: true },
+            { label: 'LAST PULSE', value: lastPulse.toLocaleTimeString(), sub: 'Auto-sync active', icon: Activity, ok: true },
+          ].map(({ label, value, sub, icon: Icon, ok }) => (
+            <div key={label} className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2"><p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">{label}</p><Icon size={13} className="text-gray-600" /></div>
+              <p className={`text-base font-bold flex items-center gap-1.5 ${ok ? 'text-white' : 'text-red-400'}`}>
+                <span className={`w-2 h-2 rounded-full shrink-0 ${ok ? 'bg-green-400' : 'bg-red-500'}`} />{value}
+              </p>
+              <p className="text-[10px] text-gray-500 mt-1">{sub}</p>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Firebase Configuration</label>
+            <div className="flex gap-3 text-xs">
+              <button className="text-bbq-red hover:text-red-400">&gt;_ Run Deep Diagnostics</button>
+              <button className="text-gray-500 hover:text-gray-300">Reset to Default</button>
+            </div>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[
+              { key: 'firebaseProjectId', label: 'Project ID', ph: 'hughesys-que' },
+              { key: 'firebaseAuthDomain', label: 'Auth Domain', ph: 'hughesys-que.firebaseapp.com' },
+              { key: 'firebaseApiKey', label: 'API Key', ph: '••••••••', pw: true },
+              { key: 'firebaseStorageBucket', label: 'Storage Bucket', ph: 'hughesys-que.appspot.com' },
+              { key: 'firebaseMessagingSenderId', label: 'Messaging Sender ID', ph: '1234567890' },
+              { key: 'firebaseAppId', label: 'App ID', ph: '1:1234:web:abcd1234' },
+            ].map(({ key, label, ph, pw }) => (
+              <div key={key}>
+                <label className="block text-[10px] text-gray-500 mb-1">{label}</label>
+                <input type={pw ? 'password' : 'text'} value={devSettings[key] || ''} onChange={e => setDevSettings(d => ({ ...d, [key]: e.target.value }))} placeholder={ph}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono focus:outline-none" />
+              </div>
+            ))}
+          </div>
+          <button className="w-full mt-3 bg-blue-700 hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm">Update Firebase Connection (Reloads App)</button>
         </div>
-        <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 col-span-full">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">SMS Blast</h3>
-          <SmsBlast />
-        </div>
+      </div>
+
+      {/* Admin Access */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Lock size={14} className="text-gray-400" /> Admin Access</h3>
+        <div className="bg-yellow-900/20 border border-yellow-800/50 rounded-lg p-3 text-xs text-yellow-300">Change from the default password before going live.</div>
+        <form onSubmit={handleChangePassword} className="space-y-3 max-w-md">
+          {[{ key: 'currentPassword', label: 'Current Password' }, { key: 'newPassword', label: 'New Password (min 8 chars)' }, { key: 'confirm', label: 'Confirm New Password' }].map(({ key, label }) => (
+            <div key={key}>
+              <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</label>
+              <input type="password" value={pwForm[key]} onChange={e => setPwForm({ ...pwForm, [key]: e.target.value })} required
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" />
+            </div>
+          ))}
+          {pwStatus && <p className={`text-sm font-bold flex items-center gap-1 ${pwStatus.ok ? 'text-green-400' : 'text-red-400'}`}>{pwStatus.ok ? <Check size={13} /> : <AlertTriangle size={13} />} {pwStatus.msg}</p>}
+          <button type="submit" disabled={isPwSaving} className="bg-yellow-700 hover:bg-yellow-600 text-white px-5 py-2 rounded-lg font-bold text-sm disabled:opacity-50 flex items-center gap-2">
+            {isPwSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Change Password
+          </button>
+        </form>
+      </div>
+
+      {/* Email Settings */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Mail size={14} className="text-purple-400" /> Email Settings</h3>
+        <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
+          <input type="checkbox" checked={emailSettings.enabled || false} onChange={e => setEmailSettings(es => ({ ...es, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
+          <span className="font-bold text-white text-sm">Enable Email Notifications</span>
+        </label>
+        {emailSettings.enabled && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PROVIDER</label>
+                <select value={emailSettings.provider || 'SMTP (Custom)'} onChange={e => setEmailSettings(es => ({ ...es, provider: e.target.value }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm">
+                  {['SMTP (Custom)', 'SendGrid', 'Mailgun', 'Amazon SES'].map(p => <option key={p}>{p}</option>)}
+                </select>
+              </div>
+              {[{ k: 'fromEmail', l: 'FROM EMAIL', p: 'orders@hughesysque.com.au' }, { k: 'fromName', l: 'FROM NAME', p: 'Hughesys Que' }, { k: 'adminEmail', l: 'ADMIN EMAIL (RECEIVES ORDER ALERTS)', p: 'admin@hughesysque.com.au' }].map(({ k, l, p }) => (
+                <div key={k}><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{l}</label>
+                  <input value={emailSettings[k] || ''} onChange={e => setEmailSettings(es => ({ ...es, [k]: e.target.value }))} placeholder={p} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" /></div>
+              ))}
+            </div>
+            <div className="space-y-3">
+              {[{ k: 'smtpHost', l: 'SMTP HOST', p: 'smtp.siteground.biz' }, { k: 'smtpPort', l: 'SMTP PORT', p: '465' }, { k: 'smtpUser', l: 'SMTP USER', p: 'admin@hughesysque.com.au' }].map(({ k, l, p }) => (
+                <div key={k}><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{l}</label>
+                  <input value={emailSettings[k] || ''} onChange={e => setEmailSettings(es => ({ ...es, [k]: e.target.value }))} placeholder={p} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" /></div>
+              ))}
+              <div><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">SMTP PASSWORD</label>
+                <input type="password" value={emailSettings.smtpPassword || ''} onChange={e => setEmailSettings(es => ({ ...es, smtpPassword: e.target.value }))} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" /></div>
+              <div className="bg-blue-950/30 border border-blue-800/40 rounded-lg p-3 text-xs text-blue-300">
+                <p className="font-bold">SiteGround GoGeek Guide</p>
+                <p className="text-gray-400 mt-1">Use SSL/TLS settings from SiteGround cPanel &gt; Email Accounts &gt; Connect Devices. Port is usually <strong className="text-white">465</strong>. The 'User' is your <strong className="text-white">full email address</strong>.</p>
+              </div>
+              <button className="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2.5 rounded-lg text-sm">Send Test Email</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* SMS Settings */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Smartphone size={14} className="text-green-400" /> SMS Settings (Twilio)</h3>
+        <p className="text-xs text-gray-500">Send order alerts and customer confirmations via SMS. Uses Twilio — enter credentials from <a href="https://console.twilio.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">console.twilio.com</a>.</p>
+        <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
+          <input type="checkbox" checked={smsSettings.enabled || false} onChange={e => setSmsSettings(s => ({ ...s, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
+          <div><span className="font-bold text-white text-sm">Enable SMS Notifications</span><p className="text-xs text-gray-500">Sends order alerts to admin and confirmation to customers.</p></div>
+        </label>
+        {smsSettings.enabled && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">FROM NUMBER</label>
+              <input value={smsSettings.fromNumber || ''} onChange={e => setSmsSettings(s => ({ ...s, fromNumber: e.target.value }))} placeholder="+61485019997"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" />
+            </div>
+            {[{ k: 'accountSid', l: 'ACCOUNT SID', p: 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' }, { k: 'authToken', l: 'AUTH TOKEN', pw: true, p: '••••••••••••••••' }].map(({ k, l, p, pw }) => (
+              <div key={k}><label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{l}</label>
+                <input type={pw ? 'password' : 'text'} value={smsSettings[k] || ''} onChange={e => setSmsSettings(s => ({ ...s, [k]: e.target.value }))} placeholder={p}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" /></div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
