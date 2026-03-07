@@ -1848,6 +1848,12 @@ const SocialCommandCenter = () => {
   const [calMonth, setCalMonth] = useState(new Date());
   const hasGemini = !!process.env.REACT_APP_GEMINI_API_KEY;
   const socialStats = settings.socialStats || {};
+  const [showFbConfig, setShowFbConfig] = useState(false);
+  const [fbPageId, setFbPageId] = useState(settings.fbPageId || '');
+  const [editingStats, setEditingStats] = useState(false);
+  const [statsForm, setStatsForm] = useState({ followers: socialStats.followers || 0, reach: socialStats.reach || 0, engagement: socialStats.engagement || '0%' });
+  const [isCheckingGemini, setIsCheckingGemini] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const handleGenerate = async () => {
     if (!aiPrompt.trim()) { toast.error('Enter a topic first.'); return; }
@@ -1893,6 +1899,35 @@ Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption"
     setIsScheduling(false);
   };
 
+  const handleCheckGemini = async () => {
+    setIsCheckingGemini(true);
+    const result = await callGemini('Reply with exactly: OK');
+    toast[result ? 'success' : 'error'](result ? 'Gemini AI is active and responding!' : hasGemini ? 'Key set but no response — check quota or validity.' : 'Add REACT_APP_GEMINI_API_KEY to CF Pages.');
+    setIsCheckingGemini(false);
+  };
+  const handleUpdateStats = async () => {
+    await updateSettings({ socialStats: statsForm });
+    setEditingStats(false);
+    toast.success('Social stats updated!');
+  };
+  const handleFbConfigure = async () => {
+    await updateSettings({ fbPageId, facebookConnected: !!fbPageId });
+    setFbConnected(!!fbPageId);
+    setShowFbConfig(false);
+    toast.success(fbPageId ? 'Facebook page configured!' : 'Facebook disconnected.');
+  };
+  const handleGenerateImage = async () => {
+    if (!aiPrompt.trim()) { toast.error('Enter a topic first.'); return; }
+    setIsGeneratingImage(true);
+    const result = await callGemini(
+      `Write a detailed image generation prompt for a ${platform} post about: ${aiPrompt}. For "${settings.businessName || 'Hughesys Que'}" BBQ food truck. Describe lighting, composition, style. Max 80 words.`,
+      'You are a creative director for a BBQ food truck brand.'
+    );
+    if (result) { navigator.clipboard?.writeText(result.trim()); toast.success('Image prompt copied to clipboard!'); }
+    else toast.error(hasGemini ? 'AI error — try again.' : 'Add REACT_APP_GEMINI_API_KEY to CF Pages.');
+    setIsGeneratingImage(false);
+  };
+
   const calDays = () => {
     const year = calMonth.getFullYear(), month = calMonth.getMonth(), days = [];
     for (let i = 0; i < new Date(year, month, 1).getDay(); i++) days.push(null);
@@ -1907,8 +1942,8 @@ Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption"
           <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wide">Social Command Center</h2>
           <p className="text-gray-400 text-sm mt-1">Manage content, schedule posts, and track growth.</p>
         </div>
-        <button onClick={() => toast.success('Stats refreshed!')} className="flex items-center gap-2 bg-gray-800 border border-gray-700 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-gray-700">
-          <RefreshCw size={14} /> Refresh Stats
+        <button onClick={() => { setStatsForm({ followers: socialStats.followers || 0, reach: socialStats.reach || 0, engagement: socialStats.engagement || '0%' }); setEditingStats(true); }} className="flex items-center gap-2 bg-gray-800 border border-gray-700 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-gray-700">
+          <RefreshCw size={14} /> Update Stats
         </button>
       </div>
 
@@ -1931,6 +1966,26 @@ Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption"
         ))}
       </div>
 
+      {editingStats && (
+        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-5 space-y-4">
+          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><BarChart2 size={14} className="text-yellow-400" /> Update Social Stats</h3>
+          <p className="text-xs text-gray-500">Manually enter your current stats from Facebook/Instagram Insights.</p>
+          <div className="grid grid-cols-3 gap-4">
+            {[{ key: 'followers', label: 'FOLLOWERS', ph: '0' }, { key: 'reach', label: 'REACH (30d)', ph: '0' }, { key: 'engagement', label: 'ENGAGEMENT', ph: '0%' }].map(({ key, label, ph }) => (
+              <div key={key}>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</label>
+                <input value={statsForm[key] || ''} onChange={e => setStatsForm(s => ({ ...s, [key]: e.target.value }))} placeholder={ph}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm text-center font-mono" />
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleUpdateStats} className="bg-bbq-red hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2"><Save size={14} /> Save Stats</button>
+            <button onClick={() => setEditingStats(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-5 space-y-4">
           <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Wand2 size={14} className="text-yellow-400" /> AI Content Generator</h3>
@@ -1947,8 +2002,9 @@ Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption"
               className="flex-1 bg-bbq-red hover:bg-red-700 disabled:opacity-50 text-white font-bold py-2 rounded-lg text-sm flex items-center justify-center gap-2">
               {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />} Generate Text
             </button>
-            <button className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-3 py-2 rounded-lg text-sm flex items-center gap-1.5">
-              <ImageIcon size={14} /> Image
+            <button onClick={handleGenerateImage} disabled={isGeneratingImage || !aiPrompt.trim()}
+              className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white font-bold px-3 py-2 rounded-lg text-sm flex items-center gap-1.5">
+              {isGeneratingImage ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />} Prompt
             </button>
           </div>
           {generatedContent && (
@@ -2020,8 +2076,8 @@ Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption"
             <div className={`flex items-center gap-1.5 text-xs ${hasGemini ? 'text-green-400' : 'text-gray-500'}`}>
               <div className={`w-1.5 h-1.5 rounded-full ${hasGemini ? 'bg-green-400' : 'bg-gray-600'}`} /> Claude AI — {hasGemini ? 'connected' : 'not checked'}
             </div>
-            <button className="bg-gray-800 border border-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-gray-700">Check</button>
-            <button className="bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-bold px-3 py-1.5 rounded">Top Up</button>
+            <button onClick={handleCheckGemini} disabled={isCheckingGemini} className="bg-gray-800 border border-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-gray-700 flex items-center gap-1 disabled:opacity-50">{isCheckingGemini ? <Loader2 size={10} className="animate-spin" /> : <Activity size={10} />} Check</button>
+            <button onClick={() => window.open('https://aistudio.google.com/apikey', '_blank')} className="bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-bold px-3 py-1.5 rounded">Get API Key</button>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3">
@@ -2065,11 +2121,26 @@ Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption"
           </span>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <button onClick={() => { setFbConnected(false); updateSettings({ facebookConnected: false }); }} className="text-sm text-red-400 hover:text-red-300 underline">Disconnect</button>
-          <button className="text-sm text-blue-400 hover:text-blue-300 underline">Configure</button>
+          <button onClick={() => { setFbConnected(false); updateSettings({ facebookConnected: false, fbPageId: '' }); setFbPageId(''); toast('Facebook disconnected.'); }} className="text-sm text-red-400 hover:text-red-300 underline">Disconnect</button>
+          <button onClick={() => setShowFbConfig(!showFbConfig)} className="text-sm text-blue-400 hover:text-blue-300 underline">Configure</button>
           <button onClick={() => { setFbConnected(true); updateSettings({ facebookConnected: true }); toast.success('Connection test passed!'); }}
             className="bg-blue-700 hover:bg-blue-600 text-white font-bold px-4 py-1.5 rounded text-xs flex items-center gap-1.5"><Link size={12} /> Test Connection</button>
         </div>
+        {showFbConfig && (
+          <div className="bg-blue-950/20 border border-blue-800/40 rounded-lg p-4 space-y-3">
+            <p className="text-xs font-bold text-blue-300 uppercase tracking-wider">Facebook Page Configuration</p>
+            <div>
+              <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">FACEBOOK PAGE ID</label>
+              <input value={fbPageId} onChange={e => setFbPageId(e.target.value)} placeholder="e.g. 123456789012345"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" />
+              <p className="text-[10px] text-gray-500 mt-1">Find in Facebook Page Settings &gt; About &gt; Page Transparency &gt; Page ID.</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={handleFbConfigure} className="bg-blue-700 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded-lg text-sm">Save Configuration</button>
+              <button onClick={() => setShowFbConfig(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-5">
