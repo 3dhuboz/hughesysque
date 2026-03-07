@@ -916,66 +916,66 @@ const FTSettingsManager = () => {
         </div>
       </div>
 
-      {/* Rewards Program */
-        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
-          <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Gift size={14} className="text-yellow-400" /> Rewards Program<Tip text="Staff enter the Staff PIN at checkout to add a stamp. When a customer reaches the Stamps to Reward target, they unlock a random prize from your prize pool." /></h3>
-          <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
-            <input type="checkbox" checked={rewards.enabled || false} onChange={e => setRewards(r => ({ ...r, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
-            <div>
-              <span className="font-bold text-white text-sm">Enable Rewards Program</span>
-              <p className="text-xs text-gray-500">Customers can earn stamps and redeem prizes.</p>
-            </div>
-          </label>
-          {rewards.enabled && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PROGRAM NAME</label>
-                  <input value={rewards.programName || ''} onChange={e => setRewards(r => ({ ...r, programName: e.target.value }))} placeholder="Meat Sweats Club"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">STAFF PIN</label>
-                    <input type="password" value={rewards.staffPin || ''} onChange={e => setRewards(r => ({ ...r, staffPin: e.target.value }))} placeholder="••••"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" />
-                    <p className="text-[10px] text-gray-500 mt-1">Staff enter this to add/redeem stamps.</p>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">STAMPS TO REWARD</label>
-                    <input type="number" min="1" max="50" value={rewards.maxStamps || 10} onChange={e => setRewards(r => ({ ...r, maxStamps: parseInt(e.target.value) || 10 }))}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm text-center font-mono" />
-                    <p className="text-[10px] text-gray-500 mt-1">Stamps needed to earn a prize.</p>
-                  </div>
-                </div>
+      {/* Rewards Program */}
+      <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
+        <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Gift size={14} className="text-yellow-400" /> Rewards Program<Tip text="Staff enter the Staff PIN at checkout to add a stamp. When a customer reaches the Stamps to Reward target, they unlock a random prize from your prize pool." /></h3>
+        <label className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg p-3.5 cursor-pointer hover:border-gray-500 transition">
+          <input type="checkbox" checked={rewards.enabled || false} onChange={e => setRewards(r => ({ ...r, enabled: e.target.checked }))} className="w-4 h-4 accent-bbq-red" />
+          <div>
+            <span className="font-bold text-white text-sm">Enable Rewards Program</span>
+            <p className="text-xs text-gray-500">Customers can earn stamps and redeem prizes.</p>
+          </div>
+        </label>
+        {rewards.enabled && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PROGRAM NAME</label>
+                <input value={rewards.programName || ''} onChange={e => setRewards(r => ({ ...r, programName: e.target.value }))} placeholder="Meat Sweats Club"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" />
               </div>
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PRIZE POOL (POSSIBLE WINNINGS)</label>
-                  <p className="text-[10px] text-gray-500 mb-2">Add multiple items. The Golden Ticket will randomly select one upon scratching.</p>
-                </div>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {prizes.map((prize, idx) => (
-                    <div key={idx} className="flex items-center gap-3 bg-gray-800 border border-gray-700 rounded-lg p-3">
-                      {prize.image ? <img src={prize.image} alt="" className="w-9 h-9 object-cover rounded" /> : <div className="w-9 h-9 bg-gray-700 rounded flex items-center justify-center shrink-0"><Gift size={14} className="text-gray-500" /></div>}
-                      <span className="flex-1 text-sm font-medium text-white">{prize.name}</span>
-                      <button onClick={() => { const n = prompt('Edit prize name:', prize.name); if (n?.trim()) setRewards(r => ({ ...r, possiblePrizes: r.possiblePrizes.map((p, i) => i === idx ? { ...p, name: n.trim() } : p) })); }} className="p-1.5 text-gray-400 hover:text-white"><Edit2 size={13} /></button>
-                      <button onClick={() => removePrize(idx)} className="p-1.5 text-red-400 hover:text-red-300"><Trash2 size={13} /></button>
-                    </div>
-                  ))}
+                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">STAFF PIN</label>
+                  <input type="password" value={rewards.staffPin || ''} onChange={e => setRewards(r => ({ ...r, staffPin: e.target.value }))} placeholder="••••"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono" />
+                  <p className="text-[10px] text-gray-500 mt-1">Staff enter this to add/redeem stamps.</p>
                 </div>
                 <div>
-                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">ADD NEW PRIZE</label>
-                  <input value={newPrize} onChange={e => setNewPrize(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPrize()} placeholder="e.g. Free Burger"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-2" />
-                  <button onClick={addPrize} className="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-2.5 rounded-lg text-sm flex items-center justify-center gap-2">
-                    <Plus size={14} /> Add to Pool
-                  </button>
+                  <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">STAMPS TO REWARD</label>
+                  <input type="number" min="1" max="50" value={rewards.maxStamps || 10} onChange={e => setRewards(r => ({ ...r, maxStamps: parseInt(e.target.value) || 10 }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm text-center font-mono" />
+                  <p className="text-[10px] text-gray-500 mt-1">Stamps needed to earn a prize.</p>
                 </div>
               </div>
             </div>
-          )}
-        </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">PRIZE POOL (POSSIBLE WINNINGS)</label>
+                <p className="text-[10px] text-gray-500 mb-2">Add multiple items. The Golden Ticket will randomly select one upon scratching.</p>
+              </div>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {prizes.map((prize, idx) => (
+                  <div key={idx} className="flex items-center gap-3 bg-gray-800 border border-gray-700 rounded-lg p-3">
+                    {prize.image ? <img src={prize.image} alt="" className="w-9 h-9 object-cover rounded" /> : <div className="w-9 h-9 bg-gray-700 rounded flex items-center justify-center shrink-0"><Gift size={14} className="text-gray-500" /></div>}
+                    <span className="flex-1 text-sm font-medium text-white">{prize.name}</span>
+                    <button onClick={() => { const n = prompt('Edit prize name:', prize.name); if (n?.trim()) setRewards(r => ({ ...r, possiblePrizes: r.possiblePrizes.map((p, i) => i === idx ? { ...p, name: n.trim() } : p) })); }} className="p-1.5 text-gray-400 hover:text-white"><Edit2 size={13} /></button>
+                    <button onClick={() => removePrize(idx)} className="p-1.5 text-red-400 hover:text-red-300"><Trash2 size={13} /></button>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">ADD NEW PRIZE</label>
+                <input value={newPrize} onChange={e => setNewPrize(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPrize()} placeholder="e.g. Free Burger"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-2" />
+                <button onClick={addPrize} className="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-2.5 rounded-lg text-sm flex items-center justify-center gap-2">
+                  <Plus size={14} /> Add to Pool
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Invoice Template */}
       <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
