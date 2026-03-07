@@ -2208,7 +2208,7 @@ Return JSON array only: [{"date":"YYYY-MM-DD","platform":"${platform}","caption"
       <div className="bg-gray-900/60 border border-blue-800/40 rounded-xl p-5 space-y-4">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Globe size={14} className="text-blue-400" /> Facebook Integration<Tip text="Firebase is pre-configured via environment variables. Only edit these if switching to a different Firebase project. After changing, click Update Firebase to apply and reload." /></h3>
+            <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Globe size={14} className="text-blue-400" /> Facebook Integration<Tip text="Enter your Facebook Page ID to auto-populate the homepage ticker with your latest posts. The page ID is the last part of your Facebook page URL." /></h3>
             <p className="text-xs text-gray-500 mt-1">Connect your business page to auto-update the homepage ticker.</p>
           </div>
           <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${fbConnected ? 'bg-green-900/40 text-green-400 border border-green-700' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>
