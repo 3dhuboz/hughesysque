@@ -9,7 +9,9 @@ import {
   DollarSign, Loader2, Image as ImageIcon, ChevronDown, ChevronUp, HelpCircle,
   CheckSquare, Square, Flame, Cloud, Wifi, Users, Star, Gift,
   Search, UserCheck, AlertCircle, Smartphone, Wand2, Sparkles, Copy,
-  ClipboardList, Thermometer, Clock, BookOpen, MessageSquare, Bot, User as UserIcon, Send, Code2
+  ClipboardList, Thermometer, Clock, BookOpen, MessageSquare, Bot, User as UserIcon, Send, Code2,
+  RefreshCw, BarChart2, Database, Activity, CreditCard, Mail, TrendingUp, Eye, Zap, Server,
+  Share2, Globe, ImagePlus, Lock, UploadCloud, FileText, Palette, Link, ChevronDown as ChevronDownIcon
 } from 'lucide-react';
 
 // ─── ORDER MANAGER ───────────────────────────────────────────────────
