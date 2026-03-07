@@ -966,10 +966,31 @@ const FTSettingsManager = () => {
             ))}
           </div>
           <div>
-            <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">LOGO URL</label>
-            <input value={form.logoUrl || ''} onChange={e => setForm({ ...form, logoUrl: e.target.value })} placeholder="Paste logo URL..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono mb-2 focus:outline-none focus:border-bbq-red" />
-            {form.logoUrl && <img src={form.logoUrl} alt="Logo" className="w-full h-28 object-contain bg-black/40 rounded-lg border border-gray-700" onError={e => e.target.style.display = 'none'} />}
+            <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">LOGO</label>
+            <div className="flex gap-2 mb-2">
+              <input value={form.logoUrl || ''} onChange={e => setForm({ ...form, logoUrl: e.target.value })} placeholder="Paste logo URL..."
+                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono focus:outline-none focus:border-bbq-red" />
+              <label className="cursor-pointer flex items-center gap-1.5 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700 shrink-0 text-xs text-gray-300 font-bold" title="Upload logo from device">
+                <UploadCloud size={14} className="text-gray-400" /> Upload
+                <input type="file" accept="image/*" className="hidden" onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  const r = new FileReader();
+                  r.onload = () => setForm(prev => ({ ...prev, logoUrl: r.result }));
+                  r.readAsDataURL(f);
+                }} />
+              </label>
+              {form.logoUrl && (
+                <button type="button" onClick={() => setForm(prev => ({ ...prev, logoUrl: '' }))}
+                  className="p-2.5 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700 shrink-0">
+                  <X size={14} className="text-gray-400" />
+                </button>
+              )}
+            </div>
+            {form.logoUrl
+              ? <img src={form.logoUrl} alt="Logo preview" className="w-full h-28 object-contain bg-black/40 rounded-lg border border-gray-700" onError={e => e.target.style.display = 'none'} />
+              : <div className="w-full h-28 bg-black/40 rounded-lg border border-dashed border-gray-700 flex flex-col items-center justify-center gap-1.5 text-gray-700"><ImageIcon size={22} /><span className="text-[10px] uppercase tracking-wider">No logo set</span></div>
+            }
           </div>
         </div>
       </div>
