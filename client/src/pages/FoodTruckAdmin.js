@@ -2221,19 +2221,6 @@ const FTDevTools = () => {
       setGeminiStatus({ ok: true, msg: 'Active — AI features enabled for all admins.' });
       toast.success('Key verified and saved!');
     } else {
-      _geminiKeyOverride = settings.geminiApiKey || null;
-      const errMsg = test?.__error || 'Key did not respond — check it is a valid Gemini API key.';
-      toast.error(errMsg);
-    }
-    setIsSavingKey(false);
-    ;
-
-    const handleGeminiDisconnect = async () => {
-      if (window.confirm('Remove the saved Gemini API key from app settings?')) {
-        _geminiKeyOverride = null;
-        await updateSettings({ geminiApiKey: '' });
-        toast('Gemini key removed.');
-      }
     };
 
     const handleChangePassword = async (e) => {
