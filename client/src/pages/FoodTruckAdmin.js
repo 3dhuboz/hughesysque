@@ -900,6 +900,8 @@ const FTSettingsManager = () => {
   });
   const [newPrize, setNewPrize] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
+  const [genProgress, setGenProgress] = useState(0);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -1020,16 +1022,34 @@ const FTSettingsManager = () => {
       <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><ImagePlus size={14} className="text-red-400" /> Site Visuals<Tip text="Each field supports: paste a URL, upload from device, or click ✨ to AI-generate. The logo also updates your browser favicon and social share preview image automatically." /></h3>
-          <button type="button" onClick={() => {
-            if (!window.confirm('Clear all site visual images? This removes every saved image URL so you can upload fresh ones.')) return;
-            const allKeys = VISUAL_SECTIONS.flatMap(s => s.fields.map(f => f.key));
-            const cleared = allKeys.reduce((acc, k) => ({ ...acc, [k]: '' }), {});
-            setVisuals(cleared);
-            try { const s = JSON.parse(localStorage.getItem('hq_settings') || '{}'); delete s.siteVisuals; localStorage.setItem('hq_settings', JSON.stringify(s)); } catch { }
-            toast.success('All visuals cleared — upload fresh images below.');
-          }} className="flex items-center gap-1.5 text-[11px] bg-gray-800 border border-gray-700 hover:bg-red-900/40 hover:border-red-700 text-gray-400 hover:text-red-400 px-3 py-1.5 rounded-lg transition">
-            <X size={11} /> Clear All
-          </button>
+          <div className="flex items-center gap-2">
+            <button type="button" disabled={isGeneratingAll} onClick={async () => {
+              if (!window.confirm('Generate AI images for all fields at once? All 11 images will generate in parallel (~60 seconds total).')) return;
+              setIsGeneratingAll(true);
+              setGenProgress(0);
+              const allFields = VISUAL_SECTIONS.flatMap(s => s.fields);
+              const total = allFields.length;
+              await Promise.all(allFields.map(async ({ key, label: fl }) => {
+                const url = await generateImage(fl, form.businessName || brandName);
+                setVisuals(prev => ({ ...prev, [key]: url }));
+                setGenProgress(p => p + 1);
+              }));
+              setIsGeneratingAll(false);
+              toast.success('All images generated! Click Save Changes to keep them.');
+            }} className="flex items-center gap-1.5 text-[11px] bg-purple-900/50 border border-purple-700 hover:bg-purple-800/60 text-purple-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50">
+              {isGeneratingAll ? <><Loader2 size={11} className="animate-spin" /> {genProgress}/{VISUAL_SECTIONS.flatMap(s => s.fields).length}</> : <><Sparkles size={11} /> Generate All</>}
+            </button>
+            <button type="button" onClick={() => {
+              if (!window.confirm('Clear all site visual images? This removes every saved image URL so you can upload fresh ones.')) return;
+              const allKeys = VISUAL_SECTIONS.flatMap(s => s.fields.map(f => f.key));
+              const cleared = allKeys.reduce((acc, k) => ({ ...acc, [k]: '' }), {});
+              setVisuals(cleared);
+              try { const s = JSON.parse(localStorage.getItem('hq_settings') || '{}'); delete s.siteVisuals; localStorage.setItem('hq_settings', JSON.stringify(s)); } catch { }
+              toast.success('All visuals cleared — upload fresh images below.');
+            }} className="flex items-center gap-1.5 text-[11px] bg-gray-800 border border-gray-700 hover:bg-red-900/40 hover:border-red-700 text-gray-400 hover:text-red-400 px-3 py-1.5 rounded-lg transition">
+              <X size={11} /> Clear All
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {VISUAL_SECTIONS.map(({ label, fields }) => (
