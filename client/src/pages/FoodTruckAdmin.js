@@ -2929,7 +2929,7 @@ const FoodTruckAdmin = () => {
       {/* Sidebar */}
       <aside className="w-52 shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col">
         <div className="px-4 pt-5 pb-2">
-          <p className="text-[10px] font-mono text-gray-500 uppercase tracking-[0.2em]">Dev Panel</p>
+          <p className="text-[10px] font-mono text-gray-500 uppercase tracking-[0.2em]">Admin Panel</p>
         </div>
         <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
           {TABS.map(({ id, icon: Icon, label, badge }) => (
