@@ -924,28 +924,6 @@ const FTSettingsManager = () => {
   const startEditPrize = (idx) => { setEditingPrizeIdx(idx); setNewPrize(prizes[idx]?.name || ''); };
   const cancelEditPrize = () => { setEditingPrizeIdx(null); setNewPrize(''); };
 
-  const brokenVisualFields = VISUAL_SECTIONS.flatMap(s => s.fields).filter(({ key }) => visuals[key]?.includes('pollinations.ai'));
-
-  const handleAutoFix = async () => {
-    if (!window.confirm(`Auto-fix ${brokenVisualFields.length} expired image(s)? They will be regenerated and stored permanently in Firebase Storage (~3 min).`)) return;
-    setIsGeneratingAll(true);
-    setGenProgress(0);
-    const newVisuals = { ...visuals };
-    await Promise.all(brokenVisualFields.map(async ({ key, label: fl }) => {
-      const url = await generateImage(fl, form.businessName || brandName);
-      newVisuals[key] = url;
-      setVisuals(prev => ({ ...prev, [key]: url }));
-      setGenProgress(p => p + 1);
-    }));
-    setIsGeneratingAll(false);
-    setIsSaving(true);
-    await updateSettings({ ...form, siteVisuals: newVisuals, rewards, invoiceTemplate: invoice });
-    setIsSaving(false);
-    setShowSaveSuccess(true);
-    setTimeout(() => setShowSaveSuccess(false), 4000);
-    toast.success('All images fixed and saved permanently!');
-  };
-
   const VISUAL_SECTIONS = [
     {
       label: 'HOME PAGE', fields: [
