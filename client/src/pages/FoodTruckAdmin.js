@@ -891,23 +891,38 @@ const FTSettingsManager = () => {
   });
   const [newPrize, setNewPrize] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [genProgress, setGenProgress] = useState(0);
+  const [editingPrizeIdx, setEditingPrizeIdx] = useState(null);
 
   const handleSave = async () => {
     setIsSaving(true);
-    await updateSettings({ ...form, siteVisuals: visuals, rewards, invoiceTemplate: invoice });
+    const ok = await updateSettings({ ...form, siteVisuals: visuals, rewards, invoiceTemplate: invoice });
     setIsSaving(false);
-    toast.success('Settings saved!');
+    if (ok !== false) {
+      setShowSaveSuccess(true);
+      setTimeout(() => setShowSaveSuccess(false), 4000);
+      toast.success('Settings saved!');
+    } else {
+      toast.error('Save failed — check console for details.');
+    }
   };
 
   const prizes = rewards.possiblePrizes || [];
   const addPrize = () => {
     if (!newPrize.trim()) return;
-    setRewards(r => ({ ...r, possiblePrizes: [...(r.possiblePrizes || []), { name: newPrize.trim(), image: '' }] }));
+    if (editingPrizeIdx !== null) {
+      setRewards(r => ({ ...r, possiblePrizes: r.possiblePrizes.map((p, i) => i === editingPrizeIdx ? { ...p, name: newPrize.trim() } : p) }));
+      setEditingPrizeIdx(null);
+    } else {
+      setRewards(r => ({ ...r, possiblePrizes: [...(r.possiblePrizes || []), { name: newPrize.trim(), image: '' }] }));
+    }
     setNewPrize('');
   };
-  const removePrize = (idx) => setRewards(r => ({ ...r, possiblePrizes: r.possiblePrizes.filter((_, i) => i !== idx) }));
+  const removePrize = (idx) => { setRewards(r => ({ ...r, possiblePrizes: r.possiblePrizes.filter((_, i) => i !== idx) })); if (editingPrizeIdx === idx) { setEditingPrizeIdx(null); setNewPrize(''); } };
+  const startEditPrize = (idx) => { setEditingPrizeIdx(idx); setNewPrize(prizes[idx]?.name || ''); };
+  const cancelEditPrize = () => { setEditingPrizeIdx(null); setNewPrize(''); };
 
   const VISUAL_SECTIONS = [
     {
