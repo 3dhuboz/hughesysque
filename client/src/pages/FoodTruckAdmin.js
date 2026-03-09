@@ -964,10 +964,16 @@ const FTSettingsManager = () => {
           <p className="text-gray-400 text-sm mt-1">Business settings, branding, and rewards.</p>
         </div>
         <button onClick={handleSave} disabled={isSaving}
-          className="flex items-center gap-2 bg-gray-800 border border-gray-600 text-white font-bold px-4 py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50 text-sm">
-          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Changes
+          className={`flex items-center gap-2 font-bold px-5 py-2.5 rounded-lg transition border text-sm ${showSaveSuccess ? 'bg-green-700 border-green-500 text-white' : isSaving ? 'bg-gray-700 border-gray-600 text-gray-400 cursor-wait' : 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'} disabled:opacity-50`}>
+          {isSaving ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : showSaveSuccess ? <><Check size={14} /> Saved!</> : <><Save size={14} /> Save Changes</>}
         </button>
       </div>
+      {showSaveSuccess && (
+        <div className="bg-green-900/30 border border-green-600/50 text-green-300 p-3.5 rounded-xl flex items-center gap-3">
+          <Check size={16} className="text-green-400 shrink-0" />
+          <strong className="text-sm">Changes Saved &amp; Synced to Firestore</strong>
+        </div>
+      )}
 
       {/* General Configuration */}
       <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
