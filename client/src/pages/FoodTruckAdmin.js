@@ -1274,7 +1274,8 @@ const callGemini = async (prompt, system) => {
 };
 
 // ─── AI IMAGE GENERATOR ─────────────────────────────────────────────
-// Uses Gemini to craft a vivid prompt, then Pollinations.ai (free, no key) to render it
+// Uses Gemini to craft a vivid prompt, then Pollinations.ai to render it.
+// The blob is immediately uploaded to Firebase Storage so the URL is permanent.
 const generateImage = async (hint, businessName = 'Hughesys Que') => {
   let imagePrompt = `${businessName} BBQ food truck — ${hint}, professional food photography, moody dark background, cinematic lighting`;
   const geminiResult = await callGemini(
@@ -1283,7 +1284,18 @@ const generateImage = async (hint, businessName = 'Hughesys Que') => {
   );
   if (geminiResult && typeof geminiResult === 'string') imagePrompt = geminiResult.trim();
   const seed = Math.floor(Math.random() * 9999);
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=1200&height=630&nologo=true&seed=${seed}`;
+  const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=1200&height=630&nologo=true&seed=${seed}`;
+  // Fetch the generated image and upload to Firebase Storage for a permanent URL
+  try {
+    const resp = await fetch(pollinationsUrl);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const blob = await resp.blob();
+    const path = `siteVisuals/ai_${Date.now()}_${seed}.jpg`;
+    return await uploadToStorage(blob, path);
+  } catch (err) {
+    console.warn('Could not upload AI image to Storage, using direct URL:', err);
+    return pollinationsUrl;
+  }
 };
 
 // ─── CUSTOMER MANAGER ────────────────────────────────────────────────
