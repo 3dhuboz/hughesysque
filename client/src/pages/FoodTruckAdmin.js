@@ -846,19 +846,10 @@ const ImageField = ({ label, value, onChange, hint, businessName }) => {
             <span className="text-[10px] uppercase tracking-wider">No image set</span>
           </div>
         )}
-        {value && (imgState === 'loading' || imgState === 'slow') && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-900/80 z-10">
+        {value && imgState !== 'loaded' && imgState !== 'error' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-900/70 z-10 pointer-events-none">
             <Loader2 size={18} className="animate-spin text-gray-500" />
-            {imgState === 'slow'
-              ? <span className="text-[10px] text-yellow-500/80 text-center px-2 leading-tight">AI image is generating…<br />hang tight, almost there</span>
-              : <span className="text-[10px] text-gray-600">Loading preview…</span>
-            }
-            {imgState === 'slow' && (
-              <a href={value} target="_blank" rel="noreferrer"
-                className="text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2.5 py-1 rounded flex items-center gap-1 mt-1">
-                <Eye size={10} /> Open in new tab
-              </a>
-            )}
+            {imgState === 'slow' && <span className="text-[10px] text-yellow-500/80 text-center px-2 leading-tight">Still loading…</span>}
           </div>
         )}
         {value && imgState === 'error' && (
@@ -874,7 +865,7 @@ const ImageField = ({ label, value, onChange, hint, businessName }) => {
         {value && (
           <img
             src={value} alt={label}
-            className={`w-full h-full object-cover transition-opacity duration-500 ${imgState === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
+            className="w-full h-full object-cover"
             onLoad={() => setImgState('loaded')}
             onError={() => setImgState('error')}
           />
