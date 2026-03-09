@@ -16,8 +16,8 @@ const StorefrontLayout = ({ children }) => {
   const tagline = brandTagline || 'Quality Street Food';
   const logoUrl = settings.logoUrl;
 
-  // Maintenance mode — block all non-admin visitors
-  if (settings?.maintenanceMode && user?.role !== 'admin' && user?.role !== 'dev') {
+  // Maintenance mode — block all non-admin visitors (but allow /login so admins can sign in)
+  if (settings?.maintenanceMode && user?.role !== 'admin' && user?.role !== 'dev' && location.pathname !== '/login') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6"
         style={{ backgroundColor: '#0f0f0f', color: '#e5e5e5' }}>
