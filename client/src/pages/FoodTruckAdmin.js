@@ -963,12 +963,12 @@ const FTSettingsManager = () => {
     setIsGeneratingAll(true);
     setGenProgress(0);
     const newVisuals = { ...visuals };
-    await Promise.all(brokenVisualFields.map(async ({ key, label: fl }) => {
+    for (const { key, label: fl } of brokenVisualFields) {
       const url = await generateImage(fl, form.businessName || brandName);
       newVisuals[key] = url;
       setVisuals(prev => ({ ...prev, [key]: url }));
       setGenProgress(p => p + 1);
-    }));
+    }
     setIsGeneratingAll(false);
     setIsSaving(true);
     await updateSettings({ ...form, siteVisuals: newVisuals, rewards, invoiceTemplate: invoice });
@@ -1082,16 +1082,15 @@ const FTSettingsManager = () => {
           <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><ImagePlus size={14} className="text-red-400" /> Site Visuals<Tip text="Each field supports: paste a URL, upload from device, or click ✨ to AI-generate. The logo also updates your browser favicon and social share preview image automatically." /></h3>
           <div className="flex items-center gap-2">
             <button type="button" disabled={isGeneratingAll} onClick={async () => {
-              if (!window.confirm('Generate AI images for all fields at once? All 11 images will generate in parallel (~60 seconds total).')) return;
+              if (!window.confirm('Generate AI images for all fields one by one? 11 images, ~3-5 min total. Do not close this tab.')) return;
               setIsGeneratingAll(true);
               setGenProgress(0);
               const allFields = VISUAL_SECTIONS.flatMap(s => s.fields);
-              const total = allFields.length;
-              await Promise.all(allFields.map(async ({ key, label: fl }) => {
+              for (const { key, label: fl } of allFields) {
                 const url = await generateImage(fl, form.businessName || brandName);
                 setVisuals(prev => ({ ...prev, [key]: url }));
                 setGenProgress(p => p + 1);
-              }));
+              }
               setIsGeneratingAll(false);
               toast.success('All images generated! Click Save Changes to keep them.');
             }} className="flex items-center gap-1.5 text-[11px] bg-purple-900/50 border border-purple-700 hover:bg-purple-800/60 text-purple-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50">
@@ -1319,9 +1318,33 @@ const callGemini = async (prompt, system) => {
   return { __error: 'No available Gemini model responded — check your API key and quota.' };
 };
 
+// ─── CANVAS IMAGE COMPRESS (matches Street Meats BBQ approach) ──────
+// Loads an image URL into a canvas, compresses it, returns a base64 string.
+// Base64 is stored directly in Firestore — no URL expiry, no external dependencies.
+const fetchImageAsBase64 = (url, maxW = 600, quality = 0.55) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.naturalWidth || img.width;
+      let h = img.naturalHeight || img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => reject(new Error('Image load failed'));
+    // Cache-bust to force CORS headers on repeat requests
+    img.src = url.includes('?') ? `${url}&_cb=${Date.now()}` : `${url}?_cb=${Date.now()}`;
+  });
+
 // ─── AI IMAGE GENERATOR ─────────────────────────────────────────────
 // Uses Gemini to craft a vivid prompt, then Pollinations.ai to render it.
-// The blob is immediately uploaded to Firebase Storage so the URL is permanent.
+// Primary: canvas → compressed base64 stored in Firestore (permanent, like Street Meats).
+// Fallback: Firebase Storage URL. Last resort: raw Pollinations URL.
 const generateImage = async (hint, businessName = 'Hughesys Que') => {
   let imagePrompt = `${businessName} BBQ food truck — ${hint}, professional food photography, moody dark background, cinematic lighting`;
   const geminiResult = await callGemini(
@@ -1331,16 +1354,22 @@ const generateImage = async (hint, businessName = 'Hughesys Que') => {
   if (geminiResult && typeof geminiResult === 'string') imagePrompt = geminiResult.trim();
   const seed = Math.floor(Math.random() * 9999);
   const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=1200&height=630&nologo=true&seed=${seed}`;
-  // Fetch the generated image and upload to Firebase Storage for a permanent URL
+  // Primary: load into canvas → compressed base64 (permanent, no URL expiry)
   try {
-    const resp = await fetch(pollinationsUrl);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const blob = await resp.blob();
-    const path = `siteVisuals/ai_${Date.now()}_${seed}.jpg`;
-    return await uploadToStorage(blob, path);
-  } catch (err) {
-    console.warn('Could not upload AI image to Storage, using direct URL:', err);
-    return pollinationsUrl;
+    const base64 = await fetchImageAsBase64(pollinationsUrl);
+    return base64;
+  } catch (canvasErr) {
+    console.warn('Canvas encode failed, trying Firebase Storage:', canvasErr);
+    // Fallback: upload blob to Firebase Storage
+    try {
+      const resp = await fetch(pollinationsUrl);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const blob = await resp.blob();
+      return await uploadToStorage(blob, `siteVisuals/ai_${Date.now()}_${seed}.jpg`);
+    } catch (storageErr) {
+      console.warn('Storage upload failed, using direct URL:', storageErr);
+      return pollinationsUrl;
+    }
   }
 };
 
