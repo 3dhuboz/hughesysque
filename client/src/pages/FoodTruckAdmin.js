@@ -2947,7 +2947,7 @@ const FoodTruckAdmin = () => {
         <div className="px-4 py-4 border-t border-gray-800 space-y-2">
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <UserIcon size={12} />
-            <span>Developer Mode</span>
+            <span>Admin Mode</span>
           </div>
           {connectionError ? (
             <div className="flex items-center gap-2 text-xs text-red-400">
