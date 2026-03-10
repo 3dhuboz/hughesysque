@@ -23,6 +23,24 @@ const uploadToStorage = async (file, path) => {
   return await getDownloadURL(fileRef);
 };
 
+// ─── CANVAS IMAGE COMPRESSOR (matches Street Meats BBQ) ─────────────
+// Takes a base64 string (from FileReader) and returns a compressed base64.
+// Keeps images small enough to store directly in Firestore (no URL expiry).
+const compressImageBase64 = (base64Str, maxW = 700, quality = 0.55) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(base64Str);
+    img.src = base64Str;
+  });
+
 // ─── HELP TIP COMPONENT ─────────────────────────────────────────────
 const Tip = ({ text }) => (
   <span className="relative group inline-flex items-center cursor-help">
@@ -792,85 +810,64 @@ const FTMenuManager = () => {
   );
 };
 
-// ─── IMAGE UPLOAD FIELD ──────────────────────────────────────────────
+// ─── IMAGE UPLOAD FIELD (matches Street Meats BBQ ImageSettingRow) ───
 const ImageField = ({ label, value, onChange, hint, businessName }) => {
+  const fileInputRef = useRef(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [imgState, setImgState] = useState('idle'); // idle | loading | loaded | error | slow
-  useEffect(() => {
-    if (!value) { setImgState('idle'); return; }
-    setImgState('loading');
-    const t = setTimeout(() => setImgState(s => s === 'loading' ? 'slow' : s), 20000);
-    return () => clearTimeout(t);
-  }, [value]);
-  const handleFile = async (e) => {
+  const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImgState('loading');
-    try {
-      const path = `siteVisuals/${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_')}`;
-      const url = await uploadToStorage(file, path);
-      onChange(url);
-    } catch (err) {
-      console.error('Upload failed:', err);
-      toast.error('Upload failed — check Firebase Storage rules.');
-      setImgState('error');
-    }
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const compressed = await compressImageBase64(reader.result, 700, 0.55);
+      onChange(compressed);
+    };
+    reader.readAsDataURL(file);
   };
   const handleAIGenerate = async () => {
     setIsGenerating(true);
-    const url = await generateImage(hint || label, businessName);
-    onChange(url);
+    try {
+      const result = await generateImage(hint || label, businessName);
+      if (result) onChange(result);
+    } catch { toast.error('Image generation failed'); }
     setIsGenerating(false);
-    toast.success('AI image generated!');
   };
+  const isBase64 = value?.startsWith('data:');
   return (
-    <div className="space-y-1.5">
-      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">{label}</label>
-      <div className="flex gap-1.5 items-center">
-        <input value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Paste a URL..."
-          className="flex-1 bg-gray-900 border border-gray-700 rounded p-2 text-[11px] text-gray-400 font-mono truncate focus:outline-none focus:border-gray-500" />
-        <label className="cursor-pointer p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700 shrink-0" title="Upload image">
-          <UploadCloud size={13} className="text-gray-400" />
-          <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
-        </label>
-        <button type="button" onClick={handleAIGenerate} disabled={isGenerating}
-          title="Generate with AI" className="p-2 bg-purple-900/60 border border-purple-700 rounded hover:bg-purple-800 shrink-0 disabled:opacity-50">
-          {isGenerating ? <Loader2 size={13} className="animate-spin text-purple-300" /> : <Sparkles size={13} className="text-purple-300" />}
+    <div>
+      <label className="text-xs text-gray-400 block mb-1.5 font-bold uppercase tracking-wider">{label}</label>
+      <div className="flex gap-2 mb-2">
+        <input
+          value={isBase64 ? '' : (value || '')}
+          onChange={e => onChange(e.target.value)}
+          placeholder={isBase64 ? '(image stored)' : 'Paste image URL...'}
+          readOnly={isBase64}
+          className="flex-1 bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-gray-500"
+        />
+        <input type="file" ref={fileInputRef} onChange={handleFile} className="hidden" accept="image/*" />
+        <button type="button" onClick={() => fileInputRef.current?.click()}
+          className="bg-gray-800 border border-gray-600 p-2 rounded-lg hover:bg-gray-700 text-gray-300" title="Upload from device">
+          <UploadCloud size={16} />
         </button>
-        {value && <button type="button" onClick={() => onChange('')} className="p-2 bg-gray-800 border border-gray-700 rounded hover:bg-gray-700 shrink-0"><X size={13} className="text-gray-400" /></button>}
+        <button type="button" onClick={handleAIGenerate} disabled={isGenerating}
+          className="bg-purple-900/60 border border-purple-700 p-2 rounded-lg hover:bg-purple-800 text-purple-300 disabled:opacity-50" title="AI Generate">
+          {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+        </button>
       </div>
-      <div className="relative w-full h-36 rounded border border-gray-700 overflow-hidden bg-gray-900/60">
-        {!value && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-gray-700">
-            <ImageIcon size={22} />
-            <span className="text-[10px] uppercase tracking-wider">No image set</span>
-          </div>
-        )}
-        {value && imgState !== 'loaded' && imgState !== 'error' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-900/70 z-10 pointer-events-none">
-            <Loader2 size={18} className="animate-spin text-gray-500" />
-            {imgState === 'slow' && <span className="text-[10px] text-yellow-500/80 text-center px-2 leading-tight">Still loading…</span>}
-          </div>
-        )}
-        {value && imgState === 'error' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-900/90 z-10 p-3 text-center">
-            <AlertTriangle size={16} className="text-red-500/60" />
-            <span className="text-[10px] text-red-400/70">Could not load preview</span>
-            <a href={value} target="_blank" rel="noreferrer"
-              className="text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2.5 py-1 rounded flex items-center gap-1">
-              <Eye size={10} /> Open URL
-            </a>
-          </div>
-        )}
-        {value && (
-          <img
-            src={value} alt={label}
-            className="w-full h-full object-cover"
-            onLoad={() => setImgState('loaded')}
-            onError={() => setImgState('error')}
-          />
-        )}
-      </div>
+      {value ? (
+        <div className="w-full h-32 rounded-lg overflow-hidden border border-gray-700 relative group">
+          <img src={value} className="w-full h-full object-cover" alt={label} />
+          <button type="button" onClick={() => onChange('')}
+            className="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition hover:bg-red-600">
+            <X size={12} />
+          </button>
+        </div>
+      ) : (
+        <div className="w-full h-32 rounded-lg border-2 border-dashed border-gray-700 flex flex-col items-center justify-center gap-1.5 text-gray-700">
+          <ImageIcon size={20} />
+          <span className="text-[10px] uppercase tracking-wider">No image set</span>
+        </div>
+      )}
     </div>
   );
 };
