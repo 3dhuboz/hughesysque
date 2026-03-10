@@ -13,6 +13,14 @@ import { auth, db, isFirebaseConfigured } from '../firebase';
 
 const AuthContext = createContext(null);
 
+const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL;
+const ensureRole = (profile, email) => {
+  if (ADMIN_EMAIL && email === ADMIN_EMAIL && (!profile.role || profile.role === 'customer')) {
+    return { ...profile, role: 'admin' };
+  }
+  return profile;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,20 +39,22 @@ export const AuthProvider = ({ children }) => {
     }
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
-        // Load full profile from Firestore
         try {
           const snap = await getDoc(doc(db, 'users', fbUser.uid));
-          if (snap.exists()) {
-            setUser({ uid: fbUser.uid, email: fbUser.email, ...snap.data() });
-          } else {
-            // Minimal user if Firestore doc missing
-            setUser({ uid: fbUser.uid, email: fbUser.email, name: fbUser.displayName || '', role: 'customer' });
-          }
+          const raw = snap.exists() ? snap.data() : {};
+          const profile = ensureRole(raw, fbUser.email);
+          setUser({ uid: fbUser.uid, email: fbUser.email, ...profile });
         } catch {
-          setUser({ uid: fbUser.uid, email: fbUser.email, name: fbUser.displayName || '', role: 'customer' });
+          // On error: keep existing user data if same UID (don't downgrade role)
+          setUser(prev =>
+            prev?.uid === fbUser.uid
+              ? prev
+              : ensureRole({ name: fbUser.displayName || '', role: 'customer' }, fbUser.email)
+                ? { uid: fbUser.uid, email: fbUser.email, ...ensureRole({ name: fbUser.displayName || '', role: 'customer' }, fbUser.email) }
+                : { uid: fbUser.uid, email: fbUser.email, name: fbUser.displayName || '', role: 'customer' }
+          );
         }
       } else {
-        // Only clear user if there's no dev session saved
         if (!localStorage.getItem('__devSession')) setUser(null);
       }
       setLoading(false);
@@ -64,7 +74,8 @@ export const AuthProvider = ({ children }) => {
     await setPersistence(auth, browserLocalPersistence);
     const cred = await signInWithEmailAndPassword(auth, email, password);
     const snap = await getDoc(doc(db, 'users', cred.user.uid));
-    const profile = snap.exists() ? snap.data() : {};
+    const raw = snap.exists() ? snap.data() : {};
+    const profile = ensureRole(raw, cred.user.email);
     const userData = { uid: cred.user.uid, email: cred.user.email, ...profile };
     setUser(userData);
     return userData;
