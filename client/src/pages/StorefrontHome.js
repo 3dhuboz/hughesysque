@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ShoppingBag, Flame, ChefHat, Utensils, MapPin, Calendar, Star, Truck } from 'lucide-react';
+import { ArrowRight, ShoppingBag, Flame, ChefHat, Utensils, MapPin, Calendar, Star, Truck, Bot, MessageSquare, Ticket, Gift } from 'lucide-react';
 import { useClientConfig } from '../context/ClientConfigContext';
 import { useStorefront } from '../context/StorefrontContext';
 import SmartHeroImg from '../components/SmartHeroImg';
@@ -50,8 +50,11 @@ const StorefrontHome = () => {
 
   const handleImageError = (e) => { e.target.src = PLACEHOLDER_IMG; };
 
-  let tickerItems = [...fallbackImages];
-  while (tickerItems.length < 10) { tickerItems = [...tickerItems, ...fallbackImages]; }
+  const sourceImages = (settings.manualTickerImages && settings.manualTickerImages.length > 0)
+    ? settings.manualTickerImages
+    : fallbackImages;
+  let tickerItems = [...sourceImages];
+  while (tickerItems.length < 10) { tickerItems = [...tickerItems, ...sourceImages]; }
 
   return (
     <div className="space-y-16 animate-fade-in relative">
@@ -146,6 +149,71 @@ const StorefrontHome = () => {
         </Link>
       </section>
 
+      {/* --- AI PITMASTER JAY --- */}
+      <section className="mx-4">
+        <div className="relative rounded-3xl overflow-hidden border border-white/10 group shadow-2xl">
+          <div className="absolute inset-0 bg-neutral-900"></div>
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center opacity-20 mix-blend-overlay transition duration-1000 group-hover:scale-105"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-transparent"></div>
+          <div className="relative z-10 flex flex-col md:flex-row items-stretch min-h-[400px]">
+            <div className="flex-1 p-8 md:p-12 flex flex-col justify-center space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-16 h-16 bg-bbq-red rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.5)] border-2 border-white/20">
+                    <Bot size={32} className="text-white" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-black animate-pulse"></div>
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-xl uppercase tracking-wider">Pitmaster Jay <span className="text-bbq-gold text-xs bg-white/10 px-2 py-0.5 rounded ml-2 align-middle">AI Beta</span></h3>
+                  <p className="text-gray-400 text-sm">Online &amp; Ready to Roast</p>
+                </div>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-display font-bold text-white leading-tight">
+                GOT A <span className="text-bbq-red">BRISKET</span> EMERGENCY?
+              </h2>
+              <p className="text-gray-300 text-lg max-w-md leading-relaxed">
+                Don't ruin the roast. Ask Jay about temperatures, wood pairings, resting times, or how to save a dry piece of meat.
+              </p>
+              <div className="pt-4">
+                <a href="/contact" className="bg-white text-black font-black uppercase tracking-widest px-8 py-4 rounded-full inline-flex items-center gap-3 hover:bg-bbq-gold transition-all shadow-[0_0_25px_rgba(255,255,255,0.2)]">
+                  <MessageSquare size={20} className="fill-current" /> Ask a Question
+                </a>
+              </div>
+            </div>
+            <div className="flex-1 bg-white/5 backdrop-blur-sm border-l border-white/5 p-8 flex flex-col justify-center relative overflow-hidden">
+              <div className="absolute top-4 right-4 flex gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              </div>
+              <div className="space-y-4 max-w-sm mx-auto w-full">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-bbq-red shrink-0 flex items-center justify-center"><Bot size={16} className="text-white" /></div>
+                  <div className="bg-gray-800 p-3 rounded-2xl rounded-tl-none border border-gray-700 text-sm text-gray-200 shadow-lg">
+                    <p>What's cooking today? Need help with that stall?</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <div className="bg-white text-black p-3 rounded-2xl rounded-tr-none text-sm font-medium shadow-lg">
+                    <p>How long should I rest a 4kg pork shoulder?</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-bbq-red shrink-0 flex items-center justify-center"><Bot size={16} className="text-white" /></div>
+                  <div className="bg-gray-800 p-3 rounded-2xl rounded-tl-none border border-gray-700 text-gray-400 text-xs flex items-center gap-2 w-fit">
+                    <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce"></span>
+                    <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                    <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/50 to-transparent pointer-events-none"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* PHILOSOPHY / INTRO */}
       <section className="relative max-w-5xl mx-auto px-6 py-12 text-center">
         <div className="absolute top-0 left-0 text-gray-800 opacity-20 -z-10 transform -translate-x-12 -translate-y-12">
@@ -212,6 +280,28 @@ const StorefrontHome = () => {
             <p className="text-gray-300 text-sm mb-4">Browse our complete selection of smoked meats & sides.</p>
             <div className="flex items-center gap-2 text-bbq-gold text-xs font-bold uppercase tracking-widest">
               View Items <ArrowRight size={14} />
+            </div>
+          </div>
+        </Link>
+      </section>
+
+      {/* --- GOLDEN TICKET REWARDS BANNER --- */}
+      <section className="mx-2 md:mx-4">
+        <Link to="/rewards" className="relative rounded-3xl overflow-hidden block group h-48 md:h-64 border-2 border-bbq-gold/50 hover:border-bbq-gold transition-all duration-500 shadow-[0_0_40px_rgba(251,191,36,0.15)]">
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-900 via-black to-yellow-900"></div>
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30"></div>
+          <div className="relative z-10 h-full flex flex-col md:flex-row items-center justify-between px-8 md:px-16 text-center md:text-left gap-4">
+            <div className="flex-1">
+              <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                <Ticket className="text-bbq-gold rotate-12" size={32} />
+                <h3 className="text-3xl md:text-5xl font-display font-bold text-white uppercase tracking-tight">The Golden Ticket</h3>
+              </div>
+              <p className="text-bbq-gold/80 font-bold uppercase tracking-widest text-sm md:text-base">Eat BBQ. Collect Stamps. Get Rewarded.</p>
+            </div>
+            <div className="flex-shrink-0">
+              <div className="bg-white text-black font-black uppercase tracking-widest px-8 py-4 rounded-full flex items-center gap-2 group-hover:scale-105 transition-transform shadow-xl">
+                <Gift size={20} className="text-bbq-gold fill-bbq-gold" /> Join The Club
+              </div>
             </div>
           </div>
         </Link>
