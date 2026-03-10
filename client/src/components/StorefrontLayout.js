@@ -31,6 +31,7 @@ const StorefrontLayout = ({ children }) => {
             <p className="text-gray-400 text-sm leading-relaxed">We're currently offline for maintenance. Check back soon — the smoke is still rising.</p>
           </div>
           <p className="text-xs text-gray-600">Hungry? Follow us on socials for updates.</p>
+          <Link to="/login" className="text-xs text-gray-700 hover:text-gray-500 transition-colors mt-4 inline-block">Admin Login</Link>
         </div>
       </div>
     );
