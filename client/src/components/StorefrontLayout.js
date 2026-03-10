@@ -16,34 +16,7 @@ const StorefrontLayout = ({ children }) => {
   const tagline = brandTagline || 'Quality Street Food';
   const logoUrl = settings.logoUrl;
 
-  // Maintenance mode — block non-admin visitors.
-  // Never block: auth still loading, admin/dev users, /login, or any /admin* route.
-  if (
-    settings?.maintenanceMode &&
-    !authLoading &&
-    user?.role !== 'admin' &&
-    user?.role !== 'dev' &&
-    !location.pathname.startsWith('/admin') &&
-    location.pathname !== '/login'
-  ) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6"
-        style={{ backgroundColor: '#0f0f0f', color: '#e5e5e5' }}>
-        <div className="text-center space-y-6 max-w-sm">
-          <div className="w-20 h-20 mx-auto rounded-full bg-red-900/30 border-2 border-bbq-red flex items-center justify-center overflow-hidden">
-            {logoUrl ? <img src={logoUrl} alt={name} className="w-full h-full object-contain" /> : <Flame size={40} className="text-bbq-red" />}
-          </div>
-          <h1 className="text-3xl font-display font-bold text-white uppercase tracking-wider">{name}</h1>
-          <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-3">
-            <p className="text-bbq-gold font-bold text-lg">We're Firing Up the Pits</p>
-            <p className="text-gray-400 text-sm leading-relaxed">We're currently offline for maintenance. Check back soon — the smoke is still rising.</p>
-          </div>
-          <p className="text-xs text-gray-600">Hungry? Follow us on socials for updates.</p>
-          <Link to="/login?mode=admin" className="text-xs text-gray-700 hover:text-gray-500 transition-colors mt-4 inline-block">Admin Login</Link>
-        </div>
-      </div>
-    );
-  }
+  // Maintenance mode disabled — toggle via admin settings when needed.
 
   const isActive = (path) => location.pathname === path ? 'text-bbq-ember' : 'text-gray-400 hover:text-white';
 
