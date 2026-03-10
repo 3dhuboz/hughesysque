@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useStorefront } from '../context/StorefrontContext';
+import { useAuth } from '../context/AuthContext';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, storage } from '../firebase';
@@ -12,7 +13,7 @@ import {
   Search, UserCheck, AlertCircle, Smartphone, Wand2, Sparkles, Copy,
   ClipboardList, Thermometer, Clock, BookOpen, MessageSquare, Bot, User as UserIcon, Send, Code2,
   RefreshCw, BarChart2, Database, Activity, CreditCard, Mail, TrendingUp, Eye, Zap, Server,
-  Share2, Globe, ImagePlus, Lock, UploadCloud, FileText, Palette, Link
+  Share2, Globe, ImagePlus, Lock, UploadCloud, FileText, Palette, Link, WifiOff
 } from 'lucide-react';
 
 // ─── FIREBASE STORAGE UPLOAD HELPER ────────────────────────────────
@@ -2979,6 +2980,8 @@ service cloud.firestore {
 // ─── MAIN ADMIN DASHBOARD ────────────────────────────────────────────
 const FoodTruckAdmin = () => {
   const { connectionError, orders, brandName, settings } = useStorefront();
+  const { user: authUser } = useAuth();
+  const isDev = authUser?.role === 'dev';
   const [activeTab, setActiveTab] = useState('orders');
   const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('__adminWelcomeSeen'));
 
@@ -2991,7 +2994,7 @@ const FoodTruckAdmin = () => {
     if (settings?.geminiApiKey) _geminiKeyOverride = settings.geminiApiKey;
   }, [settings?.geminiApiKey]);
 
-  const TABS = [
+  const ALL_TABS = [
     { id: 'orders', icon: CalendarCheck, label: 'Orders', badge: orders.filter(o => o.status === 'pending').length },
     { id: 'planner', icon: CalendarDays, label: 'Planner' },
     { id: 'pitmaster', icon: Flame, label: 'Pitmaster' },
@@ -3000,25 +3003,35 @@ const FoodTruckAdmin = () => {
     { id: 'customers', icon: Users, label: 'Customers' },
     { id: 'social', icon: Sparkles, label: 'Social & AI' },
     { id: 'settings', icon: Settings, label: 'Settings' },
-    { id: 'devtools', icon: Code2, label: 'Dev Tools' },
+    { id: 'devtools', icon: Code2, label: 'Dev Tools', devOnly: true },
   ];
 
-  const activeTabInfo = TABS.find(t => t.id === activeTab);
+  const tabs = ALL_TABS.filter(t => !t.devOnly || isDev);
+  const activeTabInfo = tabs.find(t => t.id === activeTab);
   const ActiveIcon = activeTabInfo?.icon;
 
   return (
-    <div className="flex -mx-4 md:-mx-8 -mb-8 min-h-[calc(100vh-8rem)] overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-52 shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col">
-        <div className="px-4 pt-5 pb-2">
-          <p className="text-[10px] font-mono text-gray-500 uppercase tracking-[0.2em]">Admin Panel</p>
+    <div className="flex -mx-4 md:-mx-8 min-h-[calc(100vh-160px)]">
+
+      {/* ── Sidebar (desktop only) ── */}
+      <aside className="hidden md:flex flex-col w-44 shrink-0 border-r border-gray-800/70 bg-gray-950/40">
+        <div className="px-4 py-4 border-b border-gray-800/70">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            {isDev ? 'Dev Panel' : 'Admin Panel'}
+          </p>
         </div>
-        <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
-          {TABS.map(({ id, icon: Icon, label, badge }) => (
-            <button key={id} onClick={() => setActiveTab(id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
-                ${activeTab === id ? 'bg-bbq-red text-white shadow-lg shadow-red-900/30' : 'text-gray-400 hover:text-white hover:bg-gray-800/60'}`}>
-              <Icon size={16} className="shrink-0" />
+
+        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+          {tabs.map(({ id, icon: Icon, label, badge, devOnly }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${activeTab === id
+                  ? devOnly ? 'bg-purple-700 text-white shadow-sm' : 'bg-bbq-red text-white shadow-sm'
+                  : devOnly ? 'text-purple-400 hover:text-white hover:bg-purple-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
+            >
+              <Icon size={15} />
               <span>{label}</span>
               {badge > 0 && (
                 <span className="ml-auto bg-yellow-500 text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shrink-0">{badge}</span>
@@ -3026,49 +3039,63 @@ const FoodTruckAdmin = () => {
             </button>
           ))}
         </nav>
-        <div className="px-4 py-4 border-t border-gray-800 space-y-2">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <UserIcon size={12} />
-            <span>Admin Mode</span>
-          </div>
+
+        <div className="px-3 py-3 border-t border-gray-800/70">
+          {isDev && (
+            <span className="text-[10px] flex items-center gap-1.5 text-purple-400 mb-1.5">
+              <Code2 size={10} /> Developer Mode
+            </span>
+          )}
           {connectionError ? (
-            <div className="flex items-center gap-2 text-xs text-red-400">
-              <Wifi size={12} />
-              <span>Offline</span>
-            </div>
+            <span className="text-[10px] flex items-center gap-1.5 text-red-400">
+              <WifiOff size={10} /> Offline
+            </span>
           ) : (
-            <div className="flex items-center gap-2 text-xs text-purple-400">
-              <Cloud size={12} />
-              <span>Live · {brandName}</span>
-            </div>
+            <span className="text-[10px] flex items-center gap-1.5 text-green-500">
+              <Cloud size={10} /> Live · Firestore
+            </span>
           )}
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
+      {/* ── Mobile horizontal tab bar (sits above bottom nav) ── */}
+      <div className="md:hidden fixed bottom-[72px] left-0 right-0 z-40 flex overflow-x-auto bg-gray-950/95 border-t border-gray-800 backdrop-blur-md">
+        {tabs.map(({ id, icon: Icon, label }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex flex-col items-center gap-0.5 px-3.5 py-2 shrink-0 text-[9px] font-bold uppercase tracking-wide transition-all ${activeTab === id ? 'text-white border-t-2 border-bbq-red' : 'text-gray-500 border-t-2 border-transparent'
+              }`}
+          >
+            <Icon size={16} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Main content ── */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Section header bar */}
+        <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-800/60 bg-gray-950/20">
+          {ActiveIcon && <ActiveIcon size={15} className="text-gray-400" />}
+          <span className="text-sm font-semibold text-white">{activeTabInfo?.label}</span>
+        </div>
+
+        {/* Page content */}
+        <div className="flex-1 p-5 md:p-6 overflow-auto">
           {showWelcome && (
             <div className="mb-5 bg-gradient-to-r from-bbq-red/20 to-orange-900/10 border border-bbq-red/30 rounded-xl p-4 flex items-start gap-4">
               <Flame size={22} className="text-bbq-red shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-white text-sm">Welcome to your Admin Dashboard</p>
+                <p className="font-bold text-white text-sm">Welcome to {brandName || 'your'} Admin Dashboard</p>
                 <p className="text-xs text-gray-400 mt-1 leading-relaxed">
                   <strong className="text-white">Orders</strong> — live order management &nbsp;·&nbsp;
                   <strong className="text-white">Menu</strong> — add/edit items with AI images &nbsp;·&nbsp;
                   <strong className="text-white">Settings</strong> — branding, logo &amp; rewards &nbsp;·&nbsp;
-                  <strong className="text-white">Dev Tools</strong> — API keys &amp; Firebase &nbsp;·&nbsp;
                   <strong className="text-white">Social &amp; AI</strong> — content generation
                 </p>
-                <p className="text-[11px] text-gray-500 mt-2">Look for <HelpCircle size={11} className="inline text-gray-500" /> icons throughout the panel for contextual tips.</p>
               </div>
               <button onClick={dismissWelcome} className="text-gray-600 hover:text-white shrink-0 transition"><X size={15} /></button>
-            </div>
-          )}
-          {activeTabInfo && ActiveIcon && (
-            <div className="flex items-center gap-2 mb-6 text-gray-400">
-              <ActiveIcon size={16} />
-              <span className="text-white font-medium text-sm">{activeTabInfo.label}</span>
             </div>
           )}
           {activeTab === 'orders' && <OrderManager />}
@@ -3081,7 +3108,7 @@ const FoodTruckAdmin = () => {
           {activeTab === 'settings' && <FTSettingsManager />}
           {activeTab === 'devtools' && <FTDevTools />}
         </div>
-      </main>
+      </div>
     </div>
   );
 };
