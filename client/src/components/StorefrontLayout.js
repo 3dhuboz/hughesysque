@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Menu as MenuIcon, X, Image as ImageIcon, ShoppingBag } from 'lucide-react';
+import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Menu as MenuIcon, X, Image as ImageIcon, ShoppingBag, Gift } from 'lucide-react';
 import { useClientConfig } from '../context/ClientConfigContext';
 import { useAuth } from '../context/AuthContext';
 import { useStorefront } from '../context/StorefrontContext';
@@ -62,9 +62,15 @@ const StorefrontLayout = ({ children }) => {
       <header className="hidden md:flex items-center justify-between px-8 py-4 fixed top-0 left-0 right-0 z-50 transition-all duration-300"
         style={{ background: 'rgba(31,31,31,0.7)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center overflow-hidden border-2 border-bbq-red group-hover:border-bbq-gold transition-colors duration-500 shadow-lg shadow-red-900/20">
-            {logoUrl ? <img src={logoUrl} alt={name} className="w-full h-full object-contain p-1" /> : <Flame className="text-bbq-red" size={24} />}
-          </div>
+          {logoUrl ? (
+            <div className="w-14 h-14 flex items-center justify-center overflow-visible transition-transform duration-500 group-hover:scale-105">
+              <img src={logoUrl} alt={name} className="w-full h-full object-contain drop-shadow-md" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center overflow-hidden border-2 border-bbq-red group-hover:border-bbq-gold transition-colors duration-500 shadow-lg shadow-red-900/20">
+              <Flame className="text-bbq-red" size={24} />
+            </div>
+          )}
           <div className="flex flex-col">
             <h1 className="text-2xl font-display font-bold text-white tracking-wider uppercase leading-none group-hover:text-bbq-red transition-colors">{name}</h1>
             <span className="text-xs text-bbq-gold font-bold tracking-[0.2em] uppercase">{tagline}</span>
@@ -76,6 +82,9 @@ const StorefrontLayout = ({ children }) => {
           <Link to="/menu" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/menu')}`}>Menu</Link>
           <Link to="/events" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/events')}`}>Events</Link>
           <Link to="/gallery" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/gallery')}`}>Gallery</Link>
+          <Link to="/rewards" className={`font-bold text-sm tracking-widest uppercase transition flex items-center gap-1 ${isActive('/rewards')}`}>
+            <Gift size={14} className={location.pathname === '/rewards' ? 'text-bbq-ember' : 'text-bbq-gold'} /> Rewards
+          </Link>
           <Link to="/contact" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/contact')}`}>Contact</Link>
           {(user?.role === 'admin' || user?.role === 'dev') && (
             <Link to="/admin/foodtruck" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/admin/foodtruck')}`}>Dashboard</Link>
@@ -113,9 +122,15 @@ const StorefrontLayout = ({ children }) => {
       <header className="md:hidden flex items-center justify-between p-4 fixed top-0 w-full z-50"
         style={{ background: 'rgba(31,31,31,0.7)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-black flex items-center justify-center overflow-hidden border border-bbq-red">
-            {logoUrl ? <img src={logoUrl} alt={name} className="w-full h-full object-contain p-0.5" /> : <Flame className="text-bbq-red" size={20} />}
-          </div>
+          {logoUrl ? (
+            <div className="w-10 h-10 flex items-center justify-center overflow-visible">
+              <img src={logoUrl} alt={name} className="w-full h-full object-contain" />
+            </div>
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-black flex items-center justify-center overflow-hidden border border-bbq-red">
+              <Flame className="text-bbq-red" size={20} />
+            </div>
+          )}
           <h1 className="text-lg font-display font-bold text-white uppercase tracking-tight">{name}</h1>
         </Link>
         <div className="flex items-center gap-3">
@@ -142,9 +157,15 @@ const StorefrontLayout = ({ children }) => {
         <div className="max-w-7xl mx-auto px-8 relative z-10 grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="space-y-4">
-            <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center overflow-hidden border-2 border-bbq-red shadow-2xl">
-              {logoUrl ? <img src={logoUrl} alt={name} className="w-full h-full object-contain p-1" /> : <Flame className="text-bbq-red" size={32} />}
-            </div>
+            {logoUrl ? (
+              <div className="w-16 h-16 flex items-center justify-center overflow-visible">
+                <img src={logoUrl} alt={name} className="w-full h-full object-contain drop-shadow-2xl" />
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center overflow-hidden border-2 border-bbq-red shadow-2xl">
+                <Flame className="text-bbq-red" size={32} />
+              </div>
+            )}
             <h3 className="font-display font-bold text-2xl tracking-wide uppercase text-white">{name}</h3>
             <p className="text-gray-500 text-sm leading-relaxed">
               {tagline}. Authentic wood-smoked BBQ cooked low and slow.
@@ -202,8 +223,12 @@ const StorefrontLayout = ({ children }) => {
         style={{ background: 'rgba(31,31,31,0.7)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
         <NavItem to="/" icon={Flame} label="Home" />
         <NavItem to="/menu" icon={UtensilsCrossed} label="Menu" />
-        <NavItem to="/events" icon={CalendarDays} label="Events" />
-        <NavItem to="/order" icon={ShoppingBag} label="Order" />
+        <NavItem to="/gallery" icon={ImageIcon} label="Gallery" />
+        {(user?.role === 'admin' || user?.role === 'dev') ? (
+          <NavItem to="/admin/foodtruck" icon={LayoutDashboard} label="Admin" />
+        ) : (
+          <NavItem to="/order" icon={ShoppingBag} label="Order" />
+        )}
         {user ? (
           <NavItem to="/storefront-profile" icon={UserIcon} label="Profile" />
         ) : (
