@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useStorefront } from '../context/StorefrontContext';
 
 const StorefrontLayout = ({ children }) => {
-  const { user, logout } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
   const { brandName, brandTagline, primaryColor } = useClientConfig();
   const { cart, settings } = useStorefront();
   const location = useLocation();
@@ -16,8 +16,16 @@ const StorefrontLayout = ({ children }) => {
   const tagline = brandTagline || 'Quality Street Food';
   const logoUrl = settings.logoUrl;
 
-  // Maintenance mode — block all non-admin visitors (but allow /login so admins can sign in)
-  if (settings?.maintenanceMode && user?.role !== 'admin' && user?.role !== 'dev' && location.pathname !== '/login') {
+  // Maintenance mode — block non-admin visitors.
+  // Never block: auth still loading, admin/dev users, /login, or any /admin* route.
+  if (
+    settings?.maintenanceMode &&
+    !authLoading &&
+    user?.role !== 'admin' &&
+    user?.role !== 'dev' &&
+    !location.pathname.startsWith('/admin') &&
+    location.pathname !== '/login'
+  ) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6"
         style={{ backgroundColor: '#0f0f0f', color: '#e5e5e5' }}>
