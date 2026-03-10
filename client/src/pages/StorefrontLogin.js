@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStorefront } from '../context/StorefrontContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, User, Lock, Shield, ArrowLeft, Loader2, Flame } from 'lucide-react';
 
 const StorefrontLogin = () => {
   const { login, brandName } = useStorefront();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState('LOGIN'); // LOGIN | SIGNUP | ADMIN
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('mode') === 'admin') setMode('ADMIN');
+  }, [location.search]);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,8 +66,8 @@ const StorefrontLogin = () => {
             </h2>
             <p className="text-gray-400 text-sm">
               {mode === 'LOGIN' ? 'Login to view your orders and rewards.' :
-               mode === 'SIGNUP' ? 'Create an account to order and earn stamps.' :
-               'Secure area for authorised personnel only.'}
+                mode === 'SIGNUP' ? 'Create an account to order and earn stamps.' :
+                  'Secure area for authorised personnel only.'}
             </p>
           </div>
 
@@ -85,11 +91,11 @@ const StorefrontLogin = () => {
               </div>
               <button type="submit" disabled={isLoading}
                 className="w-full bg-bbq-red text-white py-3 rounded-lg font-bold hover:bg-red-700 transition shadow-lg flex justify-center items-center gap-2">
-                {isLoading ? <Loader2 className="animate-spin" size={20}/> : 'Access Dashboard'}
+                {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Access Dashboard'}
               </button>
               <button type="button" onClick={() => setMode('LOGIN')}
                 className="w-full text-gray-400 hover:text-white text-sm flex items-center justify-center gap-2 transition">
-                <ArrowLeft size={14}/> Back to Customer Login
+                <ArrowLeft size={14} /> Back to Customer Login
               </button>
             </form>
           ) : (
@@ -121,7 +127,7 @@ const StorefrontLogin = () => {
                 </div>
                 <button type="submit" disabled={isLoading}
                   className="w-full bg-gradient-to-r from-bbq-red to-red-800 text-white py-4 rounded-lg font-bold hover:shadow-[0_0_20px_rgba(217,56,30,0.4)] transition-all shadow-xl flex justify-center items-center gap-2">
-                  {isLoading ? <Loader2 className="animate-spin" size={20}/> : (mode === 'LOGIN' ? 'Login' : 'Create Account')}
+                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : (mode === 'LOGIN' ? 'Login' : 'Create Account')}
                 </button>
               </form>
 
