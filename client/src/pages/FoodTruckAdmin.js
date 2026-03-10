@@ -1045,17 +1045,15 @@ const FTSettingsManager = () => {
                 className="flex-1 bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm font-mono focus:outline-none focus:border-bbq-red" />
               <label className="cursor-pointer flex items-center gap-1.5 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700 shrink-0 text-xs text-gray-300 font-bold" title="Upload logo from device">
                 <UploadCloud size={14} className="text-gray-400" /> Upload
-                <input type="file" accept="image/*" className="hidden" onChange={async e => {
+                <input type="file" accept="image/*" className="hidden" onChange={e => {
                   const f = e.target.files?.[0];
                   if (!f) return;
-                  try {
-                    const path = `logos/${Date.now()}_${f.name.replace(/[^a-z0-9.]/gi, '_')}`;
-                    const url = await uploadToStorage(f, path);
-                    setForm(prev => ({ ...prev, logoUrl: url }));
-                  } catch (err) {
-                    console.error('Logo upload failed:', err);
-                    toast.error('Logo upload failed — check Firebase Storage rules.');
-                  }
+                  const reader = new FileReader();
+                  reader.onloadend = async () => {
+                    const compressed = await compressImageBase64(reader.result, 400, 0.8);
+                    setForm(prev => ({ ...prev, logoUrl: compressed }));
+                  };
+                  reader.readAsDataURL(f);
                 }} />
               </label>
               {form.logoUrl && (
