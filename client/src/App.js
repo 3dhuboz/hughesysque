@@ -188,6 +188,19 @@ const AppShell = () => {
     }
   }, [clientMode, brandName]);
 
+  // Admin paths in client mode: need StorefrontProvider (for useStorefront hooks) but NO StorefrontLayout (no maintenance check)
+  if (isAdminPath && clientMode) {
+    return (
+      <StorefrontProvider>
+        <AppRoutes />
+        <Toaster position="top-right" toastOptions={{
+          duration: 4000,
+          style: { background: '#1e293b', color: '#f8fafc', borderRadius: '8px' }
+        }} />
+      </StorefrontProvider>
+    );
+  }
+
   // Storefront pages get the BBQ-themed StorefrontLayout + StorefrontProvider
   if (isStorefront && clientMode) {
     return (
