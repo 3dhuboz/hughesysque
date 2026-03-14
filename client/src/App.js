@@ -24,6 +24,7 @@ import AdminSiteGround from './pages/AdminSiteGround';
 import Profile from './pages/Profile';
 import SocialAI from './pages/SocialAI';
 import AdminSocial from './pages/AdminSocial';
+import AdminSocialBridge from './pages/AdminSocialBridge';
 import SocialAIProduct from './pages/SocialAIProduct';
 import AutoHue from './pages/AutoHue';
 import Marketplace from './pages/Marketplace';
@@ -104,7 +105,7 @@ const AppRoutes = () => {
 
         {/* Client admin — limited to settings & social management */}
         <Route path="/admin" element={<ProtectedRoute adminOnly>{enabledApps.includes('foodtruck') ? <Navigate to="/admin/foodtruck" replace /> : <AdminDashboard />}</ProtectedRoute>} />
-        <Route path="/admin/social" element={<ProtectedRoute adminOnly><AdminSocial /></ProtectedRoute>} />
+        <Route path="/admin/social" element={<ProtectedRoute adminOnly><AdminSocialBridge /></ProtectedRoute>} />
         <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
         <Route path="/admin/foodtruck" element={<ProtectedRoute adminOnly><FoodTruckAdmin /></ProtectedRoute>} />
 
