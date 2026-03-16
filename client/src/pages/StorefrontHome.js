@@ -234,7 +234,7 @@ const StorefrontHome = () => {
         <Link to="/order" className="relative h-64 rounded-2xl overflow-hidden group border border-white/10 hover:border-bbq-red/50 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
           <SmartHeroImg
-            src={settings.eventsHeroImage}
+            src={settings.homeScheduleCardImage}
             fallback={CARD_SCHEDULE}
             alt="Events"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700"
@@ -254,7 +254,7 @@ const StorefrontHome = () => {
         <Link to="/order" className="relative h-64 rounded-2xl overflow-hidden group border border-white/10 hover:border-bbq-red/50 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
           <SmartHeroImg
-            src={settings.menuHeroImage}
+            src={settings.homeMenuCardImage}
             fallback={CARD_MENU}
             alt="Menu"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700"
