@@ -55,7 +55,7 @@ const StorefrontContact = () => {
                   <div className="bg-black/40 w-12 h-12 flex items-center justify-center rounded-lg text-bbq-gold border border-white/5"><Mail size={20} /></div>
                   <div>
                     <p className="text-xs font-bold text-gray-500 uppercase">Email</p>
-                    <a href="mailto:hugheseysbbq2021@gmail.com" className="text-white text-lg font-bold hover:text-bbq-red transition">hugheseysbbq2021@gmail.com</a>
+                    <a href={`mailto:${contactEmail}`} className="text-white text-lg font-bold hover:text-bbq-red transition">{contactEmail}</a>
                   </div>
                 </div>
                 <div className="flex gap-4">

@@ -29,7 +29,6 @@ const StorefrontHome = () => {
 
   const name = settings.businessName || brandName || 'Hughesys Que';
   const tagline = settings.businessTagline || brandTagline || 'Quality Street Food';
-  const sv = settings.siteVisuals || {};
 
   const today = new Date(new Date().setHours(0, 0, 0, 0));
   const nextCookDay = calendarEvents
@@ -55,7 +54,7 @@ const StorefrontHome = () => {
           <div className="absolute inset-0">
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/80 z-10" />
             <SmartHeroImg
-              src={sv.cateringHero}
+              src={settings.heroCateringImage}
               fallback={HERO_CATERING}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
               alt="Catering Feast"
@@ -83,7 +82,7 @@ const StorefrontHome = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-bbq-red/40 to-transparent mix-blend-overlay z-10" />
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/90 z-20" />
             <SmartHeroImg
-              src={sv.cookMenuHero}
+              src={settings.heroCookImage}
               fallback={HERO_COOK}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 contrast-125"
               alt="Smoker and BBQ"
@@ -235,7 +234,7 @@ const StorefrontHome = () => {
         <Link to="/order" className="relative h-64 rounded-2xl overflow-hidden group border border-white/10 hover:border-bbq-red/50 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
           <SmartHeroImg
-            src={sv.eventsHero}
+            src={settings.eventsHeroImage}
             fallback={CARD_SCHEDULE}
             alt="Events"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700"
@@ -255,7 +254,7 @@ const StorefrontHome = () => {
         <Link to="/order" className="relative h-64 rounded-2xl overflow-hidden group border border-white/10 hover:border-bbq-red/50 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
           <SmartHeroImg
-            src={sv.menuHero}
+            src={settings.menuHeroImage}
             fallback={CARD_MENU}
             alt="Menu"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700"
