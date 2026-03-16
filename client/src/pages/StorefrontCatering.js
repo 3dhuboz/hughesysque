@@ -186,7 +186,7 @@ const StorefrontCatering = () => {
       {/* Hero */}
       <div className="relative h-[35vh] min-h-[260px] rounded-2xl overflow-hidden shadow-2xl mb-8">
         <div className="absolute inset-0 bg-black/60 z-10" />
-        <SmartHeroImg src={settings.siteVisuals?.diyPageHero} fallback="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1950&q=80"
+        <SmartHeroImg src={settings.diyHeroImage} fallback="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1950&q=80"
           className="absolute inset-0 w-full h-full object-cover" alt="Catering" />
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-6">
           <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 tracking-tight uppercase">
@@ -338,7 +338,7 @@ const StorefrontCatering = () => {
                   {[
                     {
                       onClick: () => setSelectionMode('PACKAGES'),
-                      img: settings.siteVisuals?.packageCard || 'https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80',
+                      img: settings.diyCardPackageImage || 'https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80',
                       accentClass: 'group-hover:border-bbq-gold',
                       iconBg: 'bg-bbq-gold',
                       Icon: Package,
@@ -351,7 +351,7 @@ const StorefrontCatering = () => {
                     },
                     {
                       onClick: () => selectPackage('pkg_custom'),
-                      img: settings.siteVisuals?.customCard || 'https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80',
+                      img: settings.diyCardCustomImage || 'https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80',
                       accentClass: 'group-hover:border-bbq-red',
                       iconBg: 'bg-bbq-red',
                       Icon: ChefHat,
