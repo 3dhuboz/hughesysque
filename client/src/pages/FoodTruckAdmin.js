@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import AdminSocialBridge from './AdminSocialBridge';
 import { useStorefront } from '../context/StorefrontContext';
+import { useClientConfig } from '../context/ClientConfigContext';
 import { useAuth } from '../context/AuthContext';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -3028,8 +3029,8 @@ const FoodTruckAdmin = () => {
               key={id}
               onClick={() => setActiveTab(id)}
               className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${activeTab === id
-                  ? devOnly ? 'bg-purple-700 text-white shadow-sm' : 'bg-bbq-red text-white shadow-sm'
-                  : devOnly ? 'text-purple-400 hover:text-white hover:bg-purple-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                ? devOnly ? 'bg-purple-700 text-white shadow-sm' : 'bg-bbq-red text-white shadow-sm'
+                : devOnly ? 'text-purple-400 hover:text-white hover:bg-purple-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
             >
               <Icon size={15} />
