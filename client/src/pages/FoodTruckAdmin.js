@@ -1101,7 +1101,7 @@ const FTSettingsManager = () => {
               const allKeys = VISUAL_SECTIONS.flatMap(s => s.fields.map(f => f.key));
               const cleared = allKeys.reduce((acc, k) => ({ ...acc, [k]: '' }), {});
               setVisuals(cleared);
-              try { const s = JSON.parse(localStorage.getItem('hq_settings') || '{}'); delete s.siteVisuals; localStorage.setItem('hq_settings', JSON.stringify(s)); } catch { }
+              try { const s = JSON.parse(localStorage.getItem('hq_settings') || '{}'); allKeys.forEach(k => delete s[k]); localStorage.setItem('hq_settings', JSON.stringify(s)); } catch { }
               toast.success('All visuals cleared — upload fresh images below.');
             }} className="flex items-center gap-1.5 text-[11px] bg-gray-800 border border-gray-700 hover:bg-red-900/40 hover:border-red-700 text-gray-400 hover:text-red-400 px-3 py-1.5 rounded-lg transition">
               <X size={11} /> Clear All
