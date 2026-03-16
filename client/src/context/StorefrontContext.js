@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
-  collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc,
-  query, orderBy, where, arrayUnion, arrayRemove, increment, getDoc,
+  collection, doc, onSnapshot, query, orderBy,
 } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { useClientConfig } from './ClientConfigContext';
-import { db, isFirebaseConfigured } from '../firebase';
+import { db, isFirebaseConfigured, auth } from '../firebase';
+import { restSetDoc, restGetDoc, restListDocs, restDeleteDoc } from '../services/firestoreRest';
 
 const StorefrontContext = createContext(undefined);
 
@@ -39,6 +39,14 @@ export const StorefrontProvider = ({ children }) => {
   // ── Data State ──
   const [isLoading, setIsLoading] = useState(true);
   const [connectionError, setConnectionError] = useState(null);
+
+  // Track which core listeners have received first snapshot
+  const loadedRef = React.useRef(new Set());
+  const markLoaded = (source) => {
+    loadedRef.current.add(source);
+    const REQUIRED = ['Menu', 'Orders', 'Settings'];
+    if (REQUIRED.every(s => loadedRef.current.has(s))) setIsLoading(false);
+  };
   const [menu, setMenu] = useState(() => {
     try { const s = localStorage.getItem('hq_menu'); return s ? JSON.parse(s) : []; } catch { return []; }
   });
@@ -85,7 +93,7 @@ export const StorefrontProvider = ({ children }) => {
     } catch { }
   }, [selectedOrderDate]);
 
-  // ── Firestore real-time listeners ──
+  // ── Firestore real-time listeners + REST bootstrap ──
   useEffect(() => {
     if (!isFirebaseConfigured) {
       setConnectionError('Firebase not configured. Set REACT_APP_FIREBASE_* env vars.');
@@ -99,47 +107,13 @@ export const StorefrontProvider = ({ children }) => {
       } else {
         console.error(`Firestore error (${source}):`, err);
       }
+      markLoaded(source);
     };
 
-    // Menu
-    const unsubMenu = onSnapshot(collection(db, 'menu'), (snap) => {
-      const data = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-      setMenu(data);
-      try { localStorage.setItem('hq_menu', JSON.stringify(data.map(i => ({ ...i, image: '' })))); } catch { }
-      setConnectionError(null);
-    }, handleError('menu'));
+    // Timeout fallback: show whatever we have after 5s
+    const fallbackTimer = setTimeout(() => setIsLoading(false), 5000);
 
-    // Orders
-    const unsubOrders = onSnapshot(
-      query(collection(db, 'orders'), orderBy('createdAt', 'desc')),
-      (snap) => {
-        setOrders(snap.docs.map(d => ({ ...d.data(), id: d.id })));
-        setConnectionError(null);
-      }, handleError('orders')
-    );
-
-    // Events
-    const unsubEvents = onSnapshot(collection(db, 'events'), (snap) => {
-      const data = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-      setCalendarEvents(data);
-      try { localStorage.setItem('hq_events', JSON.stringify(data)); } catch { }
-      setConnectionError(null);
-    }, handleError('events'));
-
-    // Gallery
-    const unsubGallery = onSnapshot(
-      query(collection(db, 'gallery_posts'), orderBy('createdAt', 'desc')),
-      (snap) => setGalleryPosts(snap.docs.map(d => ({ ...d.data(), id: d.id }))),
-      handleError('gallery')
-    );
-
-    // Users
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
-      setUsers(snap.docs.map(d => ({ ...d.data(), id: d.id, uid: d.id })));
-      setConnectionError(null);
-    }, handleError('users'));
-
-    // Settings — merge multiple sub-docs into one settings object
+    // Settings merge helper
     const mergeSettings = (data) => {
       if (!data) return;
       setSettings(prev => {
@@ -148,14 +122,110 @@ export const StorefrontProvider = ({ children }) => {
         return merged;
       });
     };
-    const unsubGeneral = onSnapshot(doc(db, 'settings', 'general'), snap => mergeSettings(snap.data()), handleError('settings/general'));
-    const unsubRewards = onSnapshot(doc(db, 'settings', 'rewards'), snap => mergeSettings(snap.data()), handleError('settings/rewards'));
 
-    setIsLoading(false);
+    // ── REST Bootstrap: fast initial load while onSnapshot connects ──
+    const settingsDocs = ['general', 'ticker', 'img_home', 'img_catering', 'img_pages', 'rewards'];
+    Promise.all(settingsDocs.map(id => restGetDoc('settings', id).catch(() => null)))
+      .then(results => {
+        results.forEach(d => { if (d && Object.keys(d).length > 0) mergeSettings(d); });
+        markLoaded('Settings');
+      })
+      .catch(() => markLoaded('Settings'));
+
+    restListDocs('menu').then(docs => {
+      if (docs.length > 0) {
+        setMenu(docs);
+        try { localStorage.setItem('hq_menu', JSON.stringify(docs.map(i => ({ ...i, image: '' })))); } catch { }
+      }
+      markLoaded('Menu');
+    }).catch(() => markLoaded('Menu'));
+
+    restListDocs('orders').then(docs => {
+      if (docs.length > 0) {
+        const sorted = docs.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        setOrders(sorted);
+      }
+      markLoaded('Orders');
+    }).catch(() => markLoaded('Orders'));
+
+    restListDocs('events').then(docs => {
+      if (docs.length > 0) {
+        setCalendarEvents(docs);
+        try { localStorage.setItem('hq_events', JSON.stringify(docs)); } catch { }
+      }
+    }).catch(() => { });
+
+    restListDocs('gallery_posts').then(docs => {
+      if (docs.length > 0) {
+        const sorted = docs.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        setGalleryPosts(sorted);
+      }
+    }).catch(() => { });
+
+    restListDocs('users').then(docs => {
+      if (docs.length > 0) {
+        setUsers(docs.map(d => ({ ...d, uid: d.id })));
+        if (auth?.currentUser) {
+          const me = docs.find(u => u.id === auth.currentUser.uid);
+          // user profile is managed by AuthContext; just ensure users list is populated
+        }
+      }
+    }).catch(() => { });
+
+    // ── SDK onSnapshot: real-time updates after initial load ──
+    const unsubMenu = onSnapshot(collection(db, 'menu'), (snap) => {
+      if (snap.docs.length === 0) return;
+      const data = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      setMenu(data);
+      try { localStorage.setItem('hq_menu', JSON.stringify(data.map(i => ({ ...i, image: '' })))); } catch { }
+      setConnectionError(null);
+      markLoaded('Menu');
+    }, handleError('Menu'));
+
+    const unsubOrders = onSnapshot(
+      query(collection(db, 'orders'), orderBy('createdAt', 'desc')),
+      (snap) => {
+        if (snap.docs.length === 0) return;
+        setOrders(snap.docs.map(d => ({ ...d.data(), id: d.id })));
+        setConnectionError(null);
+        markLoaded('Orders');
+      }, handleError('Orders')
+    );
+
+    const unsubEvents = onSnapshot(collection(db, 'events'), (snap) => {
+      if (snap.docs.length === 0) return;
+      const data = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      setCalendarEvents(data);
+      try { localStorage.setItem('hq_events', JSON.stringify(data)); } catch { }
+      setConnectionError(null);
+    }, handleError('Events'));
+
+    const unsubGallery = onSnapshot(
+      query(collection(db, 'gallery_posts'), orderBy('createdAt', 'desc')),
+      (snap) => {
+        if (snap.docs.length === 0) return;
+        setGalleryPosts(snap.docs.map(d => ({ ...d.data(), id: d.id })));
+      },
+      handleError('Gallery')
+    );
+
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+      if (snap.docs.length === 0) return;
+      setUsers(snap.docs.map(d => ({ ...d.data(), id: d.id, uid: d.id })));
+      setConnectionError(null);
+    }, handleError('Users'));
+
+    const unsubGeneral = onSnapshot(doc(db, 'settings', 'general'), snap => { mergeSettings(snap.data()); markLoaded('Settings'); }, handleError('Settings'));
+    const unsubTicker = onSnapshot(doc(db, 'settings', 'ticker'), snap => mergeSettings(snap.data()), handleError('Ticker'));
+    const unsubImgHome = onSnapshot(doc(db, 'settings', 'img_home'), snap => mergeSettings(snap.data()), handleError('ImgHome'));
+    const unsubImgCat = onSnapshot(doc(db, 'settings', 'img_catering'), snap => mergeSettings(snap.data()), handleError('ImgCat'));
+    const unsubImgPages = onSnapshot(doc(db, 'settings', 'img_pages'), snap => mergeSettings(snap.data()), handleError('ImgPages'));
+    const unsubRewards = onSnapshot(doc(db, 'settings', 'rewards'), snap => mergeSettings(snap.data()), handleError('Rewards'));
 
     return () => {
+      clearTimeout(fallbackTimer);
       unsubMenu(); unsubOrders(); unsubEvents(); unsubGallery(); unsubUsers();
-      unsubGeneral(); unsubRewards();
+      unsubGeneral(); unsubTicker(); unsubImgHome(); unsubImgCat(); unsubImgPages(); unsubRewards();
     };
   }, []);
 
@@ -170,13 +240,14 @@ export const StorefrontProvider = ({ children }) => {
   const addUser = async (newUser) => {
     if (!newUser.id && !newUser.uid) return;
     const uid = newUser.id || newUser.uid;
-    await setDoc(doc(db, 'users', uid), newUser, { merge: true });
+    await restSetDoc('users', uid, newUser);
   };
 
   const updateUserProfile = async (updatedUser) => {
     const uid = updatedUser.uid || updatedUser.id;
     if (!uid) return;
-    await updateDoc(doc(db, 'users', uid), updatedUser);
+    await restSetDoc('users', uid, updatedUser);
+    setUsers(prev => prev.map(u => (u.id === uid || u.uid === uid) ? { ...u, ...updatedUser } : u));
     if (authUser && uid === authUser.uid) {
       await authUpdateProfile(updatedUser);
     }
@@ -185,32 +256,43 @@ export const StorefrontProvider = ({ children }) => {
   const adminUpdateUser = updateUserProfile;
 
   const deleteUser = async (userId) => {
-    await deleteDoc(doc(db, 'users', userId));
+    await restDeleteDoc('users', userId);
+    setUsers(prev => prev.filter(u => u.id !== userId && u.uid !== userId));
   };
 
   // ── Menu Actions ──
   const addMenuItem = async (item) => {
-    const id = item.id || doc(collection(db, 'menu')).id;
-    await setDoc(doc(db, 'menu', id), { ...item, id });
+    const id = item.id || `menu_${Date.now()}`;
+    await restSetDoc('menu', id, { ...item, id });
+    setMenu(prev => [...prev.filter(m => m.id !== id), { ...item, id }]);
   };
 
   const updateMenuItem = async (item) => {
     const id = item.id || item._id;
-    await updateDoc(doc(db, 'menu', id), { ...item });
+    await restSetDoc('menu', id, { ...item, id });
+    setMenu(prev => prev.map(m => m.id === id ? { ...item, id } : m));
+  };
+
+  const deleteMenuItem = async (itemId) => {
+    await restDeleteDoc('menu', itemId);
+    setMenu(prev => prev.filter(m => m.id !== itemId));
   };
 
   // ── Calendar/Event Actions ──
   const addCalendarEvent = async (event) => {
-    const id = event.id || doc(collection(db, 'events')).id;
-    await setDoc(doc(db, 'events', id), { ...event, id });
+    const id = event.id || `evt_${Date.now()}`;
+    await restSetDoc('events', id, { ...event, id });
+    setCalendarEvents(prev => [...prev.filter(e => e.id !== id), { ...event, id }]);
   };
 
   const updateCalendarEvent = async (event) => {
-    await updateDoc(doc(db, 'events', event.id), { ...event });
+    await restSetDoc('events', event.id, { ...event });
+    setCalendarEvents(prev => prev.map(e => e.id === event.id ? event : e));
   };
 
   const removeCalendarEvent = async (eventId) => {
-    await deleteDoc(doc(db, 'events', eventId));
+    await restDeleteDoc('events', eventId);
+    setCalendarEvents(prev => prev.filter(e => e.id !== eventId));
   };
 
   const isDatePastCutoff = (dateStr) => {
@@ -230,9 +312,10 @@ export const StorefrontProvider = ({ children }) => {
 
   // ── Order Actions ──
   const createOrder = async (order) => {
-    const id = order.id || doc(collection(db, 'orders')).id;
+    const id = order.id || `ord_${Date.now()}`;
     const orderData = { ...order, id, createdAt: order.createdAt || new Date().toISOString() };
-    await setDoc(doc(db, 'orders', id), orderData);
+    await restSetDoc('orders', id, orderData);
+    setOrders(prev => [orderData, ...prev]);
     if (order.discountApplied && user?.hasCateringDiscount) {
       await updateUserProfile({ ...authUser, hasCateringDiscount: false });
     }
@@ -241,23 +324,24 @@ export const StorefrontProvider = ({ children }) => {
   };
 
   const updateOrderStatus = async (orderId, status) => {
-    await updateDoc(doc(db, 'orders', orderId), { status });
+    await restSetDoc('orders', orderId, { status });
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
     if (status === 'Confirmed') {
       const order = orders.find(o => o.id === orderId);
       if (order?.type === 'CATERING') {
         const dateStr = new Date(order.cookDay).toISOString().split('T')[0];
         const evtId = `evt_o_${orderId}`;
-        await setDoc(doc(db, 'events', evtId), {
-          id: evtId, date: dateStr, type: 'ORDER_PICKUP',
-          title: `Pickup: ${order.customerName}`, orderId,
-        });
+        const newEvt = { id: evtId, date: dateStr, type: 'ORDER_PICKUP', title: `Pickup: ${order.customerName}`, orderId };
+        await restSetDoc('events', evtId, newEvt);
+        setCalendarEvents(prev => [...prev.filter(e => e.id !== evtId), newEvt]);
       }
     }
   };
 
   const updateOrder = async (updatedOrder) => {
     const id = updatedOrder.id || updatedOrder._id;
-    await setDoc(doc(db, 'orders', id), { ...updatedOrder, id });
+    await restSetDoc('orders', id, { ...updatedOrder, id });
+    setOrders(prev => prev.map(o => o.id === id ? { ...updatedOrder, id } : o));
   };
 
   // ── Cart Actions ──
@@ -289,13 +373,14 @@ export const StorefrontProvider = ({ children }) => {
   const addSocialPost = (post) => setSocialPosts(prev => [post, ...prev]);
 
   const addGalleryPost = async (post) => {
-    const id = post.id || doc(collection(db, 'gallery_posts')).id;
-    await setDoc(doc(db, 'gallery_posts', id), {
+    const id = post.id || `gal_${Date.now()}`;
+    const postData = {
       ...post, id,
       createdAt: post.createdAt || new Date().toISOString(),
       likes: post.likes || 0,
       likedBy: post.likedBy || [],
-    });
+    };
+    await restSetDoc('gallery_posts', id, postData);
   };
 
   const toggleGalleryLike = async (postId) => {
@@ -303,27 +388,50 @@ export const StorefrontProvider = ({ children }) => {
     const post = galleryPosts.find(p => p.id === postId);
     if (!post) return;
     const isLiked = post.likedBy?.includes(user.id);
-    const ref = doc(db, 'gallery_posts', postId);
-    if (isLiked) {
-      await updateDoc(ref, { likes: increment(-1), likedBy: arrayRemove(user.id) });
-    } else {
-      await updateDoc(ref, { likes: increment(1), likedBy: arrayUnion(user.id) });
-    }
+    const newLikedBy = isLiked
+      ? (post.likedBy || []).filter(id => id !== user.id)
+      : [...(post.likedBy || []), user.id];
+    const newLikes = Math.max(0, (post.likes || 0) + (isLiked ? -1 : 1));
+    await restSetDoc('gallery_posts', postId, { likes: newLikes, likedBy: newLikedBy });
+    setGalleryPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: newLikes, likedBy: newLikedBy } : p));
   };
 
   // ── Settings Actions ──
+  const HOME_KEYS = ['heroCateringImage', 'heroCookImage', 'homePromoterImage', 'homeScheduleCardImage', 'homeMenuCardImage'];
+  const CATERING_KEYS = ['diyHeroImage', 'diyCardPackageImage', 'diyCardCustomImage', 'cateringPackageImages', 'cateringPackages'];
+  const PAGE_KEYS = ['eventsHeroImage', 'promotersHeroImage', 'promotersSocialImage', 'maintenanceImage', 'logoUrl', 'menuHeroImage', 'galleryHeroImage'];
+  const TICKER_KEYS = ['manualTickerImages'];
+  const REWARDS_KEYS = ['rewards'];
+
   const updateSettings = async (newSettings) => {
     const merged = { ...settings, ...newSettings };
     setSettings(merged);
     try {
-      const { rewards, ...general } = newSettings;
+      const keysToSave = Object.keys(newSettings);
+      const generalPayload = {};
+      const homePayload = {};
+      const cateringPayload = {};
+      const pagePayload = {};
+      const tickerPayload = {};
+      const rewardsPayload = {};
+
+      keysToSave.forEach(key => {
+        const val = newSettings[key];
+        if (TICKER_KEYS.includes(key)) tickerPayload[key] = val;
+        else if (HOME_KEYS.includes(key)) homePayload[key] = val;
+        else if (CATERING_KEYS.includes(key)) cateringPayload[key] = val;
+        else if (PAGE_KEYS.includes(key)) pagePayload[key] = val;
+        else if (REWARDS_KEYS.includes(key)) rewardsPayload[key] = val;
+        else generalPayload[key] = val;
+      });
+
       const promises = [];
-      if (Object.keys(general).length > 0) {
-        promises.push(setDoc(doc(db, 'settings', 'general'), general, { merge: true }));
-      }
-      if (rewards !== undefined) {
-        promises.push(setDoc(doc(db, 'settings', 'rewards'), { rewards }, { merge: true }));
-      }
+      if (Object.keys(generalPayload).length > 0) promises.push(restSetDoc('settings', 'general', generalPayload));
+      if (Object.keys(tickerPayload).length > 0) promises.push(restSetDoc('settings', 'ticker', tickerPayload));
+      if (Object.keys(rewardsPayload).length > 0) promises.push(restSetDoc('settings', 'rewards', rewardsPayload));
+      if (Object.keys(homePayload).length > 0) promises.push(restSetDoc('settings', 'img_home', homePayload));
+      if (Object.keys(cateringPayload).length > 0) promises.push(restSetDoc('settings', 'img_catering', cateringPayload));
+      if (Object.keys(pagePayload).length > 0) promises.push(restSetDoc('settings', 'img_pages', pagePayload));
       await Promise.all(promises);
       try { localStorage.setItem('hq_settings', JSON.stringify(merged)); } catch { }
       return true;
@@ -399,7 +507,7 @@ export const StorefrontProvider = ({ children }) => {
   return (
     <StorefrontContext.Provider value={{
       user, users, login, logout, addUser, updateUserProfile, adminUpdateUser, deleteUser,
-      menu, addMenuItem, updateMenuItem,
+      menu, addMenuItem, updateMenuItem, deleteMenuItem,
       cookDays, addCookDay,
       calendarEvents, addCalendarEvent, updateCalendarEvent, removeCalendarEvent, checkAvailability, isDatePastCutoff,
       orders, createOrder, updateOrderStatus, updateOrder,
