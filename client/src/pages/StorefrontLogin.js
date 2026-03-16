@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useStorefront } from '../context/StorefrontContext';
+import { useClientConfig } from '../context/ClientConfigContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, User, Lock, Shield, ArrowLeft, Loader2, Flame } from 'lucide-react';
 
 const StorefrontLogin = () => {
-  const { login, brandName } = useStorefront();
+  const { login } = useStorefront();
+  const { brandName } = useClientConfig();
   const navigate = useNavigate();
   const location = useLocation();
   const [mode, setMode] = useState('LOGIN'); // LOGIN | SIGNUP | ADMIN
