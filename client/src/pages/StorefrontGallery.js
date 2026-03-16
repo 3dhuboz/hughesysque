@@ -131,7 +131,7 @@ const StorefrontGallery = () => {
     <div className="animate-fade-in pb-20">
       <div className="relative h-[40vh] min-h-[300px] rounded-2xl overflow-hidden shadow-2xl mb-8">
         <div className="absolute inset-0 bg-black/60 z-10" />
-        <SmartHeroImg src={sv.galleryHero} fallback="https://images.unsplash.com/photo-1516054575922-f0b8eeadec1a?auto=format&fit=crop&w=1950&q=80"
+        <SmartHeroImg src={settings.galleryHeroImage} fallback="https://images.unsplash.com/photo-1516054575922-f0b8eeadec1a?auto=format&fit=crop&w=1950&q=80"
           className="absolute inset-0 w-full h-full object-cover" alt="BBQ Gallery" />
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-6">
           <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-4 tracking-tight uppercase drop-shadow-xl">
