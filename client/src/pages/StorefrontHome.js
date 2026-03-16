@@ -298,7 +298,7 @@ const StorefrontHome = () => {
       <section className="relative w-full h-[500px] overflow-hidden flex items-center justify-center my-12 group">
         <div
           className="absolute inset-0 bg-fixed bg-cover bg-center"
-          style={{ backgroundImage: `url('${sv.promoterSection && sv.promoterSection.trim() ? sv.promoterSection : PROMOTER_IMG}')` }}
+          style={{ backgroundImage: `url('${settings.homePromoterImage?.trim() ? settings.homePromoterImage : PROMOTER_IMG}')` }}
         ></div>
         <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition duration-700"></div>
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
