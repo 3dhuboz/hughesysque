@@ -206,11 +206,10 @@ const StorefrontMenu = () => {
 
   const getCatId = (cat) => `cat-${(cat || 'unknown').replace(/\s+/g, '-')}`;
 
-  const sv = settings.siteVisuals || {};
   const packImages = [
-    sv.menuPackHero1 || "https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80",
-    sv.menuPackHero2 || "https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80",
-    sv.menuPackHero3 || "https://images.unsplash.com/photo-1593030668930-813f11244a1c?auto=format&fit=crop&w=800&q=80",
+    settings.menuHeroImage || "https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80",
+    settings.diyCardPackageImage || "https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80",
+    settings.diyCardCustomImage || "https://images.unsplash.com/photo-1593030668930-813f11244a1c?auto=format&fit=crop&w=800&q=80",
   ];
 
   return (
@@ -237,14 +236,14 @@ const StorefrontMenu = () => {
           <div className="relative w-full md:w-1/2 min-h-[300px] md:min-h-full">
             <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-2 p-2 bg-black">
               <div className="row-span-2 relative overflow-hidden rounded-xl">
-                <SmartHeroImg src={sv.menuPackHero1} fallback={packImages[0]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="BBQ Platter" />
+                <SmartHeroImg src={settings.menuHeroImage} fallback={packImages[0]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="BBQ Platter" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
               </div>
               <div className="relative overflow-hidden rounded-xl">
-                <SmartHeroImg src={sv.menuPackHero2} fallback={packImages[1]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="Brisket" />
+                <SmartHeroImg src={settings.diyCardPackageImage} fallback={packImages[1]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="Brisket" />
               </div>
               <div className="relative overflow-hidden rounded-xl">
-                <SmartHeroImg src={sv.menuPackHero3} fallback={packImages[2]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="Ribs" />
+                <SmartHeroImg src={settings.diyCardCustomImage} fallback={packImages[2]} className="w-full h-full object-cover hover:scale-105 transition duration-700" alt="Ribs" />
               </div>
             </div>
             <div className="absolute inset-0 bg-gradient-to-r from-purple-900/95 via-transparent to-transparent md:block hidden pointer-events-none"></div>
