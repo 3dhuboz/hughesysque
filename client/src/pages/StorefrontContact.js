@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Mail, MapPin, Send, Instagram, Facebook, ChevronDown, ChevronUp, HelpCircle, Clock, CheckCircle } from 'lucide-react';
 import { useStorefront } from '../context/StorefrontContext';
+import { useClientConfig } from '../context/ClientConfigContext';
 
 const StorefrontContact = () => {
-  const { settings, brandName } = useStorefront();
+  const { settings } = useStorefront();
+  const { brandName } = useClientConfig();
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [isSent, setIsSent] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
@@ -17,7 +19,9 @@ const StorefrontContact = () => {
   };
 
   const toggleFaq = (index) => { setOpenFaqIndex(openFaqIndex === index ? null : index); };
-  const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent('Ipswich, QLD')}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+  const address = settings.businessAddress || 'Queensland, AU';
+  const contactEmail = settings.contactEmail || settings.adminEmail || 'hugheseysbbq2021@gmail.com';
+  const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
 
   const faqs = [
     { q: "Do you offer private catering?", a: "Yes we offer catering at your house, a public hall, wedding chapel etc. A minimum of 45 people are required for us to attend." },
@@ -48,14 +52,14 @@ const StorefrontContact = () => {
               <h3 className="text-2xl font-bold text-white mb-6 font-display uppercase tracking-widest border-b border-gray-700 pb-4">Get In Touch</h3>
               <div className="space-y-6">
                 <div className="flex gap-4">
-                  <div className="bg-black/40 w-12 h-12 flex items-center justify-center rounded-lg text-bbq-gold border border-white/5"><Mail size={20}/></div>
+                  <div className="bg-black/40 w-12 h-12 flex items-center justify-center rounded-lg text-bbq-gold border border-white/5"><Mail size={20} /></div>
                   <div>
                     <p className="text-xs font-bold text-gray-500 uppercase">Email</p>
                     <a href="mailto:hugheseysbbq2021@gmail.com" className="text-white text-lg font-bold hover:text-bbq-red transition">hugheseysbbq2021@gmail.com</a>
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <div className="bg-black/40 w-12 h-12 flex items-center justify-center rounded-lg text-bbq-gold border border-white/5"><Clock size={20}/></div>
+                  <div className="bg-black/40 w-12 h-12 flex items-center justify-center rounded-lg text-bbq-gold border border-white/5"><Clock size={20} /></div>
                   <div>
                     <p className="text-xs font-bold text-gray-500 uppercase">Office Hours</p>
                     <p className="text-white font-bold">Mon - Fri: 9am - 5pm</p>
@@ -68,10 +72,10 @@ const StorefrontContact = () => {
             </div>
             <div className="flex gap-4 pt-4">
               <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#1877F2] py-3 rounded-lg text-white font-bold flex justify-center items-center gap-2 hover:opacity-90 transition">
-                <Facebook size={18}/> Facebook
+                <Facebook size={18} /> Facebook
               </a>
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex-1 bg-gradient-to-tr from-yellow-500 to-purple-600 py-3 rounded-lg text-white font-bold flex justify-center items-center gap-2 hover:opacity-90 transition">
-                <Instagram size={18}/> Instagram
+                <Instagram size={18} /> Instagram
               </a>
             </div>
           </div>
@@ -80,7 +84,7 @@ const StorefrontContact = () => {
         <div className="lg:col-span-7 bg-white p-8 md:p-12 relative">
           {isSent ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-10">
-              <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6"><CheckCircle size={48}/></div>
+              <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6"><CheckCircle size={48} /></div>
               <h3 className="text-3xl font-bold text-gray-900 mb-2 font-display">MESSAGE RECEIVED</h3>
               <p className="text-gray-500 text-lg mb-8 max-w-sm">Thanks for reaching out! We'll fire up the laptop and get back to you shortly.</p>
               <button onClick={() => setIsSent(false)} className="text-bbq-red font-bold hover:underline">Send another message</button>
@@ -94,23 +98,23 @@ const StorefrontContact = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Name</label>
-                  <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
+                  <input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
                     className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-900 focus:border-bbq-red focus:ring-1 focus:ring-bbq-red outline-none transition" placeholder="Your Name" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Phone</label>
-                  <input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})}
+                  <input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-900 focus:border-bbq-red focus:ring-1 focus:ring-bbq-red outline-none transition" placeholder="Optional" />
                 </div>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Email</label>
-                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
+                <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })}
                   className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-900 focus:border-bbq-red focus:ring-1 focus:ring-bbq-red outline-none transition" placeholder="you@email.com" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Topic</label>
-                <select value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})}
+                <select value={formData.subject} onChange={e => setFormData({ ...formData, subject: e.target.value })}
                   className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-900 focus:border-bbq-red focus:ring-1 focus:ring-bbq-red outline-none transition">
                   <option value="">Select a topic...</option>
                   <option value="Catering">Catering Inquiry</option>
@@ -120,7 +124,7 @@ const StorefrontContact = () => {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Message</label>
-                <textarea required value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})}
+                <textarea required value={formData.message} onChange={e => setFormData({ ...formData, message: e.target.value })}
                   className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-900 focus:border-bbq-red focus:ring-1 focus:ring-bbq-red outline-none transition h-32 resize-none" placeholder="Tell us what you need..." />
               </div>
               <button type="submit" className="w-full bg-bbq-red text-white font-bold py-4 rounded-lg hover:bg-red-800 transition flex items-center justify-center gap-2 shadow-xl transform hover:-translate-y-1">
@@ -133,14 +137,14 @@ const StorefrontContact = () => {
 
       <div className="max-w-3xl mx-auto px-4">
         <div className="text-center mb-10">
-          <h2 className="text-3xl font-display font-bold text-white flex items-center justify-center gap-2"><HelpCircle className="text-gray-500"/> FAQ</h2>
+          <h2 className="text-3xl font-display font-bold text-white flex items-center justify-center gap-2"><HelpCircle className="text-gray-500" /> FAQ</h2>
         </div>
         <div className="space-y-4">
           {faqs.map((item, index) => (
             <div key={index} className="bg-bbq-charcoal border border-gray-700 rounded-xl overflow-hidden transition-all duration-300 hover:border-gray-500">
               <button onClick={() => toggleFaq(index)} className="w-full p-5 text-left flex justify-between items-center">
                 <span className="font-bold text-white uppercase tracking-wide">{item.q}</span>
-                {openFaqIndex === index ? <ChevronUp className="text-bbq-red"/> : <ChevronDown className="text-gray-500"/>}
+                {openFaqIndex === index ? <ChevronUp className="text-bbq-red" /> : <ChevronDown className="text-gray-500" />}
               </button>
               <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openFaqIndex === index ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
                 <div className="p-5 pt-0 text-gray-400 leading-relaxed border-t border-gray-700">{item.a}</div>
