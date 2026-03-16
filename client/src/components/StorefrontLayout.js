@@ -168,7 +168,7 @@ const StorefrontLayout = ({ children }) => {
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-bbq-red shrink-0" />
-                <a href="mailto:hugheseysbbq2021@gmail.com" className="hover:text-white transition">hugheseysbbq2021@gmail.com</a>
+                <a href={`mailto:${settings.contactEmail || settings.adminEmail || 'hugheseysbbq2021@gmail.com'}`} className="hover:text-white transition">{settings.contactEmail || settings.adminEmail || 'hugheseysbbq2021@gmail.com'}</a>
               </li>
             </ul>
           </div>

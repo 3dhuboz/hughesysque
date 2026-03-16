@@ -1,5 +1,6 @@
 ---
 description: How to onboard a new white-label food truck client (Firebase + Cloudflare Pages)
+auto_execution_mode: 3
 ---
 
 # Onboard a New White-Label Food Truck Client

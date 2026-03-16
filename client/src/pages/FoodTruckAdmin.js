@@ -2983,7 +2983,8 @@ service cloud.firestore {
 
 // ─── MAIN ADMIN DASHBOARD ────────────────────────────────────────────
 const FoodTruckAdmin = () => {
-  const { connectionError, orders, brandName, settings } = useStorefront();
+  const { connectionError, orders, settings } = useStorefront();
+  const { brandName } = useClientConfig();
   const { user: authUser } = useAuth();
   const isDev = authUser?.role === 'dev';
   const [activeTab, setActiveTab] = useState('orders');

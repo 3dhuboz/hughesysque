@@ -189,11 +189,13 @@ const AppShell = () => {
     }
   }, [clientMode, brandName]);
 
-  // Admin paths in client mode: need StorefrontProvider (for useStorefront hooks) but NO StorefrontLayout (no maintenance check)
+  // Admin paths in client mode: wrapped in StorefrontLayout so the header/nav appears (matching Street Meatz)
   if (isAdminPath && clientMode) {
     return (
       <StorefrontProvider>
-        <AppRoutes />
+        <StorefrontLayout>
+          <AppRoutes />
+        </StorefrontLayout>
         <Toaster position="top-right" toastOptions={{
           duration: 4000,
           style: { background: '#1e293b', color: '#f8fafc', borderRadius: '8px' }
