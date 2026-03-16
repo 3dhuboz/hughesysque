@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import SmartHeroImg from '../components/SmartHeroImg';
 import { useStorefront } from '../context/StorefrontContext';
+import { useClientConfig } from '../context/ClientConfigContext';
 import { Camera, Upload, X, Heart, Share2, Instagram, Facebook, Image as ImageIcon } from 'lucide-react';
 
 const compressImage = (base64Str, maxWidth = 800, quality = 0.7) => {
@@ -36,7 +37,7 @@ const FeedPost = ({ post }) => {
 
   const handleShare = () => {
     if (navigator.share) {
-      navigator.share({ title: 'Hughesys Que BBQ', text: `Check out this shot by @${post.userName}!`, url: window.location.href }).catch(() => { });
+      navigator.share({ title: 'Fan Gallery', text: `Check out this shot by @${post.userName}!`, url: window.location.href }).catch(() => { });
     } else { alert('Link copied!'); }
   };
 
@@ -79,8 +80,8 @@ const FeedPost = ({ post }) => {
 };
 
 const StorefrontGallery = () => {
-  const { galleryPosts, addGalleryPost, settings, user, brandName } = useStorefront();
-  const sv = settings.siteVisuals || {};
+  const { galleryPosts, addGalleryPost, settings, user } = useStorefront();
+  const { brandName } = useClientConfig();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [caption, setCaption] = useState('');
