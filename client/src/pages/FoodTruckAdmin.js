@@ -532,7 +532,8 @@ const FTPlanner = () => {
 
 // ─── MENU MANAGER ────────────────────────────────────────────────────
 const FTMenuManager = () => {
-  const { menu, addMenuItem, updateMenuItem, calendarEvents, brandName } = useStorefront();
+  const { menu, addMenuItem, updateMenuItem, calendarEvents } = useStorefront();
+  const { brandName } = useClientConfig();
   const [isEditing, setIsEditing] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [editItem, setEditItem] = useState({ availabilityType: 'everyday', isPack: false, packGroups: [], available: true });
@@ -877,9 +878,11 @@ const ImageField = ({ label, value, onChange, hint, businessName }) => {
 
 // ─── SETTINGS MANAGER ────────────────────────────────────────────────
 const FTSettingsManager = () => {
-  const { settings, updateSettings, brandName } = useStorefront();
+  const { settings, updateSettings } = useStorefront();
+  const { brandName } = useClientConfig();
+  const IMG_KEYS = ['heroCateringImage', 'heroCookImage', 'homePromoterImage', 'homeScheduleCardImage', 'homeMenuCardImage', 'menuHeroImage', 'diyHeroImage', 'diyCardPackageImage', 'diyCardCuratedImage', 'diyCardCustomImage', 'eventsHeroImage', 'galleryHeroImage'];
   const [form, setForm] = useState({ ...settings });
-  const [visuals, setVisuals] = useState({ ...(settings.siteVisuals || {}) });
+  const [visuals, setVisuals] = useState(() => Object.fromEntries(IMG_KEYS.map(k => [k, settings[k] || ''])));
   const [rewards, setRewards] = useState({ ...(settings.rewards || {}) });
   const [invoice, setInvoice] = useState({
     paymentButtonLabel: 'Pay Now',
@@ -898,7 +901,7 @@ const FTSettingsManager = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const ok = await updateSettings({ ...form, siteVisuals: visuals, rewards, invoiceTemplate: invoice });
+    const ok = await updateSettings({ ...form, ...visuals, rewards, invoiceTemplate: invoice });
     setIsSaving(false);
     if (ok !== false) {
       setShowSaveSuccess(true);
@@ -927,31 +930,30 @@ const FTSettingsManager = () => {
   const VISUAL_SECTIONS = [
     {
       label: 'HOME PAGE', fields: [
-        { key: 'cateringHero', label: 'CATERING HERO (LEFT)' },
-        { key: 'cookMenuHero', label: 'COOK DAY HERO (RIGHT)' },
-        { key: 'promoterSection', label: 'PROMOTER PARALLAX' },
-        { key: 'eventsHero', label: 'SCHEDULE CARD' },
-        { key: 'menuHero', label: 'MENU CARD' },
+        { key: 'heroCateringImage', label: 'CATERING HERO (LEFT)' },
+        { key: 'heroCookImage', label: 'COOK DAY HERO (RIGHT)' },
+        { key: 'homePromoterImage', label: 'PROMOTER PARALLAX' },
+        { key: 'homeScheduleCardImage', label: 'SCHEDULE CARD' },
+        { key: 'homeMenuCardImage', label: 'MENU CARD' },
       ]
     },
     {
       label: 'MENU PAGE', fields: [
-        { key: 'menuPackHero1', label: 'PACK HERO (LARGE)' },
-        { key: 'menuPackHero2', label: 'PACK HERO (TOP RIGHT)' },
-        { key: 'menuPackHero3', label: 'PACK HERO (BOTTOM RIGHT)' },
+        { key: 'menuHeroImage', label: 'MENU HERO (LARGE)' },
+        { key: 'diyCardPackageImage', label: 'MENU HERO (TOP RIGHT)' },
+        { key: 'diyCardCustomImage', label: 'MENU HERO (BOTTOM RIGHT)' },
       ]
     },
     {
       label: 'CATERING & DIY', fields: [
-        { key: 'diyPageHero', label: 'CATERING PAGE HERO' },
-        { key: 'packageCard', label: 'CURATED PACKAGES CARD' },
-        { key: 'customCard', label: 'BUILD YOUR OWN CARD' },
+        { key: 'diyHeroImage', label: 'CATERING PAGE HERO' },
+        { key: 'diyCardCuratedImage', label: 'CURATED PACKAGES CARD' },
       ]
     },
     {
       label: 'OTHER PAGES', fields: [
-        { key: 'eventsPageHero', label: 'EVENTS PAGE HERO' },
-        { key: 'galleryHero', label: 'GALLERY PAGE HERO' },
+        { key: 'eventsHeroImage', label: 'EVENTS PAGE HERO' },
+        { key: 'galleryHeroImage', label: 'GALLERY PAGE HERO' },
       ]
     },
   ];
@@ -971,7 +973,7 @@ const FTSettingsManager = () => {
     }
     setIsGeneratingAll(false);
     setIsSaving(true);
-    await updateSettings({ ...form, siteVisuals: newVisuals, rewards, invoiceTemplate: invoice });
+    await updateSettings({ ...form, ...newVisuals, rewards, invoiceTemplate: invoice });
     setIsSaving(false);
     setShowSaveSuccess(true);
     setTimeout(() => setShowSaveSuccess(false), 4000);
