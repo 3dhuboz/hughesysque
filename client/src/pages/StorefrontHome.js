@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, Flame, ChefHat, Utensils, MapPin, Calendar, Star, Truck, Bot, MessageSquare, Ticket, Gift } from 'lucide-react';
 import { useClientConfig } from '../context/ClientConfigContext';
 import { useStorefront } from '../context/StorefrontContext';
 import SmartHeroImg from '../components/SmartHeroImg';
-import api from '../api';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80';
 const HERO_CATERING = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1200&q=80';
@@ -25,27 +24,16 @@ const fallbackImages = [
 ];
 
 const StorefrontHome = () => {
-  const { brandName, brandTagline, primaryColor } = useClientConfig();
-  const { settings } = useStorefront();
-  const [cookDays, setCookDays] = useState([]);
-  const [menuItems, setMenuItems] = useState([]);
+  const { brandName, brandTagline } = useClientConfig();
+  const { settings, calendarEvents } = useStorefront();
 
   const name = settings.businessName || brandName || 'Hughesys Que';
-  const tagline = brandTagline || 'Quality Street Food';
+  const tagline = settings.businessTagline || brandTagline || 'Quality Street Food';
   const sv = settings.siteVisuals || {};
 
-  useEffect(() => {
-    Promise.all([
-      api.get('/foodtruck/public/menu').catch(() => ({ data: [] })),
-      api.get('/foodtruck/public/cookdays').catch(() => ({ data: [] })),
-    ]).then(([menuRes, cookRes]) => {
-      setMenuItems(menuRes.data);
-      setCookDays(cookRes.data);
-    });
-  }, []);
-
-  const nextCookDay = cookDays
-    .filter(d => new Date(d.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
+  const today = new Date(new Date().setHours(0, 0, 0, 0));
+  const nextCookDay = calendarEvents
+    .filter(e => e.type === 'ORDER_PICKUP' && new Date(e.date) >= today)
     .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
 
   const handleImageError = (e) => { e.target.src = PLACEHOLDER_IMG; };
