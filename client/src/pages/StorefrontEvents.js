@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import SmartHeroImg from '../components/SmartHeroImg';
-import { useStorefront } from '../context/StorefrontContext';
+import { useStorefront } from '../context/AppContext';
+import { useClientConfig } from '../context/AppContext';
 import { Calendar, MapPin, Clock, Share2, Bell, Check, BellOff, Megaphone, Utensils, Star, Flame, Coffee } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const StorefrontEvents = () => {
-  const { calendarEvents, toggleReminder, reminders, settings, brandName } = useStorefront();
+  const { calendarEvents, toggleReminder, reminders, settings } = useStorefront();
+  const { brandName } = useClientConfig();
 
   const publicEvents = calendarEvents
     .filter(evt => new Date(evt.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
@@ -29,7 +31,7 @@ const StorefrontEvents = () => {
       <div className="relative h-[40vh] min-h-[300px] rounded-2xl overflow-hidden shadow-2xl">
         <div className="absolute inset-0 bg-black/60 z-10" />
         <SmartHeroImg
-          src={settings.siteVisuals?.eventsPageHero || settings.siteVisuals?.eventsHero}
+          src={settings.eventsHeroImage}
           fallback="https://images.unsplash.com/photo-1533174072545-e8d4aa97edf9?auto=format&fit=crop&w=1950&q=80"
           className="absolute inset-0 w-full h-full object-cover" alt="BBQ Event Crowd" />
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-6">

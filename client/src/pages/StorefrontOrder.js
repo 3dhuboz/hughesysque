@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useStorefront } from '../context/StorefrontContext';
+import { useStorefront } from '../context/AppContext';
 import { ShoppingBag, Trash2, CheckCircle, Clock, User, Mail, Phone, AlertCircle, ArrowRight, Truck, Check, Plus, Minus, Flame, Snowflake, X, Package, MapPin, CreditCard, Lock, Info, Ticket } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 

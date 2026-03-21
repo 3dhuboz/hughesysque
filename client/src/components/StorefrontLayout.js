@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Menu as MenuIcon, X, Image as ImageIcon, ShoppingBag, Gift } from 'lucide-react';
-import { useClientConfig } from '../context/ClientConfigContext';
-import { useAuth } from '../context/AuthContext';
-import { useStorefront } from '../context/StorefrontContext';
+import { useClientConfig } from '../context/AppContext';
+import { useAuth } from '../context/AppContext';
+import { useStorefront } from '../context/AppContext';
 
 const StorefrontLayout = ({ children }) => {
   const { user, loading: authLoading, logout } = useAuth();
@@ -168,7 +168,7 @@ const StorefrontLayout = ({ children }) => {
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-bbq-red shrink-0" />
-                <a href="mailto:hugheseysbbq2021@gmail.com" className="hover:text-white transition">hugheseysbbq2021@gmail.com</a>
+                <a href={`mailto:${settings.contactEmail || settings.adminEmail || 'hugheseysbbq2021@gmail.com'}`} className="hover:text-white transition">{settings.contactEmail || settings.adminEmail || 'hugheseysbbq2021@gmail.com'}</a>
               </li>
             </ul>
           </div>

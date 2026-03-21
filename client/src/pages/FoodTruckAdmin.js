@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import AdminSocialBridge from './AdminSocialBridge';
-import { useStorefront } from '../context/StorefrontContext';
-import { useAuth } from '../context/AuthContext';
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, storage } from '../firebase';
+import { useStorefront } from '../context/AppContext';
+import { useClientConfig } from '../context/AppContext';
+import { useAuth } from '../context/AppContext';
+// Firebase auth replaced by Clerk — password change via Clerk dashboard
+// Firebase storage replaced by base64/R2
+// firebase import removed
 import toast from 'react-hot-toast';
 import {
   CalendarCheck, CalendarDays, Utensils, Settings, Plus, Edit2, Trash2, X, Save,
@@ -17,12 +18,9 @@ import {
   Share2, Globe, ImagePlus, Lock, UploadCloud, FileText, Palette, Link, WifiOff
 } from 'lucide-react';
 
-// ─── FIREBASE STORAGE UPLOAD HELPER ────────────────────────────────
 const uploadToStorage = async (file, path) => {
-  if (!storage) throw new Error('Firebase Storage not configured');
-  const fileRef = storageRef(storage, path);
-  await uploadBytes(fileRef, file);
-  return await getDownloadURL(fileRef);
+  // R2 upload pending — fall back to base64 stored in D1
+  throw new Error('Cloud storage not configured. Use base64 image upload.');
 };
 
 // ─── CANVAS IMAGE COMPRESSOR (matches Street Meats BBQ) ─────────────
@@ -531,7 +529,8 @@ const FTPlanner = () => {
 
 // ─── MENU MANAGER ────────────────────────────────────────────────────
 const FTMenuManager = () => {
-  const { menu, addMenuItem, updateMenuItem, calendarEvents, brandName } = useStorefront();
+  const { menu, addMenuItem, updateMenuItem, calendarEvents } = useStorefront();
+  const { brandName } = useClientConfig();
   const [isEditing, setIsEditing] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [editItem, setEditItem] = useState({ availabilityType: 'everyday', isPack: false, packGroups: [], available: true });
@@ -876,9 +875,11 @@ const ImageField = ({ label, value, onChange, hint, businessName }) => {
 
 // ─── SETTINGS MANAGER ────────────────────────────────────────────────
 const FTSettingsManager = () => {
-  const { settings, updateSettings, brandName } = useStorefront();
+  const { settings, updateSettings } = useStorefront();
+  const { brandName } = useClientConfig();
+  const IMG_KEYS = ['heroCateringImage', 'heroCookImage', 'homePromoterImage', 'homeScheduleCardImage', 'homeMenuCardImage', 'menuHeroImage', 'diyHeroImage', 'diyCardPackageImage', 'diyCardCuratedImage', 'diyCardCustomImage', 'eventsHeroImage', 'galleryHeroImage'];
   const [form, setForm] = useState({ ...settings });
-  const [visuals, setVisuals] = useState({ ...(settings.siteVisuals || {}) });
+  const [visuals, setVisuals] = useState(() => Object.fromEntries(IMG_KEYS.map(k => [k, settings[k] || ''])));
   const [rewards, setRewards] = useState({ ...(settings.rewards || {}) });
   const [invoice, setInvoice] = useState({
     paymentButtonLabel: 'Pay Now',
@@ -897,7 +898,7 @@ const FTSettingsManager = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const ok = await updateSettings({ ...form, siteVisuals: visuals, rewards, invoiceTemplate: invoice });
+    const ok = await updateSettings({ ...form, ...visuals, rewards, invoiceTemplate: invoice });
     setIsSaving(false);
     if (ok !== false) {
       setShowSaveSuccess(true);
@@ -926,31 +927,30 @@ const FTSettingsManager = () => {
   const VISUAL_SECTIONS = [
     {
       label: 'HOME PAGE', fields: [
-        { key: 'cateringHero', label: 'CATERING HERO (LEFT)' },
-        { key: 'cookMenuHero', label: 'COOK DAY HERO (RIGHT)' },
-        { key: 'promoterSection', label: 'PROMOTER PARALLAX' },
-        { key: 'eventsHero', label: 'SCHEDULE CARD' },
-        { key: 'menuHero', label: 'MENU CARD' },
+        { key: 'heroCateringImage', label: 'CATERING HERO (LEFT)' },
+        { key: 'heroCookImage', label: 'COOK DAY HERO (RIGHT)' },
+        { key: 'homePromoterImage', label: 'PROMOTER PARALLAX' },
+        { key: 'homeScheduleCardImage', label: 'SCHEDULE CARD' },
+        { key: 'homeMenuCardImage', label: 'MENU CARD' },
       ]
     },
     {
       label: 'MENU PAGE', fields: [
-        { key: 'menuPackHero1', label: 'PACK HERO (LARGE)' },
-        { key: 'menuPackHero2', label: 'PACK HERO (TOP RIGHT)' },
-        { key: 'menuPackHero3', label: 'PACK HERO (BOTTOM RIGHT)' },
+        { key: 'menuHeroImage', label: 'MENU HERO (LARGE)' },
+        { key: 'diyCardPackageImage', label: 'MENU HERO (TOP RIGHT)' },
+        { key: 'diyCardCustomImage', label: 'MENU HERO (BOTTOM RIGHT)' },
       ]
     },
     {
       label: 'CATERING & DIY', fields: [
-        { key: 'diyPageHero', label: 'CATERING PAGE HERO' },
-        { key: 'packageCard', label: 'CURATED PACKAGES CARD' },
-        { key: 'customCard', label: 'BUILD YOUR OWN CARD' },
+        { key: 'diyHeroImage', label: 'CATERING PAGE HERO' },
+        { key: 'diyCardCuratedImage', label: 'CURATED PACKAGES CARD' },
       ]
     },
     {
       label: 'OTHER PAGES', fields: [
-        { key: 'eventsPageHero', label: 'EVENTS PAGE HERO' },
-        { key: 'galleryHero', label: 'GALLERY PAGE HERO' },
+        { key: 'eventsHeroImage', label: 'EVENTS PAGE HERO' },
+        { key: 'galleryHeroImage', label: 'GALLERY PAGE HERO' },
       ]
     },
   ];
@@ -970,7 +970,7 @@ const FTSettingsManager = () => {
     }
     setIsGeneratingAll(false);
     setIsSaving(true);
-    await updateSettings({ ...form, siteVisuals: newVisuals, rewards, invoiceTemplate: invoice });
+    await updateSettings({ ...form, ...newVisuals, rewards, invoiceTemplate: invoice });
     setIsSaving(false);
     setShowSaveSuccess(true);
     setTimeout(() => setShowSaveSuccess(false), 4000);
@@ -1098,7 +1098,7 @@ const FTSettingsManager = () => {
               const allKeys = VISUAL_SECTIONS.flatMap(s => s.fields.map(f => f.key));
               const cleared = allKeys.reduce((acc, k) => ({ ...acc, [k]: '' }), {});
               setVisuals(cleared);
-              try { const s = JSON.parse(localStorage.getItem('hq_settings') || '{}'); delete s.siteVisuals; localStorage.setItem('hq_settings', JSON.stringify(s)); } catch { }
+              try { const s = JSON.parse(localStorage.getItem('hq_settings') || '{}'); allKeys.forEach(k => delete s[k]); localStorage.setItem('hq_settings', JSON.stringify(s)); } catch { }
               toast.success('All visuals cleared — upload fresh images below.');
             }} className="flex items-center gap-1.5 text-[11px] bg-gray-800 border border-gray-700 hover:bg-red-900/40 hover:border-red-700 text-gray-400 hover:text-red-400 px-3 py-1.5 rounded-lg transition">
               <X size={11} /> Clear All
@@ -2588,14 +2588,14 @@ const FTDevTools = () => {
     if (pwForm.newPassword.length < 8) { setPwStatus({ ok: false, msg: 'Min 8 characters.' }); return; }
     setIsPwSaving(true); setPwStatus(null);
     try {
-      const fbUser = auth.currentUser;
-      if (!fbUser) throw new Error('Not logged in to Firebase');
-      await reauthenticateWithCredential(fbUser, EmailAuthProvider.credential(fbUser.email, pwForm.currentPassword));
-      await updatePassword(fbUser, pwForm.newPassword);
+      // Password change managed via Clerk dashboard — stub for now
+      throw new Error('Password changes are managed via your Clerk account dashboard.');
+
+
       setPwStatus({ ok: true, msg: 'Password changed successfully!' });
       setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
     } catch (err) {
-      setPwStatus({ ok: false, msg: err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' ? 'Current password is incorrect.' : err.message });
+      setPwStatus({ ok: false, msg: err.message });
     } finally { setIsPwSaving(false); }
   };
 
@@ -2980,7 +2980,8 @@ service cloud.firestore {
 
 // ─── MAIN ADMIN DASHBOARD ────────────────────────────────────────────
 const FoodTruckAdmin = () => {
-  const { connectionError, orders, brandName, settings } = useStorefront();
+  const { connectionError, orders, settings } = useStorefront();
+  const { brandName } = useClientConfig();
   const { user: authUser } = useAuth();
   const isDev = authUser?.role === 'dev';
   const [activeTab, setActiveTab] = useState('orders');
@@ -3028,8 +3029,8 @@ const FoodTruckAdmin = () => {
               key={id}
               onClick={() => setActiveTab(id)}
               className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${activeTab === id
-                  ? devOnly ? 'bg-purple-700 text-white shadow-sm' : 'bg-bbq-red text-white shadow-sm'
-                  : devOnly ? 'text-purple-400 hover:text-white hover:bg-purple-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                ? devOnly ? 'bg-purple-700 text-white shadow-sm' : 'bg-bbq-red text-white shadow-sm'
+                : devOnly ? 'text-purple-400 hover:text-white hover:bg-purple-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
             >
               <Icon size={15} />

@@ -1,5 +1,6 @@
 ---
 description: How to onboard a new white-label food truck client (Firebase + Cloudflare Pages)
+auto_execution_mode: 3
 ---
 
 # Onboard a New White-Label Food Truck Client
@@ -67,6 +68,7 @@ description: How to onboard a new white-label food truck client (Firebase + Clou
 3. Set build settings:
    - **Build command**: `cd client && npm install && npm run build`
    - **Output directory**: `client/build`
+   - **Production branch**: `master` ⚠️ (must be `master` — if left as `main`, all pushes go to Preview only and the live domain never updates)
 4. **Before deploying** — add Environment Variables:
 
 | Variable | Value |
