@@ -37,6 +37,14 @@ import Privacy from './pages/Privacy';
 import PennyAgent from './components/PennyAgent';
 import WirezLauncher from './pages/WirezLauncher';
 import SimpleWebsiteProduct from './pages/SimpleWebsiteProduct';
+import YJRLHome from './pages/yjrl/YJRLHome';
+import YJRLFixtures from './pages/yjrl/YJRLFixtures';
+import YJRLNews from './pages/yjrl/YJRLNews';
+import YJRLPlayerPortal from './pages/yjrl/YJRLPlayerPortal';
+import YJRLCoachPortal from './pages/yjrl/YJRLCoachPortal';
+import YJRLParentPortal from './pages/yjrl/YJRLParentPortal';
+import YJRLAdminPortal from './pages/yjrl/YJRLAdminPortal';
+import YJRLRegister from './pages/yjrl/YJRLRegister';
 import AdminSettings from './pages/AdminSettings';
 import AdminClientProjects from './pages/AdminClientProjects';
 import AdminTemplates from './pages/AdminTemplates';
@@ -170,6 +178,18 @@ const AppRoutes = () => {
       <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
       <Route path="/admin/projects" element={<ProtectedRoute adminOnly><AdminClientProjects /></ProtectedRoute>} />
       <Route path="/admin/templates" element={<ProtectedRoute adminOnly><AdminTemplates /></ProtectedRoute>} />
+
+      {/* ── Yeppoon Junior Rugby League ── */}
+      <Route path="/yjrl" element={<YJRLHome />} />
+      <Route path="/yjrl/fixtures" element={<YJRLFixtures />} />
+      <Route path="/yjrl/teams" element={<YJRLFixtures />} />
+      <Route path="/yjrl/news" element={<YJRLNews />} />
+      <Route path="/yjrl/news/:id" element={<YJRLNews />} />
+      <Route path="/yjrl/register" element={<YJRLRegister />} />
+      <Route path="/yjrl/portal/player" element={<YJRLPlayerPortal />} />
+      <Route path="/yjrl/portal/coach" element={<YJRLCoachPortal />} />
+      <Route path="/yjrl/portal/parent" element={<YJRLParentPortal />} />
+      <Route path="/yjrl/portal/admin" element={<YJRLAdminPortal />} />
 
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
