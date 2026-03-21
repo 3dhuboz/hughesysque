@@ -6,4 +6,4 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "hughesys-que-db"
-database_id = "TBD"
+database_id = "09db3efb-8bd5-4384-804b-775c37a697a9"
