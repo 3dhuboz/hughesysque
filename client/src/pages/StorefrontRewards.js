@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useStorefront } from '../context/StorefrontContext';
+import { useStorefront } from '../context/AppContext';
+import { useClientConfig } from '../context/AppContext';
 import { Flame, CheckCircle, AlertCircle, ShieldCheck, Lock, Ticket, Gift, Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const StorefrontRewards = () => {
-  const { user, settings, verifyStaffPin, brandName } = useStorefront();
+  const { user, settings, verifyStaffPin } = useStorefront();
+  const { brandName } = useClientConfig();
   const navigate = useNavigate();
   const config = settings.rewards || { enabled: false, maxStamps: 10, programName: '', rewardTitle: '', staffPin: '1234', rewardImage: '', possiblePrizes: [] };
 
@@ -119,7 +121,7 @@ const StorefrontRewards = () => {
           <Ticket size={80} className="text-bbq-gold relative z-10" strokeWidth={1} />
         </div>
         <h2 className="text-4xl font-display font-bold text-white mb-2 tracking-wide uppercase">Golden Ticket Club</h2>
-        <p className="text-gray-400 mb-8 max-w-xs mx-auto text-lg">Earn stamps. Reveal prizes.<br/>Join the inner circle.</p>
+        <p className="text-gray-400 mb-8 max-w-xs mx-auto text-lg">Earn stamps. Reveal prizes.<br />Join the inner circle.</p>
         <button onClick={() => navigate('/login')}
           className="bg-gradient-to-r from-bbq-gold to-yellow-600 text-black px-10 py-4 rounded-full font-black uppercase tracking-widest hover:scale-105 transition shadow-[0_0_30px_rgba(251,191,36,0.3)]">
           Get Your Ticket
@@ -222,7 +224,7 @@ const StorefrontRewards = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-900/40 via-black to-yellow-900/40"></div>
             <div className="relative z-10 py-3 text-center">
               <h4 className="text-white font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2">
-                <Trophy size={16} className="text-bbq-gold"/> Guaranteed Winner Upon Completion <Trophy size={16} className="text-bbq-gold"/>
+                <Trophy size={16} className="text-bbq-gold" /> Guaranteed Winner Upon Completion <Trophy size={16} className="text-bbq-gold" />
               </h4>
             </div>
           </div>
@@ -256,14 +258,14 @@ const StorefrontRewards = () => {
             </button>
           ) : (
             <div className="text-gray-400 text-sm animate-pulse flex items-center gap-2 bg-black/40 px-4 py-2 rounded-full border border-gray-700">
-              <Gift className="text-bbq-gold"/>
+              <Gift className="text-bbq-gold" />
               {isScratched ? 'Finding your prize...' : 'Scratch the gold area above to reveal!'}
             </div>
           )
         ) : (
           <button onClick={() => openModal('ADD')}
             className="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white px-8 py-4 rounded-xl font-bold flex items-center gap-3 transition group">
-            <div className="bg-white text-black p-2 rounded-lg group-hover:rotate-12 transition"><ShieldCheck size={20}/></div>
+            <div className="bg-white text-black p-2 rounded-lg group-hover:rotate-12 transition"><ShieldCheck size={20} /></div>
             <span>Staff Check-in (Add Stamp)</span>
           </button>
         )}
@@ -284,7 +286,7 @@ const StorefrontRewards = () => {
               ) : (
                 <>
                   <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-widest flex items-center justify-center gap-2">
-                    <Lock size={16} className="text-bbq-red"/> Staff Authorization
+                    <Lock size={16} className="text-bbq-red" /> Staff Authorization
                   </h3>
                   {pinAction === 'REDEEM' && wonPrize && (
                     <div className="bg-black/40 p-3 rounded mb-4 border border-gray-700">
@@ -300,7 +302,7 @@ const StorefrontRewards = () => {
                   </div>
                   {errorMsg && <div className="text-red-500 text-xs font-bold mb-6 bg-red-900/20 py-2 rounded">{errorMsg}</div>}
                   <div className="grid grid-cols-3 gap-4 mb-8">
-                    {[1,2,3,4,5,6,7,8,9].map(num => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                       <button key={num} onClick={() => handleKeyPad(num.toString())}
                         className="h-16 rounded-2xl bg-black hover:bg-gray-900 text-white font-bold text-xl transition active:scale-95 border border-gray-800">{num}</button>
                     ))}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStorefront } from '../context/StorefrontContext';
+import { useStorefront } from '../context/AppContext';
 import { Save, User as UserIcon, MapPin, Phone, Mail, ShoppingBag, Truck, Flame, Star, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 

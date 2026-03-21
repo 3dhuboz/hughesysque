@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStorefront } from '../context/StorefrontContext';
+import { useStorefront } from '../context/AppContext';
 import { Search, Package, Truck, ArrowRight, CheckCircle, MapPin, AlertCircle } from 'lucide-react';
 
 const StorefrontTracking = () => {

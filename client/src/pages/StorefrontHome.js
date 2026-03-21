@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, Flame, ChefHat, Utensils, MapPin, Calendar, Star, Truck, Bot, MessageSquare, Ticket, Gift } from 'lucide-react';
-import { useClientConfig } from '../context/ClientConfigContext';
-import { useStorefront } from '../context/StorefrontContext';
+import { useClientConfig } from '../context/AppContext';
+import { useStorefront } from '../context/AppContext';
 import SmartHeroImg from '../components/SmartHeroImg';
-import api from '../api';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80';
 const HERO_CATERING = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1200&q=80';
@@ -25,27 +24,15 @@ const fallbackImages = [
 ];
 
 const StorefrontHome = () => {
-  const { brandName, brandTagline, primaryColor } = useClientConfig();
-  const { settings } = useStorefront();
-  const [cookDays, setCookDays] = useState([]);
-  const [menuItems, setMenuItems] = useState([]);
+  const { brandName, brandTagline } = useClientConfig();
+  const { settings, calendarEvents } = useStorefront();
 
   const name = settings.businessName || brandName || 'Hughesys Que';
-  const tagline = brandTagline || 'Quality Street Food';
-  const sv = settings.siteVisuals || {};
+  const tagline = settings.businessTagline || brandTagline || 'Quality Street Food';
 
-  useEffect(() => {
-    Promise.all([
-      api.get('/foodtruck/public/menu').catch(() => ({ data: [] })),
-      api.get('/foodtruck/public/cookdays').catch(() => ({ data: [] })),
-    ]).then(([menuRes, cookRes]) => {
-      setMenuItems(menuRes.data);
-      setCookDays(cookRes.data);
-    });
-  }, []);
-
-  const nextCookDay = cookDays
-    .filter(d => new Date(d.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
+  const today = new Date(new Date().setHours(0, 0, 0, 0));
+  const nextCookDay = calendarEvents
+    .filter(e => e.type === 'ORDER_PICKUP' && new Date(e.date) >= today)
     .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
 
   const handleImageError = (e) => { e.target.src = PLACEHOLDER_IMG; };
@@ -67,7 +54,7 @@ const StorefrontHome = () => {
           <div className="absolute inset-0">
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/80 z-10" />
             <SmartHeroImg
-              src={sv.cateringHero}
+              src={settings.heroCateringImage}
               fallback={HERO_CATERING}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
               alt="Catering Feast"
@@ -95,7 +82,7 @@ const StorefrontHome = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-bbq-red/40 to-transparent mix-blend-overlay z-10" />
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/90 z-20" />
             <SmartHeroImg
-              src={sv.cookMenuHero}
+              src={settings.heroCookImage}
               fallback={HERO_COOK}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 contrast-125"
               alt="Smoker and BBQ"
@@ -247,7 +234,7 @@ const StorefrontHome = () => {
         <Link to="/order" className="relative h-64 rounded-2xl overflow-hidden group border border-white/10 hover:border-bbq-red/50 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
           <SmartHeroImg
-            src={sv.eventsHero}
+            src={settings.homeScheduleCardImage}
             fallback={CARD_SCHEDULE}
             alt="Events"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700"
@@ -267,7 +254,7 @@ const StorefrontHome = () => {
         <Link to="/order" className="relative h-64 rounded-2xl overflow-hidden group border border-white/10 hover:border-bbq-red/50 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
           <SmartHeroImg
-            src={sv.menuHero}
+            src={settings.homeMenuCardImage}
             fallback={CARD_MENU}
             alt="Menu"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700"
@@ -311,7 +298,7 @@ const StorefrontHome = () => {
       <section className="relative w-full h-[500px] overflow-hidden flex items-center justify-center my-12 group">
         <div
           className="absolute inset-0 bg-fixed bg-cover bg-center"
-          style={{ backgroundImage: `url('${sv.promoterSection && sv.promoterSection.trim() ? sv.promoterSection : PROMOTER_IMG}')` }}
+          style={{ backgroundImage: `url('${settings.homePromoterImage?.trim() ? settings.homePromoterImage : PROMOTER_IMG}')` }}
         ></div>
         <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition duration-700"></div>
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
