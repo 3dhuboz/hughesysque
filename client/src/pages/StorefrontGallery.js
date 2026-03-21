@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import SmartHeroImg from '../components/SmartHeroImg';
-import { useStorefront } from '../context/StorefrontContext';
-import { useClientConfig } from '../context/ClientConfigContext';
+import { useStorefront } from '../context/AppContext';
+import { useClientConfig } from '../context/AppContext';
 import { Camera, Upload, X, Heart, Share2, Instagram, Facebook, Image as ImageIcon } from 'lucide-react';
 
 const compressImage = (base64Str, maxWidth = 800, quality = 0.7) => {

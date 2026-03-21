@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStorefront } from '../context/StorefrontContext';
+import { useStorefront } from '../context/AppContext';
 import SmartHeroImg from '../components/SmartHeroImg';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, Package, Users, Calendar, X, Plus, Minus, Check, Truck, Info, Clock, Utensils, AlertCircle } from 'lucide-react';

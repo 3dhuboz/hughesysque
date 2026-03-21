@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import SmartHeroImg from '../components/SmartHeroImg';
-import { useStorefront } from '../context/StorefrontContext';
+import { useStorefront } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import {
   ChefHat, Users, Clock, ArrowRight, ArrowLeft, Calendar, CheckCircle,

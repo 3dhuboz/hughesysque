@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useStorefront } from '../context/StorefrontContext';
-import { useClientConfig } from '../context/ClientConfigContext';
+import { useStorefront } from '../context/AppContext';
+import { useClientConfig } from '../context/AppContext';
 import { Flame, CheckCircle, AlertCircle, ShieldCheck, Lock, Ticket, Gift, Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

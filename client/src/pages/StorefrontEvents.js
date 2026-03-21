@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import SmartHeroImg from '../components/SmartHeroImg';
-import { useStorefront } from '../context/StorefrontContext';
-import { useClientConfig } from '../context/ClientConfigContext';
+import { useStorefront } from '../context/AppContext';
+import { useClientConfig } from '../context/AppContext';
 import { Calendar, MapPin, Clock, Share2, Bell, Check, BellOff, Megaphone, Utensils, Star, Flame, Coffee } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

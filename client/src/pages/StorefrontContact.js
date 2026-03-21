@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, MapPin, Send, Instagram, Facebook, ChevronDown, ChevronUp, HelpCircle, Clock, CheckCircle } from 'lucide-react';
-import { useStorefront } from '../context/StorefrontContext';
-import { useClientConfig } from '../context/ClientConfigContext';
+import { useStorefront } from '../context/AppContext';
+import { useClientConfig } from '../context/AppContext';
 
 const StorefrontContact = () => {
   const { settings } = useStorefront();

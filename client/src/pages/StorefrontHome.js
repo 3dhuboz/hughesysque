@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, Flame, ChefHat, Utensils, MapPin, Calendar, Star, Truck, Bot, MessageSquare, Ticket, Gift } from 'lucide-react';
-import { useClientConfig } from '../context/ClientConfigContext';
-import { useStorefront } from '../context/StorefrontContext';
+import { useClientConfig } from '../context/AppContext';
+import { useStorefront } from '../context/AppContext';
 import SmartHeroImg from '../components/SmartHeroImg';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80';

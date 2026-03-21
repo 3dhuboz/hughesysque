@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useStorefront } from '../context/StorefrontContext';
-import { useClientConfig } from '../context/ClientConfigContext';
+import { useStorefront } from '../context/AppContext';
+import { useClientConfig } from '../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, User, Lock, Shield, ArrowLeft, Loader2, Flame } from 'lucide-react';
 

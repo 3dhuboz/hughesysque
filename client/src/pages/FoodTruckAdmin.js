@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import AdminSocialBridge from './AdminSocialBridge';
-import { useStorefront } from '../context/StorefrontContext';
-import { useClientConfig } from '../context/ClientConfigContext';
-import { useAuth } from '../context/AuthContext';
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, storage } from '../firebase';
+import { useStorefront } from '../context/AppContext';
+import { useClientConfig } from '../context/AppContext';
+import { useAuth } from '../context/AppContext';
+// Firebase auth replaced by Clerk — password change via Clerk dashboard
+// Firebase storage replaced by base64/R2
+// firebase import removed
 import toast from 'react-hot-toast';
 import {
   CalendarCheck, CalendarDays, Utensils, Settings, Plus, Edit2, Trash2, X, Save,
@@ -18,12 +18,9 @@ import {
   Share2, Globe, ImagePlus, Lock, UploadCloud, FileText, Palette, Link, WifiOff
 } from 'lucide-react';
 
-// ─── FIREBASE STORAGE UPLOAD HELPER ────────────────────────────────
 const uploadToStorage = async (file, path) => {
-  if (!storage) throw new Error('Firebase Storage not configured');
-  const fileRef = storageRef(storage, path);
-  await uploadBytes(fileRef, file);
-  return await getDownloadURL(fileRef);
+  // R2 upload pending — fall back to base64 stored in D1
+  throw new Error('Cloud storage not configured. Use base64 image upload.');
 };
 
 // ─── CANVAS IMAGE COMPRESSOR (matches Street Meats BBQ) ─────────────
@@ -2591,14 +2588,14 @@ const FTDevTools = () => {
     if (pwForm.newPassword.length < 8) { setPwStatus({ ok: false, msg: 'Min 8 characters.' }); return; }
     setIsPwSaving(true); setPwStatus(null);
     try {
-      const fbUser = auth.currentUser;
-      if (!fbUser) throw new Error('Not logged in to Firebase');
-      await reauthenticateWithCredential(fbUser, EmailAuthProvider.credential(fbUser.email, pwForm.currentPassword));
-      await updatePassword(fbUser, pwForm.newPassword);
+      // Password change managed via Clerk dashboard — stub for now
+      throw new Error('Password changes are managed via your Clerk account dashboard.');
+
+
       setPwStatus({ ok: true, msg: 'Password changed successfully!' });
       setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
     } catch (err) {
-      setPwStatus({ ok: false, msg: err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' ? 'Current password is incorrect.' : err.message });
+      setPwStatus({ ok: false, msg: err.message });
     } finally { setIsPwSaving(false); }
   };
 

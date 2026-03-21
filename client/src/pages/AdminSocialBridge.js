@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Sparkles, RefreshCw, ExternalLink } from 'lucide-react';
-import { useClientConfig } from '../context/ClientConfigContext';
+import { useClientConfig } from '../context/AppContext';
 
 const SOCIAL_AI_URLS = {
   hugheseysque: 'https://social.hugheseysque.au',
