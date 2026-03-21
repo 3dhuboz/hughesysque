@@ -309,6 +309,7 @@ app.use('/api/foodtruck', require('./routes/foodtruck'));
 app.use('/api/simplewebsite', require('./routes/simplewebsite'));
 app.use('/api/square', require('./routes/squareWebhook'));
 app.use('/api/v1', require('./routes/v1Utils'));
+app.use('/api/yjrl', require('./routes/yjrl'));
 
 
 // Serve React app in production (only if client/build exists — not present in API-only Railway deploy)
