@@ -94,16 +94,55 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const hasClerk = !!CLERK_KEY;
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+// Inner component used only when Clerk IS configured — hooks always called inside ClerkProvider
+const AppProviderWithClerk: React.FC<{ children: ReactNode }> = ({ children }) => {
   const clerkAuth = useAuth();
   const clerkUserHook = useUser();
+  return (
+    <AppProviderCore
+      authLoaded={clerkAuth.isLoaded}
+      userLoaded={clerkUserHook.isLoaded}
+      userId={clerkAuth.userId ?? null}
+      clerkUser={clerkUserHook.user ?? null}
+      getToken={clerkAuth.getToken}
+      clerkSignOut={clerkAuth.signOut}
+    >
+      {children}
+    </AppProviderCore>
+  );
+};
 
-  const authLoaded = hasClerk ? clerkAuth.isLoaded : true;
-  const userLoaded = hasClerk ? clerkUserHook.isLoaded : true;
-  const userId = hasClerk ? clerkAuth.userId : null;
-  const clerkUser = hasClerk ? clerkUserHook.user : null;
-  const getToken = hasClerk ? clerkAuth.getToken : (async () => null);
-  const clerkSignOut = hasClerk ? clerkAuth.signOut : (async () => {});
+// Wrapper: chooses Clerk or no-Clerk path — avoids unconditional hook calls
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  if (hasClerk) {
+    return <AppProviderWithClerk>{children}</AppProviderWithClerk>;
+  }
+  return (
+    <AppProviderCore
+      authLoaded={true}
+      userLoaded={true}
+      userId={null}
+      clerkUser={null}
+      getToken={async () => null}
+      clerkSignOut={async () => {}}
+    >
+      {children}
+    </AppProviderCore>
+  );
+};
+
+interface ClerkProps {
+  authLoaded: boolean;
+  userLoaded: boolean;
+  userId: string | null;
+  clerkUser: any;
+  getToken: (opts?: any) => Promise<string | null>;
+  clerkSignOut: (opts?: any) => Promise<void>;
+}
+
+const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
+  authLoaded, userLoaded, userId, clerkUser, getToken, clerkSignOut, children
+}) => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);

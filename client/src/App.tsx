@@ -138,19 +138,27 @@ const AppRoutes = () => {
   );
 };
 
+const AppCore: React.FC = () => (
+  <ToastProvider>
+    <AppProvider>
+      <HashRouter>
+        <ScrollToTop />
+        <AppRoutes />
+      </HashRouter>
+    </AppProvider>
+  </ToastProvider>
+);
+
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
-      <ClerkProvider publishableKey={CLERK_KEY}>
-        <ToastProvider>
-          <AppProvider>
-            <HashRouter>
-              <ScrollToTop />
-              <AppRoutes />
-            </HashRouter>
-          </AppProvider>
-        </ToastProvider>
-      </ClerkProvider>
+      {CLERK_KEY ? (
+        <ClerkProvider publishableKey={CLERK_KEY}>
+          <AppCore />
+        </ClerkProvider>
+      ) : (
+        <AppCore />
+      )}
     </ErrorBoundary>
   );
 };
