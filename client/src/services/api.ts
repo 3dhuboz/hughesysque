@@ -76,3 +76,8 @@ export const updateSettings = (data: Partial<AppSettings>) =>
 // Seed
 export const seedDatabase = () =>
   apiFetch('/seed', { method: 'POST' });
+
+// Not applicable (no Firebase in this stack)
+export const migrateFromFirestore = async (_apiKey?: string) => {
+  return { migrated: 0, message: 'Migration not available — this app uses Cloudflare D1 natively.' };
+};
