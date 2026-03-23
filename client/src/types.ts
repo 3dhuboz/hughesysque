@@ -212,9 +212,14 @@ export interface AppSettings {
   instagramBusinessAccountId?: string;
   manualTickerImages: string[]; 
   businessName: string;
-  businessAddress: string; 
+  businessAddress: string;
+  tagline?: string;
+  location?: string;
+  adminEmail?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
   logoUrl: string;
-  adminUsername?: string; 
+  adminUsername?: string;
   adminPassword?: string;
   geminiApiKey?: string;
   rewards: RewardsConfig;
