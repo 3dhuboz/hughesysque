@@ -266,8 +266,9 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
     }
   }, [userId, clerkUser, authLoaded, userLoaded]);
 
-  const login = async (role: UserRole, email?: string, password?: string) => {
-    if (role === UserRole.ADMIN || role === UserRole.DEV) {
+  const login = async (role: UserRole | string, email?: string, password?: string) => {
+    const normalizedRole = (role as string).toUpperCase();
+    if (normalizedRole === UserRole.ADMIN || normalizedRole === UserRole.DEV) {
       if (email === 'dev' && password === '123') { setUser(INITIAL_DEV_USER); return; }
       if (email === settings.adminUsername && password === settings.adminPassword) { setUser(INITIAL_ADMIN_USER); return; }
       throw new Error('Invalid admin credentials');
