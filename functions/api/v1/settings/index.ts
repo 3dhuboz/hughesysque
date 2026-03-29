@@ -31,7 +31,7 @@ export const onRequest = async (context: any) => {
       return json(merged);
     }
 
-    if (request.method === 'PUT') {
+    if (request.method === 'PUT' || request.method === 'PATCH' || request.method === 'POST') {
       requireAuth(await verifyAuth(request, env), 'ADMIN');
       const data = await request.json();
       const existing = await db.prepare("SELECT data FROM settings WHERE key = 'general'").first();
@@ -65,7 +65,7 @@ export const onRequest = async (context: any) => {
       return json(merged);
     }
 
-    return json({ error: 'Method not allowed' }, 405);
+    return json({ error: `Method not allowed (received: ${request.method})` }, 405);
   } catch (err: any) {
     const status = err.status || 500;
     return json({ error: err.message || 'Internal Server Error' }, status);
