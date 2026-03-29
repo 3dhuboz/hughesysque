@@ -349,8 +349,8 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
         }
         console.log('[Settings] Saving changed fields:', Object.keys(changedFields));
         const result = await updateSettings(changedFields);
-        if (result === false) {
-            toast('Failed to save — check console for details.', 'error');
+        if (result !== true) {
+            toast(`Failed to save: ${result || 'Unknown error'}`, 'error');
         } else {
             setShowSaveSuccess(true);
             setTimeout(() => setShowSaveSuccess(false), 4000);
@@ -621,7 +621,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
   };
 
   // Helper Component for Image Row
-  const ImageSettingRow = ({ label, settingKey, prompt }: { label: string, settingKey: keyof AppSettings, prompt: string }) => {
+  const ImageSettingRow = ({ label, settingKey, prompt, maxWidth = 1200 }: { label: string, settingKey: keyof AppSettings, prompt: string, maxWidth?: number }) => {
       const inputId = `upload-${settingKey}`;
 
       const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -631,7 +631,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
           const reader = new FileReader();
           reader.onloadend = async () => {
               const base64 = reader.result as string;
-              const compressed = await compressImage(base64, 1200, 0.7);
+              const compressed = await compressImage(base64, maxWidth, 0.7);
               setFormData(prev => ({ ...prev, [settingKey]: compressed }));
           };
           reader.readAsDataURL(file);
@@ -843,7 +843,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
               </div>
 
               <div className="space-y-4">
-                  <ImageSettingRow label="Logo URL" settingKey="logoUrl" prompt="BBQ restaurant logo, vector style, minimal" />
+                  <ImageSettingRow label="Logo URL" settingKey="logoUrl" prompt="BBQ restaurant logo, vector style, minimal" maxWidth={400} />
               </div>
           </div>
       </section>

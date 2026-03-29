@@ -75,7 +75,7 @@ interface AppContextType {
   toggleGalleryLike: (postId: string) => Promise<void>;
 
   settings: AppSettings;
-  updateSettings: (newSettings: Partial<AppSettings>) => Promise<boolean>;
+  updateSettings: (newSettings: Partial<AppSettings>) => Promise<true | string>;
 
   reminders: string[];
   toggleReminder: (eventId: string) => void;
@@ -434,7 +434,7 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
       return true;
     } catch (err: any) {
       console.error('[Settings] API write failed:', err.message);
-      return false;
+      return err.message || 'Unknown error';
     }
   };
 
