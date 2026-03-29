@@ -623,7 +623,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
 
   // Helper Component for Image Row
   const ImageSettingRow = ({ label, settingKey, prompt }: { label: string, settingKey: keyof AppSettings, prompt: string }) => {
-      const fileInputRef = React.useRef<HTMLInputElement>(null);
+      const inputId = `upload-${settingKey}`;
 
       const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
           const file = e.target.files?.[0];
@@ -632,7 +632,6 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
           const reader = new FileReader();
           reader.onloadend = async () => {
               const base64 = reader.result as string;
-              // Compress slightly less for hero images (1200px width)
               const compressed = await compressImage(base64, 1200, 0.7);
               setFormData(prev => ({ ...prev, [settingKey]: compressed }));
           };
@@ -643,26 +642,26 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
           <div>
               <label className="text-xs text-gray-400 block mb-1 font-bold uppercase">{label}</label>
               <div className="flex gap-2 mb-2">
-                  <input 
+                  <input
                       value={(formData[settingKey] as string) || ''}
                       onChange={e => setFormData({...formData, [settingKey]: e.target.value})}
                       placeholder="Image URL..."
                       className="flex-1 bg-black/40 border border-gray-700 rounded-lg p-2 text-white text-xs"
                   />
-                  <input 
-                      type="file" 
-                      ref={fileInputRef}
+                  <input
+                      type="file"
+                      id={inputId}
                       onChange={handleUpload}
                       className="hidden"
                       accept="image/*"
                   />
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="bg-gray-800 border border-gray-600 p-2 rounded hover:bg-gray-700 text-gray-300"
+                  <label
+                    htmlFor={inputId}
+                    className="bg-gray-800 border border-gray-600 p-2 rounded hover:bg-gray-700 text-gray-300 cursor-pointer flex items-center"
                     title="Upload Image"
                   >
                       <Upload size={16}/>
-                  </button>
+                  </label>
                   <button 
                     onClick={() => handleGenerateImage(settingKey, prompt)} 
                     className="bg-bbq-charcoal border border-gray-600 p-2 rounded hover:bg-gray-700" 
