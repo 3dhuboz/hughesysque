@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Link, useLocation } from 'react-router-dom';
-import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, Gift, AlertTriangle } from 'lucide-react';
+import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, Gift, AlertTriangle, Music2 } from 'lucide-react';
 import InstallPwa from './InstallPwa';
 
 interface LayoutProps {
@@ -197,8 +197,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-bbq-red shrink-0" />
-                <a href={`mailto:${settings?.adminEmail || 'admin@hugheseysque.au'}`} className="hover:text-white transition">
-                  {settings?.adminEmail || 'admin@hugheseysque.au'}
+                <a href={`mailto:${settings?.contactEmail || settings?.adminEmail || 'hugheseysbbq2021@gmail.com'}`} className="hover:text-white transition">
+                  {settings?.contactEmail || settings?.adminEmail || 'hugheseysbbq2021@gmail.com'}
                 </a>
               </li>
             </ul>
@@ -216,6 +216,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               {settings?.instagramUrl && (
                 <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-gradient-to-tr hover:from-yellow-500 hover:to-purple-600 transition text-white border border-white/10">
                   <Instagram size={20} />
+                </a>
+              )}
+              {settings?.tiktokUrl && (
+                <a href={settings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-black transition text-white border border-white/10">
+                  <Music2 size={20} />
                 </a>
               )}
             </div>

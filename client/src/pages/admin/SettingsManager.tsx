@@ -755,10 +755,91 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
 
                   <div>
                       <label className="text-xs font-bold text-gray-500 uppercase">Business Address</label>
-                      <input 
+                      <input
                           value={formData.businessAddress || ''}
                           onChange={e => setFormData({ ...formData, businessAddress: e.target.value })}
                           className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Phone</label>
+                      <input
+                          value={formData.phone || ''}
+                          onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="0480 502 444"
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Contact Email (Public)</label>
+                      <input
+                          value={formData.contactEmail || ''}
+                          onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="hugheseysbbq2021@gmail.com"
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Tagline</label>
+                      <input
+                          value={formData.tagline || ''}
+                          onChange={e => setFormData({ ...formData, tagline: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="Low & Slow BBQ"
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Hero Heading</label>
+                      <input
+                          value={formData.heroHeading || ''}
+                          onChange={e => setFormData({ ...formData, heroHeading: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="Live in moments that matter"
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Hero Subtitle</label>
+                      <input
+                          value={formData.subtitle || ''}
+                          onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="Simple, affordable, memorable"
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Google Maps URL</label>
+                      <input
+                          value={formData.mapsUrl || ''}
+                          onChange={e => setFormData({ ...formData, mapsUrl: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="https://maps.google.com/..."
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Facebook URL</label>
+                      <input
+                          value={formData.facebookUrl || ''}
+                          onChange={e => setFormData({ ...formData, facebookUrl: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="https://www.facebook.com/..."
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Instagram URL</label>
+                      <input
+                          value={formData.instagramUrl || ''}
+                          onChange={e => setFormData({ ...formData, instagramUrl: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="https://www.instagram.com/..."
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">TikTok URL</label>
+                      <input
+                          value={formData.tiktokUrl || ''}
+                          onChange={e => setFormData({ ...formData, tiktokUrl: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="https://www.tiktok.com/@..."
                       />
                   </div>
               </div>
