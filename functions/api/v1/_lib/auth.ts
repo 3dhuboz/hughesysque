@@ -98,12 +98,16 @@ export async function verifyAuth(request: Request, env: any): Promise<AuthResult
 
 export function requireAuth(auth: AuthResult | null, minRole?: string): AuthResult {
   if (!auth) {
-    throw { status: 401, message: 'Unauthorized' };
+    const err = new Error('Unauthorized');
+    (err as any).status = 401;
+    throw err;
   }
   if (minRole) {
     const hierarchy = ['GUEST', 'CUSTOMER', 'ADMIN', 'DEV'];
     if (hierarchy.indexOf(auth.role) < hierarchy.indexOf(minRole)) {
-      throw { status: 403, message: 'Forbidden' };
+      const err = new Error('Forbidden');
+      (err as any).status = 403;
+      throw err;
     }
   }
   return auth;

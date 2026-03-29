@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
 import { CreditCard, Save, CheckCircle, ExternalLink, Loader2, X, AlertCircle, Monitor, Facebook, ChevronDown, ChevronUp, HelpCircle, ArrowRight, Gift, Wand2, Database, Server, Wifi, Banknote, Power, Eye, EyeOff, LayoutTemplate, MessageSquare, Utensils, Smartphone, Shield, Plus, Trash2, Activity, RefreshCw, Lock, WifiOff, Edit2, RotateCcw, Terminal, AlertTriangle, Copy, FileCode, Home, Music, Megaphone, Truck, Settings, Image as ImageIcon, Upload, Info } from 'lucide-react';
@@ -10,6 +10,7 @@ import { RewardPrize, AppSettings } from '../../types';
 declare global {
   interface Window {
     FB: any;
+    Square: any;
   }
 }
 
@@ -139,14 +140,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
     });
   }, [settings]);
 
-  useEffect(() => {
-     checkSystemHealth();
-     // Auto-ping every 30s
-     const interval = setInterval(checkSystemHealth, 30000);
-     return () => clearInterval(interval);
-  }, []);
-
-  const checkSystemHealth = async () => {
+  const checkSystemHealth = useCallback(async () => {
       setHealthStatus(prev => ({ ...prev, database: 'checking' }));
 
       const start = Date.now();
@@ -171,7 +165,13 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
 
       setHealthStatus(prev => ({ ...prev, storage: 'online' }));
       setLastChecked(new Date().toLocaleTimeString());
-  };
+  }, [user]);
+
+  useEffect(() => {
+     checkSystemHealth();
+     const interval = setInterval(checkSystemHealth, 30000);
+     return () => clearInterval(interval);
+  }, [checkSystemHealth]);
 
   const runDeepDiagnostics = async () => {
       setIsRunningDiag(true);
@@ -308,7 +308,6 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
       }
 
       updateSettings({
-          ...settings,
           facebookConnected: true,
           facebookPageId: page.id,
           facebookPageAccessToken: page.access_token,

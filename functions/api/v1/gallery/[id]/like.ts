@@ -23,11 +23,13 @@ export const onRequest = async (context: any) => {
       likedBy.push(auth.userId);
     }
 
-    await db.prepare('UPDATE gallery_posts SET likes = ?, liked_by = ? WHERE id = ?')
-      .bind(likedBy.length, JSON.stringify(likedBy), params.id).run();
+    const likedByJson = JSON.stringify(likedBy);
+    const [, updated] = await db.batch([
+      db.prepare('UPDATE gallery_posts SET likes = ?, liked_by = ? WHERE id = ?').bind(likedBy.length, likedByJson, params.id),
+      db.prepare('SELECT * FROM gallery_posts WHERE id = ?').bind(params.id),
+    ]);
 
-    const updated = await db.prepare('SELECT * FROM gallery_posts WHERE id = ?').bind(params.id).first();
-    return json(rowToGalleryPost(updated));
+    return json(rowToGalleryPost(updated.results?.[0]));
   } catch (err: any) {
     const status = err.status || 500;
     return json({ error: err.message || 'Internal Server Error' }, status);

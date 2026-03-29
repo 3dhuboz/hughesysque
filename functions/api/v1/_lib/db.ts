@@ -15,7 +15,7 @@ export function generateId(): string {
 /** Parse JSON text column, return fallback on error */
 export function parseJson<T>(val: string | null | undefined, fallback: T): T {
   if (!val) return fallback;
-  try { return JSON.parse(val); } catch { return fallback; }
+  try { return JSON.parse(val); } catch (e) { console.error('parseJson failed:', e, 'value:', val); return fallback; }
 }
 
 /** Convert D1 row (snake_case, integers for bools) to app types (camelCase, booleans) */
