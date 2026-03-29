@@ -99,7 +99,10 @@ export const onRequest = async (context: any) => {
 
     const signature = request.headers.get('x-square-hmacsha256-signature');
     const webhookSignatureKey = env.SQUARE_WEBHOOK_SIGNATURE_KEY;
-    if (webhookSignatureKey && signature) {
+    if (webhookSignatureKey) {
+      if (!signature) {
+        return json({ error: 'Missing signature' }, 401);
+      }
       const host = new URL(request.url).host;
       const notificationUrl = env.SQUARE_WEBHOOK_URL || `https://${host}/api/v1/payment/square-webhook`;
       const valid = await verifySignature(rawBody, signature, webhookSignatureKey, notificationUrl);

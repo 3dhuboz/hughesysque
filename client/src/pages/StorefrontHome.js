@@ -28,7 +28,7 @@ const StorefrontHome = () => {
   const { settings, calendarEvents } = useStorefront();
 
   const name = settings.businessName || brandName || 'Hughesys Que';
-  const tagline = settings.businessTagline || brandTagline || 'Quality Street Food';
+  const tagline = settings.tagline || brandTagline || 'Quality Street Food';
 
   const today = new Date(new Date().setHours(0, 0, 0, 0));
   const nextCookDay = calendarEvents

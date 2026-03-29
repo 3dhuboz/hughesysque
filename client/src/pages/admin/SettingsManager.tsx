@@ -213,8 +213,8 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
   const clearFirestoreCache = async () => {
       toast('Clearing local cache...');
       try {
-          localStorage.removeItem('sm_cart');
-          localStorage.removeItem('sm_selected_date');
+          localStorage.removeItem('hq_cart');
+          localStorage.removeItem('hq_selected_date');
           toast('Cache cleared! Reloading...', 'success');
           setTimeout(() => window.location.reload(), 1000);
       } catch (e: any) {
@@ -950,7 +950,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                                   const key = aiKey.trim();
                                   if (!key) { toast('Enter a key first.', 'warning'); return; }
                                   // Set runtime key immediately, persist to D1
-                                  import('../../services/gemini').then(m => m.setAiApiKey(key));
+                                  import('../../services/gemini').then(m => m.setGeminiApiKey(key));
                                   setAiStatus('connected');
                                   setAiEditing(false);
                                   toast('OpenRouter key active! Syncing to cloud...', 'success');
@@ -1348,7 +1348,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
               <div>
                   <label className="text-xs font-bold text-gray-500 uppercase">Admin Username</label>
                   <input 
-                      value={formData.adminUsername}
+                      value={formData.adminUsername || ''}
                       onChange={e => setFormData({ ...formData, adminUsername: e.target.value })}
                       className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
                   />
@@ -1358,7 +1358,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                   <input 
                       type="password"
                       autoComplete="off"
-                      value={formData.adminPassword}
+                      value={formData.adminPassword || ''}
                       onChange={e => setFormData({ ...formData, adminPassword: e.target.value })}
                       className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
                   />

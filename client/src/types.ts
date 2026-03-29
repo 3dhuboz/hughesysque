@@ -228,6 +228,7 @@ export interface AppSettings {
   adminUsername?: string;
   adminPassword?: string;
   geminiApiKey?: string;
+  openrouterApiKey?: string;
   rewards: RewardsConfig;
   cateringPackages?: CateringPackage[];
   // Email Settings
