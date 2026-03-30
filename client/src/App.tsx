@@ -19,6 +19,7 @@ const StorefrontLogin = React.lazy(() => import('./pages/StorefrontLogin'));
 const StorefrontContact = React.lazy(() => import('./pages/StorefrontContact'));
 const StorefrontEvents = React.lazy(() => import('./pages/StorefrontEvents'));
 const StorefrontGallery = React.lazy(() => import('./pages/StorefrontGallery'));
+const StorefrontLive = React.lazy(() => import('./pages/StorefrontLive'));
 const StorefrontRewards = React.lazy(() => import('./pages/StorefrontRewards'));
 const StorefrontTracking = React.lazy(() => import('./pages/StorefrontTracking'));
 const StorefrontProfile = React.lazy(() => import('./pages/StorefrontProfile'));
@@ -95,6 +96,7 @@ const AppRoutes = () => {
                 <Route path="/catering" element={<StorefrontCatering />} />
                 <Route path="/order" element={<StorefrontOrder />} />
                 <Route path="/events" element={<StorefrontEvents />} />
+                <Route path="/live" element={<StorefrontLive />} />
                 <Route path="/gallery" element={<StorefrontGallery />} />
                 <Route path="/rewards" element={<StorefrontRewards />} />
                 <Route path="/tracking" element={<StorefrontTracking />} />

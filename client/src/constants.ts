@@ -91,7 +91,7 @@ export const INITIAL_SETTINGS: AppSettings = {
   diyCardPackageImage: '',
   diyCardCuratedImage: '',
   diyCardCustomImage: '',
-  cateringPackageImages: { essential: '', pitmaster: '', wholehog: '' },
+  cateringPackageImages: { '2m2s': '', '2m3s': '', '3m3s': '', '4m3s': '' },
   eventsHeroImage: '',
   promotersHeroImage: '',
   promotersSocialImage: '',
@@ -135,19 +135,24 @@ export const INITIAL_SETTINGS: AppSettings = {
   },
   cateringPackages: [
     {
-      id: 'pkg_essential', name: 'The Essentials',
-      description: 'The no-fuss option. Perfect for casual backyard gatherings or office lunches.',
-      price: 35, minPax: 10, meatLimit: 2, sideLimit: 2, image: BBQ_IMGS.brisketPlate,
+      id: 'pkg_2m2s', name: '2 Meats & 2 Sides',
+      description: 'A solid spread for casual events. Choose 2 of our signature smoked meats and 2 sides. Includes bread, cutlery, plates and napkins.',
+      price: 38, minPax: 40, meatLimit: 2, sideLimit: 2, image: BBQ_IMGS.brisketPlate,
     },
     {
-      id: 'pkg_pitmaster', name: 'The Pitmaster',
-      description: 'Our crowd favourite. A balanced spread of our best smoked cuts and sides.',
-      price: 48, minPax: 10, meatLimit: 3, sideLimit: 3, image: BBQ_IMGS.mixedPlatter,
+      id: 'pkg_2m3s', name: '2 Meats & 3 Sides',
+      description: 'Extra sides to round out the feast. Choose 2 smoked meats and 3 sides. Includes bread, cutlery, plates and napkins.',
+      price: 44, minPax: 40, meatLimit: 2, sideLimit: 3, image: BBQ_IMGS.mixedPlatter,
     },
     {
-      id: 'pkg_wholehog', name: 'The Whole Hog',
-      description: 'The ultimate BBQ experience. Full variety of meats, sides, and premium additions.',
-      price: 65, minPax: 10, meatLimit: 4, sideLimit: 4, image: BBQ_IMGS.wholeBrisket,
+      id: 'pkg_3m3s', name: '3 Meats & 3 Sides',
+      description: 'Our most popular package. A balanced spread of 3 smoked meats and 3 sides. Includes bread, cutlery, plates and napkins.',
+      price: 56, minPax: 40, meatLimit: 3, sideLimit: 3, image: BBQ_IMGS.wholeBrisket,
+    },
+    {
+      id: 'pkg_4m3s', name: '4 Meats & 3 Sides',
+      description: 'The ultimate feast. Choose 4 of our signature smoked meats and 3 sides. Includes bread, cutlery, plates and napkins.',
+      price: 68, minPax: 40, meatLimit: 4, sideLimit: 3, image: BBQ_IMGS.wholeBrisket,
     },
   ],
   emailSettings: {
