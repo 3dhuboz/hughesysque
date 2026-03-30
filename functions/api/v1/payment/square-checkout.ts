@@ -1,17 +1,38 @@
+/**
+ * Square Checkout — creates a payment link.
+ * POST /api/v1/payment/square-checkout
+ * Reads Square credentials from D1 settings.
+ */
+import { getDB, parseJson } from '../_lib/db';
+
+async function getSquareSettings(env: any) {
+  const db = getDB(env);
+  const row: any = await db.prepare("SELECT data FROM settings WHERE key = 'general'").first();
+  const s = row ? parseJson(row.data, {}) : {};
+  if (!s.squareAccessToken || !s.squareLocationId) {
+    throw { status: 400, message: 'Square not configured — set access token and location ID in Admin > Settings' };
+  }
+  return {
+    accessToken: s.squareAccessToken,
+    locationId: s.squareLocationId,
+    applicationId: s.squareApplicationId || '',
+    environment: s.squareAccessToken.startsWith('EAAA') ? 'production' : 'sandbox',
+  };
+}
+
 export const onRequest = async (context: any) => {
-  const { request } = context;
+  const { request, env } = context;
   const json = (d: any, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'Content-Type': 'application/json' } });
 
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   try {
-    const { amount, currency, locationId, accessToken, environment, orderId, description, redirectUrl, items } = await request.json();
+    const sq = await getSquareSettings(env);
+    const { amount, currency, orderId, description, redirectUrl, items } = await request.json();
 
-    if (!amount || !locationId || !accessToken) {
-      return json({ error: 'Missing required fields: amount, locationId, accessToken' }, 400);
-    }
+    if (!amount) return json({ error: 'Missing required field: amount' }, 400);
 
-    const baseUrl = environment === 'production'
+    const baseUrl = sq.environment === 'production'
       ? 'https://connect.squareup.com'
       : 'https://connect.squareupsandbox.com';
 
@@ -40,7 +61,7 @@ export const onRequest = async (context: any) => {
         requestBody = {
           idempotency_key: idempotencyKey,
           order: {
-            location_id: locationId,
+            location_id: sq.locationId,
             ...(refId ? { reference_id: refId } : {}),
             line_items: lineItems,
           },
@@ -60,7 +81,7 @@ export const onRequest = async (context: any) => {
         quick_pay: {
           name: description || `Order #${(orderId || '').slice(-6)}`,
           price_money: { amount: Math.round(amount * 100), currency: cur },
-          location_id: locationId,
+          location_id: sq.locationId,
         },
         checkout_options: {
           allow_tipping: false,
@@ -74,7 +95,7 @@ export const onRequest = async (context: any) => {
       method: 'POST',
       headers: {
         'Square-Version': '2024-01-18',
-        'Authorization': `Bearer ${accessToken}`,
+        'Authorization': `Bearer ${sq.accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
@@ -97,7 +118,8 @@ export const onRequest = async (context: any) => {
       usedQuickPay,
     });
   } catch (error: any) {
+    const status = error.status || 500;
     console.error('Square checkout link error:', error);
-    return json({ error: error.message }, 500);
+    return json({ error: error.message }, status);
   }
 };

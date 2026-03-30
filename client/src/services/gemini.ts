@@ -72,10 +72,10 @@ export const generateMarketingImage = async (prompt: string): Promise<string | n
   const key = getApiKey();
   if (!key) return null;
 
-  const fullPrompt = `A delicious, professional food photography style image of BBQ food: ${prompt}. High quality, appetizing, cinematic lighting, no text or watermarks.`;
+  const fullPrompt = `Generate a professional food photography image: ${prompt}. Style: high quality, appetizing, cinematic lighting, no text or watermarks, BBQ themed.`;
 
   try {
-    const res = await fetch(`${OPENROUTER_BASE}/images/generations`, {
+    const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${key}`,
@@ -84,20 +84,25 @@ export const generateMarketingImage = async (prompt: string): Promise<string | n
         'X-Title': SITE_NAME,
       },
       body: JSON.stringify({
-        model: 'openai/dall-e-3',
-        prompt: fullPrompt,
-        n: 1,
-        size: '1024x1024',
-        response_format: 'b64_json',
+        model: 'google/gemini-2.5-flash-preview-05-20',
+        messages: [{ role: 'user', content: fullPrompt }],
+        modalities: ['image', 'text'],
       }),
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error('OpenRouter image error:', res.status, await res.text().catch(() => ''));
+      return null;
+    }
+
     const data = await res.json();
-    const b64 = data.data?.[0]?.b64_json;
-    return b64 ? `data:image/png;base64,${b64}` : null;
+    const images = data.choices?.[0]?.message?.images;
+    if (images?.[0]?.image_url?.url) {
+      return images[0].image_url.url;
+    }
+    return null;
   } catch (error: any) {
-    console.error('OpenRouter Image Error:', error?.message || error);
+    console.error('Image generation error:', error?.message || error);
     return null;
   }
 };
