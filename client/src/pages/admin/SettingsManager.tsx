@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
 import { CreditCard, Save, CheckCircle, ExternalLink, Loader2, X, AlertCircle, Monitor, Facebook, ChevronDown, ChevronUp, HelpCircle, ArrowRight, Gift, Wand2, Database, Server, Wifi, Banknote, Power, Eye, EyeOff, LayoutTemplate, MessageSquare, Utensils, Smartphone, Shield, Plus, Trash2, Activity, RefreshCw, Lock, WifiOff, Edit2, RotateCcw, Terminal, AlertTriangle, Copy, FileCode, Home, Music, Megaphone, Truck, Settings, Image as ImageIcon, Upload, Info } from 'lucide-react';
@@ -10,6 +10,7 @@ import { RewardPrize, AppSettings } from '../../types';
 declare global {
   interface Window {
     FB: any;
+    Square: any;
   }
 }
 
@@ -139,14 +140,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
     });
   }, [settings]);
 
-  useEffect(() => {
-     checkSystemHealth();
-     // Auto-ping every 30s
-     const interval = setInterval(checkSystemHealth, 30000);
-     return () => clearInterval(interval);
-  }, []);
-
-  const checkSystemHealth = async () => {
+  const checkSystemHealth = useCallback(async () => {
       setHealthStatus(prev => ({ ...prev, database: 'checking' }));
 
       const start = Date.now();
@@ -171,7 +165,13 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
 
       setHealthStatus(prev => ({ ...prev, storage: 'online' }));
       setLastChecked(new Date().toLocaleTimeString());
-  };
+  }, [user]);
+
+  useEffect(() => {
+     checkSystemHealth();
+     const interval = setInterval(checkSystemHealth, 30000);
+     return () => clearInterval(interval);
+  }, [checkSystemHealth]);
 
   const runDeepDiagnostics = async () => {
       setIsRunningDiag(true);
@@ -213,8 +213,8 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
   const clearFirestoreCache = async () => {
       toast('Clearing local cache...');
       try {
-          localStorage.removeItem('sm_cart');
-          localStorage.removeItem('sm_selected_date');
+          localStorage.removeItem('hq_cart');
+          localStorage.removeItem('hq_selected_date');
           toast('Cache cleared! Reloading...', 'success');
           setTimeout(() => window.location.reload(), 1000);
       } catch (e: any) {
@@ -308,7 +308,6 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
       }
 
       updateSettings({
-          ...settings,
           facebookConnected: true,
           facebookPageId: page.id,
           facebookPageAccessToken: page.access_token,
@@ -350,8 +349,8 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
         }
         console.log('[Settings] Saving changed fields:', Object.keys(changedFields));
         const result = await updateSettings(changedFields);
-        if (result === false) {
-            toast('Failed to save — check console for details.', 'error');
+        if (result !== true) {
+            toast(`Failed to save: ${result || 'Unknown error'}`, 'error');
         } else {
             setShowSaveSuccess(true);
             setTimeout(() => setShowSaveSuccess(false), 4000);
@@ -622,8 +621,8 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
   };
 
   // Helper Component for Image Row
-  const ImageSettingRow = ({ label, settingKey, prompt }: { label: string, settingKey: keyof AppSettings, prompt: string }) => {
-      const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const ImageSettingRow = ({ label, settingKey, prompt, maxWidth = 1200 }: { label: string, settingKey: keyof AppSettings, prompt: string, maxWidth?: number }) => {
+      const inputId = `upload-${settingKey}`;
 
       const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
           const file = e.target.files?.[0];
@@ -632,8 +631,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
           const reader = new FileReader();
           reader.onloadend = async () => {
               const base64 = reader.result as string;
-              // Compress slightly less for hero images (1200px width)
-              const compressed = await compressImage(base64, 1200, 0.7);
+              const compressed = await compressImage(base64, maxWidth, 0.7);
               setFormData(prev => ({ ...prev, [settingKey]: compressed }));
           };
           reader.readAsDataURL(file);
@@ -643,26 +641,26 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
           <div>
               <label className="text-xs text-gray-400 block mb-1 font-bold uppercase">{label}</label>
               <div className="flex gap-2 mb-2">
-                  <input 
+                  <input
                       value={(formData[settingKey] as string) || ''}
                       onChange={e => setFormData({...formData, [settingKey]: e.target.value})}
                       placeholder="Image URL..."
                       className="flex-1 bg-black/40 border border-gray-700 rounded-lg p-2 text-white text-xs"
                   />
-                  <input 
-                      type="file" 
-                      ref={fileInputRef}
+                  <input
+                      type="file"
+                      id={inputId}
                       onChange={handleUpload}
                       className="hidden"
                       accept="image/*"
                   />
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="bg-gray-800 border border-gray-600 p-2 rounded hover:bg-gray-700 text-gray-300"
+                  <label
+                    htmlFor={inputId}
+                    className="bg-gray-800 border border-gray-600 p-2 rounded hover:bg-gray-700 text-gray-300 cursor-pointer flex items-center"
                     title="Upload Image"
                   >
                       <Upload size={16}/>
-                  </button>
+                  </label>
                   <button 
                     onClick={() => handleGenerateImage(settingKey, prompt)} 
                     className="bg-bbq-charcoal border border-gray-600 p-2 rounded hover:bg-gray-700" 
@@ -755,16 +753,97 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
 
                   <div>
                       <label className="text-xs font-bold text-gray-500 uppercase">Business Address</label>
-                      <input 
+                      <input
                           value={formData.businessAddress || ''}
                           onChange={e => setFormData({ ...formData, businessAddress: e.target.value })}
                           className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
                       />
                   </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Phone</label>
+                      <input
+                          value={formData.phone || ''}
+                          onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="0480 502 444"
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Contact Email (Public)</label>
+                      <input
+                          value={formData.contactEmail || ''}
+                          onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="hugheseysbbq2021@gmail.com"
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Tagline</label>
+                      <input
+                          value={formData.tagline || ''}
+                          onChange={e => setFormData({ ...formData, tagline: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="Low & Slow BBQ"
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Hero Heading</label>
+                      <input
+                          value={formData.heroHeading || ''}
+                          onChange={e => setFormData({ ...formData, heroHeading: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="Live in moments that matter"
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Hero Subtitle</label>
+                      <input
+                          value={formData.subtitle || ''}
+                          onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="Simple, affordable, memorable"
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Google Maps URL</label>
+                      <input
+                          value={formData.mapsUrl || ''}
+                          onChange={e => setFormData({ ...formData, mapsUrl: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="https://maps.google.com/..."
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Facebook URL</label>
+                      <input
+                          value={formData.facebookUrl || ''}
+                          onChange={e => setFormData({ ...formData, facebookUrl: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="https://www.facebook.com/..."
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Instagram URL</label>
+                      <input
+                          value={formData.instagramUrl || ''}
+                          onChange={e => setFormData({ ...formData, instagramUrl: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="https://www.instagram.com/..."
+                      />
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">TikTok URL</label>
+                      <input
+                          value={formData.tiktokUrl || ''}
+                          onChange={e => setFormData({ ...formData, tiktokUrl: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="https://www.tiktok.com/@..."
+                      />
+                  </div>
               </div>
 
               <div className="space-y-4">
-                  <ImageSettingRow label="Logo URL" settingKey="logoUrl" prompt="BBQ restaurant logo, vector style, minimal" />
+                  <ImageSettingRow label="Logo URL" settingKey="logoUrl" prompt="BBQ restaurant logo, vector style, minimal" maxWidth={400} />
               </div>
           </div>
       </section>
@@ -870,7 +949,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                                   const key = aiKey.trim();
                                   if (!key) { toast('Enter a key first.', 'warning'); return; }
                                   // Set runtime key immediately, persist to D1
-                                  import('../../services/gemini').then(m => m.setAiApiKey(key));
+                                  import('../../services/gemini').then(m => m.setGeminiApiKey(key));
                                   setAiStatus('connected');
                                   setAiEditing(false);
                                   toast('OpenRouter key active! Syncing to cloud...', 'success');
@@ -1268,7 +1347,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
               <div>
                   <label className="text-xs font-bold text-gray-500 uppercase">Admin Username</label>
                   <input 
-                      value={formData.adminUsername}
+                      value={formData.adminUsername || ''}
                       onChange={e => setFormData({ ...formData, adminUsername: e.target.value })}
                       className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
                   />
@@ -1278,7 +1357,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                   <input 
                       type="password"
                       autoComplete="off"
-                      value={formData.adminPassword}
+                      value={formData.adminPassword || ''}
                       onChange={e => setFormData({ ...formData, adminPassword: e.target.value })}
                       className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
                   />

@@ -20,6 +20,7 @@ export const onRequest = async (context: any) => {
         await db.prepare(`UPDATE gallery_posts SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
       }
       const row = await db.prepare('SELECT * FROM gallery_posts WHERE id = ?').bind(params.id).first();
+      if (!row) return json({ error: 'Not found' }, 404);
       return json(rowToGalleryPost(row));
     }
 

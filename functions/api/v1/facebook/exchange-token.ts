@@ -1,8 +1,17 @@
+import { verifyAuth, requireAuth } from '../_lib/auth';
+
 export const onRequest = async (context: any) => {
   const { request, env } = context;
   const json = (d: any, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'Content-Type': 'application/json' } });
 
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  try {
+    requireAuth(await verifyAuth(request, env), 'ADMIN');
+  } catch (err: any) {
+    const status = err.status || 401;
+    return json({ error: err.message || 'Unauthorized' }, status);
+  }
 
   const appId = env.VITE_FACEBOOK_APP_ID;
   const appSecret = env.FACEBOOK_APP_SECRET;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Menu as MenuIcon, X, Image as ImageIcon, ShoppingBag, Gift } from 'lucide-react';
+import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Menu as MenuIcon, X, Image as ImageIcon, ShoppingBag, Gift, Music2 } from 'lucide-react';
 import { useClientConfig } from '../context/AppContext';
 import { useAuth } from '../context/AppContext';
 import { useStorefront } from '../context/AppContext';
@@ -164,7 +164,7 @@ const StorefrontLayout = ({ children }) => {
             <ul className="space-y-4 text-gray-400 text-sm">
               <li className="flex items-start gap-3 group">
                 <MapPin size={18} className="text-bbq-red shrink-0 group-hover:animate-bounce" />
-                <span>Queensland, AU<br /><span className="text-xs text-gray-600">(Check socials for truck location)</span></span>
+                <span>{settings.location || settings.businessAddress || 'Yeppoon, QLD'}<br /><span className="text-xs text-gray-600">(Check socials for truck location)</span></span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-bbq-red shrink-0" />
@@ -177,12 +177,21 @@ const StorefrontLayout = ({ children }) => {
           <div>
             <h4 className="font-bold text-bbq-gold uppercase tracking-widest text-xs mb-6">Community</h4>
             <div className="flex gap-4">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-[#1877F2] transition text-white border border-white/10">
-                <Facebook size={20} />
-              </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-gradient-to-tr hover:from-yellow-500 hover:to-purple-600 transition text-white border border-white/10">
-                <Instagram size={20} />
-              </a>
+              {settings.facebookUrl && (
+                <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-[#1877F2] transition text-white border border-white/10">
+                  <Facebook size={20} />
+                </a>
+              )}
+              {settings.instagramUrl && (
+                <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-gradient-to-tr hover:from-yellow-500 hover:to-purple-600 transition text-white border border-white/10">
+                  <Instagram size={20} />
+                </a>
+              )}
+              {settings.tiktokUrl && (
+                <a href={settings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-black transition text-white border border-white/10">
+                  <Music2 size={20} />
+                </a>
+              )}
             </div>
             <p className="text-xs text-gray-600 mt-8 font-mono">
               &copy; {new Date().getFullYear()} {name}.<br />All rights reserved.

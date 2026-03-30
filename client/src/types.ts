@@ -218,10 +218,17 @@ export interface AppSettings {
   adminEmail?: string;
   facebookUrl?: string;
   instagramUrl?: string;
+  tiktokUrl?: string;
+  phone?: string;
+  contactEmail?: string;
+  subtitle?: string;
+  heroHeading?: string;
+  mapsUrl?: string;
   logoUrl: string;
   adminUsername?: string;
   adminPassword?: string;
   geminiApiKey?: string;
+  openrouterApiKey?: string;
   rewards: RewardsConfig;
   cateringPackages?: CateringPackage[];
   // Email Settings

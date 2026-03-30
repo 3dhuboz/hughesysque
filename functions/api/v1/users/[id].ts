@@ -15,6 +15,12 @@ export const onRequest = async (context: any) => {
         return json({ error: 'Forbidden' }, 403);
       }
       const data = await request.json();
+      const isPrivileged = auth.role === 'ADMIN' || auth.role === 'DEV';
+      if (!isPrivileged) {
+        delete data.role;
+        delete data.stamps;
+        delete data.hasCateringDiscount;
+      }
       const fields: string[] = [];
       const values: any[] = [];
       const map: Record<string, string> = {
@@ -33,6 +39,7 @@ export const onRequest = async (context: any) => {
         await db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
       }
       const row = await db.prepare('SELECT * FROM users WHERE id = ?').bind(params.id).first();
+      if (!row) return json({ error: 'Not found' }, 404);
       return json(rowToUser(row));
     }
 

@@ -31,6 +31,7 @@ export const onRequest = async (context: any) => {
       values.push(params.id);
       await db.prepare(`UPDATE orders SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
       const row = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(params.id).first();
+      if (!row) return json({ error: 'Not found' }, 404);
       return json(rowToOrder(row));
     }
 

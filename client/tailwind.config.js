@@ -11,6 +11,14 @@ module.exports = {
         'bbq-ash': '#2d2d2d',
         'bbq-gold': '#fbbf24',
         'bbq-smoke': '#e5e5e5',
+        // Yeppoon Junior Rugby League
+        'yjrl-navy': '#0c1d35',
+        'yjrl-navy-light': '#1a3a5c',
+        'yjrl-gold': '#f0a500',
+        'yjrl-gold-light': '#fbbf24',
+        'yjrl-red': '#c41e3a',
+        'yjrl-cream': '#fef9f0',
+        'yjrl-dark': '#060f1c',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

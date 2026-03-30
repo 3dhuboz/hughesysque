@@ -3,6 +3,12 @@ export const onRequest = async (context: any) => {
   try {
     return await context.next();
   } catch (err: any) {
+    if (err instanceof SyntaxError) {
+      return new Response(JSON.stringify({ error: 'Malformed JSON body' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     const status = err.status || 500;
     const message = err.message || 'Internal Server Error';
     return new Response(JSON.stringify({ error: message }), {
