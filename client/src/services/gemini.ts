@@ -75,7 +75,7 @@ export const generateMarketingImage = async (prompt: string): Promise<string | n
   const fullPrompt = `Generate a professional food photography image: ${prompt}. Style: high quality, appetizing, cinematic lighting, no text or watermarks, BBQ themed.`;
 
   try {
-    const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+    const res = await fetch(`${OPENROUTER_BASE}/images/generations`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${key}`,
@@ -84,9 +84,10 @@ export const generateMarketingImage = async (prompt: string): Promise<string | n
         'X-Title': SITE_NAME,
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-preview-05-20',
-        messages: [{ role: 'user', content: fullPrompt }],
-        modalities: ['image', 'text'],
+        model: 'openai/dall-e-3',
+        prompt: fullPrompt,
+        n: 1,
+        size: '1024x1024',
       }),
     });
 
@@ -96,9 +97,13 @@ export const generateMarketingImage = async (prompt: string): Promise<string | n
     }
 
     const data = await res.json();
-    const images = data.choices?.[0]?.message?.images;
-    if (images?.[0]?.image_url?.url) {
-      return images[0].image_url.url;
+    // OpenRouter images/generations returns { data: [{ url: "..." }] }
+    if (data.data?.[0]?.url) {
+      return data.data[0].url;
+    }
+    // Fallback: check b64_json format
+    if (data.data?.[0]?.b64_json) {
+      return `data:image/png;base64,${data.data[0].b64_json}`;
     }
     return null;
   } catch (error: any) {
