@@ -22,29 +22,34 @@ interface LogEntry {
 }
 
 // Helper to compress base64 images to avoid large payloads
-// Updated: Supports custom max width for variable target sizes (prizes vs hero images)
+// Preserves PNG format for images with transparency, otherwise uses JPEG
 const compressImage = (base64Str: string, maxWidth = 700, quality = 0.5) => {
     return new Promise<string>((resolve) => {
+        const isPng = base64Str.startsWith('data:image/png');
         const img = new Image();
         img.src = base64Str;
         img.onload = () => {
             const canvas = document.createElement('canvas');
             let width = img.width;
             let height = img.height;
-            
+
             // Resize logic
             if (width > maxWidth) {
                 height *= maxWidth / width;
                 width = maxWidth;
             }
-            
+
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx?.drawImage(img, 0, 0, width, height);
-            
-            // Return compressed JPEG base64
-            resolve(canvas.toDataURL('image/jpeg', quality));
+
+            // Preserve PNG for transparency, otherwise compress as JPEG
+            if (isPng) {
+                resolve(canvas.toDataURL('image/png'));
+            } else {
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            }
         };
         img.onerror = () => {
             // Fallback if loading fails, return original
