@@ -71,7 +71,7 @@ export const toggleGalleryLike = (id: string) =>
 // Settings
 export const fetchSettings = () => apiFetch<AppSettings>('/settings');
 export const updateSettings = (data: Partial<AppSettings>) =>
-  apiFetch<AppSettings>('/settings', { method: 'PATCH', body: JSON.stringify(data) });
+  apiFetch<AppSettings>('/settings', { method: 'PUT', body: JSON.stringify(data) });
 
 // Seed
 export const seedDatabase = () =>

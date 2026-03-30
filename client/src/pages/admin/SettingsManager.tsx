@@ -853,7 +853,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
       {/* --- AI CONFIGURATION --- */}
       <section className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
           <h4 className="text-xl font-bold mb-4 flex items-center gap-2"><Wand2 size={20} className="text-bbq-gold"/> AI Configuration (OpenRouter)</h4>
-          <p className="text-sm text-gray-400 mb-4">Powers Pitmaster Jay chat, social content generation, AI image generation, and strategic recommendations.</p>
+          <p className="text-sm text-gray-400 mb-4">Powers Pitmaster Macca chat, social content generation, AI image generation, and strategic recommendations.</p>
 
           {/* Status Card */}
           <div className={`border rounded-xl p-5 mb-4 ${aiStatus === 'connected' ? 'border-green-600/40 bg-green-950/20' : aiStatus === 'error' ? 'border-red-600/40 bg-red-950/20' : 'border-gray-700 bg-black/20'}`}>

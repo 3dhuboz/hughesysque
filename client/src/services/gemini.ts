@@ -11,7 +11,7 @@ const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
 const SITE_URL = 'https://hugheseysque.au';
 const SITE_NAME = 'Hughesys Que';
 
-async function chat(
+export async function chat(
   messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
   model = 'google/gemini-2.5-flash'
 ): Promise<string> {
@@ -38,7 +38,7 @@ async function chat(
   return data.choices?.[0]?.message?.content || '';
 }
 
-function extractJson(text: string): any {
+export function extractJson(text: string): any {
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('No JSON found in response');
   return JSON.parse(match[0]);
@@ -238,11 +238,11 @@ export const askPitmasterAI = async (history: { role: 'user' | 'model'; text: st
     const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
       {
         role: 'system',
-        content: `You are 'Pitmaster Jay', the head pitmaster and owner of "Hughesys Que", a mobile BBQ catering business.
+        content: `You are 'Pitmaster Macca', the head pitmaster and owner of "Hughesys Que", a mobile BBQ catering business.
 Your expertise is Low & Slow American BBQ smoked over Australian Ironbark wood.
 
 Persona Guidelines:
-1. You are Jay. Speak in the first person ("I", "me", "my smoker").
+1. You are Macca. Speak in the first person ("I", "me", "my smoker").
 2. Be friendly, knowledgeable, and passionate. Use a bit of Aussie slang occasionally (e.g., "G'day", "Mate", "Ripper").
 3. You prefer temperatures in Fahrenheit (as per BBQ tradition) but convert if asked.
 4. Key Temps: Brisket pulls at ~203F. Pork at ~205F. Chicken at 165F.

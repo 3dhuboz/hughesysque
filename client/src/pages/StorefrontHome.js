@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ShoppingBag, Flame, ChefHat, Utensils, MapPin, Calendar, Star, Truck, Bot, MessageSquare, Ticket, Gift, Eye, Radio, Send, MessageCircle, Share2 } from 'lucide-react';
+import { ArrowRight, ShoppingBag, Flame, ChefHat, Utensils, MapPin, Calendar, Star, Truck, Bot, MessageSquare, Ticket, Gift, Eye, Radio, Send, MessageCircle, Share2, FlaskConical, Camera } from 'lucide-react';
 import { useClientConfig } from '../context/AppContext';
 import { useStorefront } from '../context/AppContext';
 import SmartHeroImg from '../components/SmartHeroImg';
@@ -506,61 +506,66 @@ const StorefrontHome = () => {
         </div>
       </section>
 
-      {/* --- AI PITMASTER JAY --- */}
-      <section data-reveal="scale" className="mx-4">
-        <div className="relative rounded-2xl overflow-hidden border border-white/5 group shadow-2xl">
-          <div className="absolute inset-0 bg-gray-950"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-bbq-red/5"></div>
-          <div className="relative z-10 flex flex-col md:flex-row items-stretch min-h-[380px]">
-            <div className="flex-1 p-8 md:p-12 flex flex-col justify-center space-y-5">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-14 h-14 bg-bbq-red rounded-2xl flex items-center justify-center shadow-lg">
-                    <Bot size={28} className="text-white" />
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 bg-green-500 w-3 h-3 rounded-full border-2 border-gray-950"></div>
+      {/* --- AI TOOLS SHOWCASE --- */}
+      <section className="mx-4">
+        <div className="text-center mb-10" data-reveal>
+          <p className="text-bbq-red uppercase tracking-[0.3em] text-xs font-bold mb-3">Powered by AI</p>
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-white uppercase">
+            Your BBQ <span className="text-bbq-gold">Brain Trust</span>
+          </h2>
+        </div>
+        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+          {/* Live Coach Card */}
+          <Link to="/live-coach" data-reveal="left" className="group relative rounded-2xl overflow-hidden border border-white/5 bg-gray-950 hover:border-bbq-red/30 transition-all duration-500 shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-bbq-red/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10 p-8 md:p-10 flex flex-col h-full min-h-[320px]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-bbq-red rounded-xl flex items-center justify-center shadow-lg">
+                  <Camera size={24} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-lg uppercase tracking-wider">Pitmaster Jay <span className="text-bbq-gold text-[10px] bg-white/5 px-2 py-0.5 rounded ml-2">AI</span></h3>
-                  <p className="text-gray-500 text-xs">Online &amp; Ready to Help</p>
+                  <h3 className="text-white font-bold text-lg uppercase tracking-wider">Live Coach</h3>
+                  <p className="text-green-500 text-[10px] uppercase tracking-widest font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Real-time AI
+                  </p>
                 </div>
               </div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-white leading-tight">
-                GOT A <span className="text-bbq-red">BRISKET</span><br />EMERGENCY?
-              </h2>
-              <p className="text-gray-400 text-base max-w-md leading-relaxed">
-                Ask Jay about temps, wood pairings, resting times, or how to rescue that dry brisket.
+              <h4 className="text-2xl md:text-3xl font-display font-bold text-white leading-tight mb-4">
+                SNAP. ANALYSE.<br /><span className="text-bbq-red">PERFECT.</span>
+              </h4>
+              <p className="text-gray-400 text-sm leading-relaxed flex-1">
+                Upload a photo of your cook, punch in your temps, and get real-time coaching from AI that factors in your local weather.
               </p>
-              <div className="pt-2">
-                <a href="/contact" className="inline-flex items-center gap-2 bg-white text-black font-bold uppercase tracking-widest text-xs px-6 py-3 rounded-full hover:bg-bbq-gold transition-all">
-                  <MessageSquare size={16} /> Ask a Question
-                </a>
+              <div className="mt-6 flex items-center gap-2 text-bbq-gold text-xs font-bold uppercase tracking-widest group-hover:gap-3 transition-all">
+                Start Coaching <ArrowRight size={14} />
               </div>
             </div>
-            <div className="flex-1 bg-white/[0.02] border-l border-white/5 p-8 flex flex-col justify-center relative overflow-hidden">
-              <div className="space-y-4 max-w-sm mx-auto w-full">
-                <div className="flex gap-3">
-                  <div className="w-7 h-7 rounded-full bg-bbq-red shrink-0 flex items-center justify-center"><Bot size={14} className="text-white" /></div>
-                  <div className="bg-white/5 p-3 rounded-2xl rounded-tl-sm text-sm text-gray-300">
-                    <p>What's cooking today? Need help with that stall?</p>
-                  </div>
+          </Link>
+
+          {/* BBQ Lab Card */}
+          <Link to="/bbq-lab" data-reveal="right" className="group relative rounded-2xl overflow-hidden border border-white/5 bg-gray-950 hover:border-bbq-gold/30 transition-all duration-500 shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-bbq-gold/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10 p-8 md:p-10 flex flex-col h-full min-h-[320px]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-bbq-gold rounded-xl flex items-center justify-center shadow-lg">
+                  <FlaskConical size={24} className="text-black" />
                 </div>
-                <div className="flex gap-3 justify-end">
-                  <div className="bg-bbq-red/20 text-white p-3 rounded-2xl rounded-tr-sm text-sm">
-                    <p>How long should I rest a 4kg pork shoulder?</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-7 h-7 rounded-full bg-bbq-red shrink-0 flex items-center justify-center"><Bot size={14} className="text-white" /></div>
-                  <div className="bg-white/5 p-3 rounded-2xl rounded-tl-sm text-gray-500 text-xs flex items-center gap-1.5 w-fit">
-                    <span className="w-1.5 h-1.5 bg-gray-600 rounded-full animate-bounce"></span>
-                    <span className="w-1.5 h-1.5 bg-gray-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                    <span className="w-1.5 h-1.5 bg-gray-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                  </div>
+                <div>
+                  <h3 className="text-white font-bold text-lg uppercase tracking-wider">BBQ Lab</h3>
+                  <p className="text-bbq-gold text-[10px] uppercase tracking-widest font-bold">What-If Simulator</p>
                 </div>
               </div>
+              <h4 className="text-2xl md:text-3xl font-display font-bold text-white leading-tight mb-4">
+                TEST BEFORE<br />YOU <span className="text-bbq-gold">SMOKE.</span>
+              </h4>
+              <p className="text-gray-400 text-sm leading-relaxed flex-1">
+                Simulate your cook before firing up. Pick your meat, set your temps, choose your wood — see predicted tenderness, moisture, bark and flavour scores.
+              </p>
+              <div className="mt-6 flex items-center gap-2 text-bbq-gold text-xs font-bold uppercase tracking-widest group-hover:gap-3 transition-all">
+                Open Lab <ArrowRight size={14} />
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
       </section>
 

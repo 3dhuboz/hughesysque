@@ -2716,7 +2716,7 @@ const FTDevTools = () => {
       <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
         <div>
           <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Wand2 size={14} className="text-yellow-400" /> AI Configuration (Gemini)<Tip text="Get a free key at aistudio.google.com/apikey. Once saved, Gemini powers: menu descriptions, catering copy, social posts, image prompts, and the Pitmaster AI chat." /></h3>
-          <p className="text-xs text-gray-500 mt-1">Powers Pitmaster Jay chat, social content generation, AI image generation, and strategic recommendations.</p>
+          <p className="text-xs text-gray-500 mt-1">Powers Pitmaster Macca chat, social content generation, AI image generation, and strategic recommendations.</p>
         </div>
         <div className={`flex items-center justify-between p-4 rounded-xl border ${hasGemini ? 'bg-green-950/20 border-green-800/50' : 'bg-gray-800/50 border-gray-700'}`}>
           <div className="flex items-center gap-3">

@@ -30,6 +30,10 @@ const Promoters = React.lazy(() => import('./pages/Promoters'));
 const PaymentSuccess = React.lazy(() => import('./pages/PaymentSuccess'));
 const Maintenance = React.lazy(() => import('./pages/Maintenance'));
 
+// AI Tools
+const BBQLab = React.lazy(() => import('./pages/BBQLab'));
+const LiveCoach = React.lazy(() => import('./pages/LiveCoach'));
+
 // Admin
 const AdminDashboard = React.lazy(() => import('./pages/admin/AdminDashboard'));
 const DataSetup = React.lazy(() => import('./pages/admin/DataSetup'));
@@ -104,6 +108,8 @@ const AppRoutes = () => {
                 <Route path="/login" element={<StorefrontLogin />} />
                 <Route path="/promoters" element={<Promoters />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
+                <Route path="/bbq-lab" element={<BBQLab />} />
+                <Route path="/live-coach" element={<LiveCoach />} />
 
                 <Route path="/pitmaster-ai" element={
                   <ProtectedCustomerRoute>
