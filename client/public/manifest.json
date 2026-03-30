@@ -4,21 +4,21 @@
   "description": "Smoked meats, catering, and quality street food in Gladstone & Yeppoon, QLD. Order online or book catering.",
   "icons": [
     {
-      "src": "logo.png",
+      "src": "logo.jpg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "logo.png",
+      "src": "logo.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "logo.png",
+      "src": "logo.jpg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "maskable"
     }
   ],
