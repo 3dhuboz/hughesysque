@@ -69,35 +69,23 @@ Return ONLY a JSON object with "content" (the post text) and "hashtags" (array o
 };
 
 export const generateMarketingImage = async (prompt: string): Promise<string | null> => {
-  const key = getApiKey();
-  if (!key) return null;
-
-  const fullPrompt = `A delicious, professional food photography style image of BBQ food: ${prompt}. High quality, appetizing, cinematic lighting, no text or watermarks.`;
+  const fullPrompt = `professional food photography, BBQ food, ${prompt}, high quality, appetizing, cinematic lighting, no text, no watermarks`;
+  const encoded = encodeURIComponent(fullPrompt);
 
   try {
-    const res = await fetch(`${OPENROUTER_BASE}/images/generations`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': SITE_URL,
-        'X-Title': SITE_NAME,
-      },
-      body: JSON.stringify({
-        model: 'openai/dall-e-3',
-        prompt: fullPrompt,
-        n: 1,
-        size: '1024x1024',
-        response_format: 'b64_json',
-      }),
+    // Use Pollinations.ai free image generation API
+    const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Image API ${res.status}`);
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
     });
-
-    if (!res.ok) return null;
-    const data = await res.json();
-    const b64 = data.data?.[0]?.b64_json;
-    return b64 ? `data:image/png;base64,${b64}` : null;
   } catch (error: any) {
-    console.error('OpenRouter Image Error:', error?.message || error);
+    console.error('Image generation error:', error?.message || error);
     return null;
   }
 };
