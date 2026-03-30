@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Link, useLocation } from 'react-router-dom';
-import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, Gift, AlertTriangle, Radio, Music2 } from 'lucide-react';
+import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Phone, Image as ImageIcon, Gift, AlertTriangle, Radio, Music2, ExternalLink } from 'lucide-react';
 import InstallPwa from './InstallPwa';
 
 interface LayoutProps {
@@ -230,6 +230,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <MapPin size={18} className="text-bbq-red shrink-0 group-hover:animate-bounce" />
                   <span>{settings?.location || 'Yeppoon, QLD'}<br/><span className="text-xs text-gray-600">(Check socials for truck location)</span></span>
                 </li>
+                {settings?.phone && (
+                  <li className="flex items-center gap-3">
+                    <Phone size={18} className="text-bbq-red shrink-0" />
+                    <a href={`tel:${settings.phone}`} className="hover:text-white transition">{settings.phone}</a>
+                  </li>
+                )}
                 <li className="flex items-center gap-3">
                   <Mail size={18} className="text-bbq-red shrink-0" />
                   <a href={`mailto:${settings?.contactEmail || settings?.adminEmail || 'hugheseysbbq2021@gmail.com'}`} className="hover:text-white transition">
@@ -262,6 +268,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <p className="text-xs text-gray-600 mt-8 font-mono">
                 © {new Date().getFullYear()} {settings?.businessName || 'Hughesys Que'}.<br/>All rights reserved.
               </p>
+              <a
+                href="https://pennywiseit.au"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-[10px] text-gray-600 hover:text-bbq-gold transition mt-3 font-sans"
+              >
+                Powered by PennyWise I.T <ExternalLink size={8} />
+              </a>
             </div>
           </div>
         </div>
