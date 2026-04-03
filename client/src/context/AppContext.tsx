@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, MenuItem, Order, CookDay, UserRole, CartItem, SocialPost, AppSettings, CalendarEvent, GalleryPost } from '../types';
+import { parseLocalDate } from '../utils/dateUtils';
 import { INITIAL_MENU, INITIAL_COOK_DAYS, INITIAL_ADMIN_USER, INITIAL_DEV_USER, INITIAL_SETTINGS, INITIAL_EVENTS } from '../constants';
 import { setGeminiApiKey } from '../services/gemini';
 import { useAuth as useClerkAuth, useUser } from '@clerk/react';
@@ -330,7 +331,7 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
   };
 
   const isDatePastCutoff = (dateStr: string): boolean => {
-    const cookDate = new Date(dateStr);
+    const cookDate = parseLocalDate(dateStr);
     const cutoff = new Date(cookDate);
     cutoff.setDate(cookDate.getDate() - 1);
     cutoff.setHours(9, 0, 0, 0);
@@ -378,7 +379,7 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
 
   const addToCart = (item: MenuItem, quantity = 1, specificDate?: string) => {
     if (specificDate && selectedOrderDate && selectedOrderDate !== specificDate) {
-      if (!window.confirm(`Your cart is for ${new Date(selectedOrderDate).toLocaleDateString()}. Clear cart for ${new Date(specificDate).toLocaleDateString()}?`)) return;
+      if (!window.confirm(`Your cart is for ${parseLocalDate(selectedOrderDate).toLocaleDateString()}. Clear cart for ${parseLocalDate(specificDate).toLocaleDateString()}?`)) return;
       setCart([]);
       setSelectedOrderDate(specificDate);
     }

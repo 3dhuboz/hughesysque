@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { parseLocalDate } from '../../utils/dateUtils';
 import { Flame, CheckSquare, ClipboardList, Thermometer, Clock, Plus, BookOpen, MessageSquare } from 'lucide-react';
 import PitmasterChat from '../../components/PitmasterChat';
 
@@ -87,8 +88,8 @@ const Pitmaster: React.FC = () => {
   
   // -- Meat Math Logic --
   const nextCookEvent = calendarEvents
-    .filter(e => e.type === 'ORDER_PICKUP' && new Date(e.date) >= new Date(new Date().setHours(0,0,0,0)))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+    .filter(e => e.type === 'ORDER_PICKUP' && parseLocalDate(e.date) >= new Date(new Date().setHours(0,0,0,0)))
+    .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())[0];
 
   const cookDate = nextCookEvent ? nextCookEvent.date : new Date().toISOString().split('T')[0];
 
@@ -170,7 +171,7 @@ const Pitmaster: React.FC = () => {
                             <ClipboardList className="text-bbq-gold" />
                             <div>
                                 <h3 className="text-xl font-bold text-white">Meat Math</h3>
-                                <p className="text-sm text-gray-400">Prep totals for {new Date(cookDate).toLocaleDateString()}</p>
+                                <p className="text-sm text-gray-400">Prep totals for {parseLocalDate(cookDate).toLocaleDateString()}</p>
                             </div>
                         </div>
                         
