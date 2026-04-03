@@ -115,3 +115,23 @@ CREATE TABLE IF NOT EXISTS cook_days (
   location TEXT NOT NULL,
   is_open INTEGER DEFAULT 1
 );
+
+CREATE TABLE IF NOT EXISTS live_chat (
+  id TEXT PRIMARY KEY,
+  stream_id TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  user_id TEXT,
+  message TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  is_admin INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_live_chat_stream ON live_chat(stream_id, created_at);
+
+CREATE TABLE IF NOT EXISTS chat_bans (
+  id TEXT PRIMARY KEY,
+  user_name TEXT NOT NULL,
+  reason TEXT,
+  banned_at TEXT NOT NULL DEFAULT (datetime('now')),
+  banned_by TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_chat_bans_name ON chat_bans(user_name);

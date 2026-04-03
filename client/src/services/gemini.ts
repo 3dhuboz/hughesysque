@@ -69,21 +69,38 @@ Return ONLY a JSON object with "content" (the post text) and "hashtags" (array o
 };
 
 export const generateMarketingImage = async (prompt: string): Promise<string | null> => {
-  const fullPrompt = `professional food photography, BBQ food, ${prompt}, high quality, appetizing, cinematic lighting, no text, no watermarks`;
-  const encoded = encodeURIComponent(fullPrompt);
+  const key = getApiKey();
+  if (!key) return null;
+
+  const fullPrompt = `Generate a professional food photography image: ${prompt}. Style: high quality, appetizing, cinematic lighting, no text or watermarks, BBQ themed.`;
 
   try {
-    // Use Pollinations.ai free image generation API
-    const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Image API ${res.status}`);
-    const blob = await res.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
+    const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': SITE_URL,
+        'X-Title': SITE_NAME,
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash-preview-05-20',
+        messages: [{ role: 'user', content: fullPrompt }],
+        modalities: ['image', 'text'],
+      }),
     });
+
+    if (!res.ok) {
+      console.error('OpenRouter image error:', res.status, await res.text().catch(() => ''));
+      return null;
+    }
+
+    const data = await res.json();
+    const images = data.choices?.[0]?.message?.images;
+    if (images?.[0]?.image_url?.url) {
+      return images[0].image_url.url;
+    }
+    return null;
   } catch (error: any) {
     console.error('Image generation error:', error?.message || error);
     return null;

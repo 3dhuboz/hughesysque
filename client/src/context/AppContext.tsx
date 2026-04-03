@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User, MenuItem, Order, CookDay, UserRole, CartItem, SocialPost, AppSettings, CalendarEvent, GalleryPost } from '../types';
 import { INITIAL_MENU, INITIAL_COOK_DAYS, INITIAL_ADMIN_USER, INITIAL_DEV_USER, INITIAL_SETTINGS, INITIAL_EVENTS } from '../constants';
 import { setGeminiApiKey } from '../services/gemini';
-import { useAuth, useUser } from '@clerk/react';
+import { useAuth as useClerkAuth, useUser } from '@clerk/react';
 import {
   initApi,
   fetchMenu,
@@ -96,7 +96,7 @@ const hasClerk = !!CLERK_KEY;
 
 // Inner component used only when Clerk IS configured — hooks always called inside ClerkProvider
 const AppProviderWithClerk: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const clerkAuth = useAuth();
+  const clerkAuth = useClerkAuth();
   const clerkUserHook = useUser();
   return (
     <AppProviderCore
@@ -338,7 +338,6 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
   };
 
   const checkAvailability = (dateStr: string): boolean => {
-    if (isDatePastCutoff(dateStr)) return false;
     if (calendarEvents.find(e => e.date === dateStr && e.type === 'BLOCKED')) return false;
     if (orders.filter(o => o.cookDay === dateStr && o.type === 'CATERING').length >= 2) return false;
     return true;

@@ -10,36 +10,53 @@ import {
 
 const DELIVERY_FEE = 25.00;
 
+const FALLBACK_IMAGES = [
+  'https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80',
+];
+
 const DEFAULT_PACKAGES = [
   {
-    id: 'pkg_essential',
-    name: 'The Essentials',
-    description: "The 'No Fuss' option. Perfect for casual backyard gatherings or office lunches.",
-    price: 35,
-    minPax: 10,
+    id: 'pkg_2m2s',
+    name: '2 Meats & 2 Sides',
+    description: "A solid spread for casual events. Choose 2 of our signature smoked meats and 2 sides. Includes bread, cutlery, plates and napkins.",
+    price: 38,
+    minPax: 40,
     meatLimit: 2,
     sideLimit: 2,
     image: 'https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80'
   },
   {
-    id: 'pkg_pitmaster',
-    name: 'The Pitmaster',
-    description: 'Our Crowd Favorite. A balanced spread of our best smoked cuts and sides.',
-    price: 48,
-    minPax: 10,
-    meatLimit: 3,
+    id: 'pkg_2m3s',
+    name: '2 Meats & 3 Sides',
+    description: 'Extra sides to round out the feast. Choose 2 smoked meats and 3 sides. Includes bread, cutlery, plates and napkins.',
+    price: 44,
+    minPax: 40,
+    meatLimit: 2,
     sideLimit: 3,
     image: 'https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80'
   },
   {
-    id: 'pkg_wholehog',
-    name: 'The Whole Hog',
-    description: 'The ultimate BBQ experience. Full variety of meats, sides, and premium additions.',
-    price: 65,
-    minPax: 10,
-    meatLimit: 4,
-    sideLimit: 4,
+    id: 'pkg_3m3s',
+    name: '3 Meats & 3 Sides',
+    description: 'Our most popular package. A balanced spread of 3 smoked meats and 3 sides. Includes bread, cutlery, plates and napkins.',
+    price: 56,
+    minPax: 40,
+    meatLimit: 3,
+    sideLimit: 3,
     image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: 'pkg_4m3s',
+    name: '4 Meats & 3 Sides',
+    description: 'The ultimate feast. Choose 4 premium smoked meats with 3 sides. Full set up with bread, cutlery, plates and napkins.',
+    price: 68,
+    minPax: 40,
+    meatLimit: 4,
+    sideLimit: 3,
+    image: 'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80'
   }
 ];
 
@@ -248,7 +265,8 @@ const StorefrontCatering = () => {
                     <Calendar className="absolute left-3 top-3.5 text-bbq-red" size={18} />
                     <input type="date" min={new Date().toISOString().split('T')[0]} value={selectedDate}
                       onChange={e => { setSelectedDate(e.target.value); setIsAvailable(null); }}
-                      className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none" />
+                      style={{ colorScheme: 'dark' }}
+                      className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:cursor-pointer" />
                   </div>
                 </div>
                 <div>
@@ -380,7 +398,11 @@ const StorefrontCatering = () => {
                     </div>
                   ))}
                 </div>
-                <div className="text-center mt-8">
+                <div className="max-w-4xl mx-auto mt-6 space-y-2">
+                  <p className="text-xs text-gray-500 text-center">* Ribs and Pork Belly attract a $4/pp surcharge. All prices exclude GST.</p>
+                  <p className="text-xs text-gray-500 text-center">Price includes full set up, sliced bread or tortillas, disposable cutlery, plates and napkins. 50% deposit required to secure booking.</p>
+                </div>
+                <div className="text-center mt-4">
                   <button onClick={() => setStep(1)} className="text-gray-500 hover:text-white underline text-sm transition">Back to Logistics</button>
                 </div>
               </div>
@@ -394,11 +416,11 @@ const StorefrontCatering = () => {
                   <div className="w-16"></div>
                 </div>
                 <div className="space-y-6 max-w-4xl mx-auto">
-                  {CATERING_PACKAGES.map(pkg => (
+                  {CATERING_PACKAGES.map((pkg, idx) => (
                     <div key={pkg.id} className="bg-bbq-charcoal rounded-2xl border border-gray-800 overflow-hidden flex flex-col md:flex-row group hover:border-gray-600 transition shadow-xl relative">
                       <div className="absolute top-4 left-4 bg-bbq-gold text-black text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider z-10">Best Value</div>
                       <div className="w-full md:w-1/3 h-48 md:h-auto relative">
-                        <img src={pkg.image} className="w-full h-full object-cover" alt={pkg.name} />
+                        <img src={pkg.image || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length]} onError={e => { e.target.src = FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length]; }} className="w-full h-full object-cover" alt={pkg.name} />
                       </div>
                       <div className="flex-1 p-6 flex flex-col justify-center">
                         <div className="flex justify-between items-start mb-2">

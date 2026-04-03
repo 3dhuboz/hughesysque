@@ -177,11 +177,7 @@ export interface AppSettings {
   diyCardPackageImage?: string;
   diyCardCuratedImage?: string;
   diyCardCustomImage?: string;
-  cateringPackageImages: {
-      essential: string;
-      pitmaster: string;
-      wholehog: string;
-  };
+  cateringPackageImages: Record<string, string>;
   // Events
   eventsHeroImage?: string;
   // Promoters

@@ -259,7 +259,7 @@ const normalizePhone = (raw: string): string => {
     const orderPayload = {
       ...order,
       customerPhone: order.customerPhone ? normalizePhone(order.customerPhone) : '',
-      items: order.items.map(li => ({ item: li.item, name: li.item.name, price: li.item.price, quantity: li.quantity }))
+      items: order.items.map((li: any) => ({ name: li.item?.name || li.name || 'Item', price: li.item?.price ?? li.price ?? 0, quantity: li.quantity }))
     };
     const results: string[] = [];
 
@@ -439,14 +439,12 @@ const normalizePhone = (raw: string): string => {
               ...editingOrder,
               customerEmail: invoiceContact.email,
               customerPhone: normalizePhone(invoiceContact.phone),
-              items: editingOrder.items.map(li => ({
-                  item: li.item,
-                  name: li.item.name,
-                  description: li.item.description || '',
-                  price: li.item.price,
+              items: editingOrder.items.map((li: any) => ({
+                  name: li.item?.name || li.name || 'Item',
+                  description: li.item?.description || li.description || '',
+                  price: li.item?.price ?? li.price ?? 0,
                   quantity: li.quantity,
                   selectedOption: li.selectedOption || '',
-                  packSelections: li.packSelections || {}
               }))
           };
 

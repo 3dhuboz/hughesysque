@@ -38,7 +38,7 @@ const Planner: React.FC = () => {
     clearTimeout(addressDebounceRef.current);
     addressDebounceRef.current = setTimeout(async () => {
       try {
-        const params = new URLSearchParams({ q, limit: '5', lang: 'en', lat: '-27.6', lon: '152.8', location_bias_scale: '2' });
+        const params = new URLSearchParams({ q, limit: '5', lang: 'en', lat: '-23.13', lon: '150.74', location_bias_scale: '5' });
         const res = await fetch(`https://photon.komoot.io/api/?${params}`);
         const data = await res.json();
         const results = data.features?.filter((f: any) => f.properties.country === 'Australia' && f.properties.street).map((f: any) => {

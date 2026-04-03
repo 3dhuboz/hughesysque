@@ -23,10 +23,16 @@ export const onRequest = async (context: any) => {
         total: 'total', depositAmount: 'deposit_amount', temperature: 'temperature',
       };
       for (const [key, col] of Object.entries(map)) {
-        if (data[key] !== undefined) { fields.push(`${col} = ?`); values.push(data[key]); }
+        if (data[key] !== undefined) {
+          const val = data[key];
+          // D1 only accepts primitives — stringify any objects that slip through
+          fields.push(`${col} = ?`);
+          values.push(val !== null && typeof val === 'object' ? JSON.stringify(val) : val);
+        }
       }
       if (data.items !== undefined) { fields.push('items = ?'); values.push(JSON.stringify(data.items)); }
       if (data.discountApplied !== undefined) { fields.push('discount_applied = ?'); values.push(data.discountApplied ? 1 : 0); }
+      if (data.cookDay !== undefined) { fields.push('cook_day = ?'); values.push(data.cookDay); }
       if (fields.length === 0) return json({ error: 'No fields to update' }, 400);
       values.push(params.id);
       await db.prepare(`UPDATE orders SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();

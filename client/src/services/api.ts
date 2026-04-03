@@ -77,6 +77,46 @@ export const updateSettings = (data: Partial<AppSettings>) =>
 export const seedDatabase = () =>
   apiFetch('/seed', { method: 'POST' });
 
+// Stream / Live
+export const createLiveInput = () => apiFetch('/stream/live-inputs', { method: 'POST' });
+export const getLiveInputs = () => apiFetch('/stream/live-inputs');
+export const getStreamStatus = () => apiFetch('/stream/status');
+export const getRecordings = () => apiFetch('/stream/recordings');
+
+// Upload recorded video to Cloudflare Stream
+export const uploadRecording = async (file: Blob, title: string) => {
+  const token = await getToken();
+  const formData = new FormData();
+  formData.append('file', file, `${title}.webm`);
+  formData.append('title', title);
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  // Do NOT set Content-Type — let the browser set it with the multipart boundary
+  const res = await fetch('/api/v1/stream/upload', { method: 'POST', headers, body: formData });
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`API ${res.status}: ${text}`);
+  }
+  return res.json();
+};
+
+// Live Chat
+export const getChatMessages = (streamId: string, after?: string) => {
+  const params = new URLSearchParams({ streamId });
+  if (after) params.set('after', after);
+  return apiFetch(`/stream/chat?${params}`);
+};
+export const sendChatMessage = (streamId: string, userName: string, message: string) =>
+  apiFetch('/stream/chat', { method: 'POST', body: JSON.stringify({ streamId, userName, message }) });
+export const deleteChatMessage = (id: string) =>
+  apiFetch(`/stream/chat?id=${id}`, { method: 'DELETE' });
+export const banChatUser = (userName: string, reason?: string) =>
+  apiFetch('/stream/chat', { method: 'POST', body: JSON.stringify({ action: 'ban', userName, reason }) });
+export const unbanChatUser = (userName: string) =>
+  apiFetch('/stream/chat', { method: 'POST', body: JSON.stringify({ action: 'unban', userName }) });
+export const getChatBans = (streamId: string) =>
+  apiFetch(`/stream/chat?streamId=${streamId}&bans=true`);
+
 // Not applicable (no Firebase in this stack)
 export const migrateFromFirestore = async (_apiKey?: string) => {
   return { migrated: 0, message: 'Migration not available — this app uses Cloudflare D1 natively.' };
