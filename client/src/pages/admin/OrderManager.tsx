@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
 import { MessageCircle, Check, Clock, XCircle, CheckCircle, AlertTriangle, Edit2, Plus, Trash2, X, Save, DollarSign, Mail, Smartphone, CreditCard, Flame, Snowflake, Truck, ShoppingBag, Package, Loader2, MapPin } from 'lucide-react';
 import { Order, MenuItem } from '../../types';
+import { toLocalDateStr } from '../../utils/dateUtils';
 
 const normalizePhone = (raw: string): string => {
   let phone = raw.replace(/[\s\-()]/g, '');
@@ -681,10 +682,11 @@ const normalizePhone = (raw: string): string => {
   };
 
   // --- UPCOMING COOK DAYS VIEW ---
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = toLocalDateStr(new Date());
 
   const getDateLabel = (dateStr: string) => {
-    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = toLocalDateStr(tomorrow);
     if (dateStr === todayStr) return 'Today';
     if (dateStr === tomorrowStr) return 'Tomorrow';
     return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });

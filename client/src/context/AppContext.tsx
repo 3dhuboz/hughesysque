@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, MenuItem, Order, CookDay, UserRole, CartItem, SocialPost, AppSettings, CalendarEvent, GalleryPost } from '../types';
-import { parseLocalDate, isEventPastCutoff } from '../utils/dateUtils';
+import { parseLocalDate, isEventPastCutoff, toLocalDateStr } from '../utils/dateUtils';
 import { INITIAL_MENU, INITIAL_COOK_DAYS, INITIAL_ADMIN_USER, INITIAL_DEV_USER, INITIAL_SETTINGS, INITIAL_EVENTS } from '../constants';
 import { setGeminiApiKey } from '../services/gemini';
 import { useAuth as useClerkAuth, useUser } from '@clerk/react';
@@ -369,7 +369,7 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
     if (status === 'Confirmed') {
       const order = orders.find(o => o.id === orderId);
       if (order?.type === 'CATERING') {
-        const dateStr = new Date(order.cookDay).toISOString().split('T')[0];
+        const dateStr = order.cookDay.includes('T') ? toLocalDateStr(new Date(order.cookDay)) : order.cookDay;
         const newEvt: CalendarEvent = {
           id: `evt_o_${order.id}`, date: dateStr, type: 'ORDER_PICKUP',
           title: `Pickup: ${order.customerName}`, orderId: order.id,
