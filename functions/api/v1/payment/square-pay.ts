@@ -1,19 +1,36 @@
+/**
+ * Square direct payment — processes a tokenized card payment.
+ * POST /api/v1/payment/square-pay
+ * Reads Square credentials from D1 settings.
+ */
+import { getDB, parseJson } from '../_lib/db';
+
 export const onRequest = async (context: any) => {
-  const { request } = context;
+  const { request, env } = context;
   const json = (d: any, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'Content-Type': 'application/json' } });
 
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   try {
-    const { sourceId, amount, currency, locationId, accessToken, environment } = await request.json();
+    const db = getDB(env);
+    const row: any = await db.prepare("SELECT data FROM settings WHERE key = 'general'").first();
+    const settings = row ? parseJson(row.data, {}) : {};
 
-    if (!sourceId || !amount || !locationId || !accessToken) {
-      return json({ error: 'Missing required fields: sourceId, amount, locationId, accessToken' }, 400);
+    const accessToken = settings.squareAccessToken;
+    const locationId = settings.squareLocationId;
+    if (!accessToken || !locationId) {
+      return json({ error: 'Square not configured — set access token and location ID in Admin > Settings' }, 400);
     }
 
-    const baseUrl = environment === 'production'
+    const baseUrl = accessToken.startsWith('EAAA')
       ? 'https://connect.squareup.com'
       : 'https://connect.squareupsandbox.com';
+
+    const { sourceId, amount, currency } = await request.json();
+
+    if (!sourceId || !amount) {
+      return json({ error: 'Missing required fields: sourceId, amount' }, 400);
+    }
 
     const idempotencyKey = `pay_${Date.now()}_${Math.random().toString(36).slice(2)}`.substring(0, 45);
 

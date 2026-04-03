@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Link, useLocation } from 'react-router-dom';
-import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, Gift, AlertTriangle, Music2 } from 'lucide-react';
+import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, Gift, AlertTriangle, Radio, Music2 } from 'lucide-react';
 import InstallPwa from './InstallPwa';
 
 interface LayoutProps {
@@ -28,7 +28,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   );
 
   return (
-    <div className="min-h-screen flex flex-col pb-20 md:pb-0 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col pb-20 md:pb-0 relative overflow-x-hidden bg-[#0a0a0a]">
+
+      {/* Subtle ambient glow — very faint */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_800px_400px_at_50%_100%,_rgba(180,40,10,0.06)_0%,_transparent_70%)]" />
+      </div>
 
       {/* CONNECTION ERROR BANNER */}
       {connectionError && (
@@ -42,7 +47,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Desktop Header */}
-      <header className={`hidden md:flex items-center justify-between px-8 py-4 fixed top-0 left-0 right-0 z-50 glass transition-all duration-300 ${connectionError ? 'mt-8' : ''}`}>
+      <header className={`hidden md:flex items-center justify-between px-8 py-4 fixed top-0 left-0 right-0 z-50 glass transition-all duration-300 ${connectionError ? 'mt-8' : ''}`} style={{ zIndex: 50 }}>
         <Link to="/" className="flex items-center gap-3 group">
           {settings?.logoUrl && !logoError ? (
              <div className="w-14 h-14 flex items-center justify-center overflow-visible transition-transform duration-500 hover:scale-105">
@@ -73,6 +78,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Link to="/menu" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/menu')}`}>Menu</Link>
           <Link to="/catering" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/catering')}`}>Catering</Link>
           <Link to="/gallery" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/gallery')}`}>Gallery</Link>
+          <Link to="/live" className={`font-bold text-sm tracking-widest uppercase transition flex items-center gap-1 ${isActive('/live')}`}>
+            <Radio size={14} className={location.pathname === '/live' ? 'text-bbq-ember' : 'text-red-500'} /> Live
+          </Link>
           <Link to="/rewards" className={`font-bold text-sm tracking-widest uppercase transition flex items-center gap-1 ${isActive('/rewards')}`}>
              <Gift size={14} className={location.pathname === '/rewards' ? 'text-bbq-ember' : 'text-bbq-gold'} /> Rewards
           </Link>
@@ -142,91 +150,119 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main className={`flex-1 w-full max-w-7xl mx-auto p-4 md:p-8 pt-24 md:pt-32 ${connectionError ? 'mt-8' : ''}`}>
+      <main className={`flex-1 w-full relative z-10 ${location.pathname === '/' ? 'pt-0' : 'max-w-7xl mx-auto p-4 md:p-8 pt-24 md:pt-32'} ${connectionError ? 'mt-8' : ''}`}>
         {children}
       </main>
 
-      {/* Footer */}
-      <footer className="relative bg-gray-950 border-t border-white/5 pt-16 pb-24 md:pb-8 mt-12 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-bbq-red/5 blur-[100px] rounded-full pointer-events-none"></div>
+      {/* Footer — Smoldering Coal Bed */}
+      <footer className="relative overflow-hidden">
+        {/* Ember particles rising from footer */}
+        <div className="absolute inset-0 pointer-events-none z-20">
+          <div className="ember ember-1" />
+          <div className="ember ember-2" />
+          <div className="ember ember-3" />
+          <div className="ember ember-4" />
+          <div className="ember ember-5" />
+          <div className="ember ember-6" />
+          <div className="ember ember-7" />
+          <div className="ember ember-8" />
+        </div>
 
-        <div className="max-w-7xl mx-auto px-8 relative z-10 grid grid-cols-1 md:grid-cols-4 gap-12">
-          {/* Brand */}
-          <div className="space-y-4">
-             <div className="w-16 h-16 flex items-center justify-center overflow-visible">
-                 {settings?.logoUrl && !logoError ? (
-                    <img
-                        src={settings.logoUrl}
-                        alt={settings?.businessName || 'Hughesys Que'}
-                        className="w-full h-full object-contain drop-shadow-2xl"
-                        onError={() => setLogoError(true)}
-                    />
-                 ) : (
-                    <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center overflow-hidden border-2 border-bbq-red shadow-2xl">
-                       <Flame className="text-bbq-red" size={32} />
-                    </div>
-                 )}
-             </div>
-             <h3 className="font-display font-bold text-2xl tracking-wide uppercase text-white">
-               {settings?.businessName || 'Hughesys Que'}
-             </h3>
-             <p className="text-gray-500 text-sm leading-relaxed">
-               {settings?.tagline || 'Low & Slow BBQ — Authentic smoked meats for every occasion.'}
-             </p>
-          </div>
+        {/* Coal bed glow layers */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1a0500] via-[#0d0200] to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-[radial-gradient(ellipse_120%_80px_at_50%_100%,_rgba(200,50,10,0.25)_0%,_transparent_70%)]" />
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-[radial-gradient(ellipse_80%_60px_at_30%_100%,_rgba(255,80,10,0.15)_0%,_transparent_60%)]" />
+          <div className="absolute bottom-0 left-0 right-0 h-20 bg-[radial-gradient(ellipse_60%_40px_at_70%_100%,_rgba(255,120,20,0.12)_0%,_transparent_50%)]" />
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-[radial-gradient(ellipse_40%_30px_at_50%_100%,_rgba(255,160,40,0.1)_0%,_transparent_40%)] animate-pulse" />
+          {/* Shimmer heat haze */}
+          <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-transparent via-orange-950/5 to-transparent" />
+        </div>
 
-          {/* Links */}
-          <div>
-            <h4 className="font-bold text-bbq-gold uppercase tracking-widest text-xs mb-6">Explore</h4>
-            <ul className="space-y-3 text-gray-400 text-sm font-medium">
-              <li><Link to="/" className="hover:text-white hover:translate-x-1 transition-all inline-block">Home</Link></li>
-              <li><Link to="/menu" className="hover:text-white hover:translate-x-1 transition-all inline-block">Full Menu</Link></li>
-              <li><Link to="/rewards" className="hover:text-white hover:translate-x-1 transition-all inline-block">Rewards Club</Link></li>
-              <li><Link to="/gallery" className="hover:text-white hover:translate-x-1 transition-all inline-block">Gallery</Link></li>
-              <li><Link to="/contact" className="hover:text-white hover:translate-x-1 transition-all inline-block">Contact</Link></li>
-            </ul>
-          </div>
+        {/* Border glow line at top of footer */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-800/40 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-red-900/10 to-transparent pointer-events-none" />
 
-          {/* Contact */}
-          <div>
-            <h4 className="font-bold text-bbq-gold uppercase tracking-widest text-xs mb-6">Contact</h4>
-            <ul className="space-y-4 text-gray-400 text-sm">
-              <li className="flex items-start gap-3 group">
-                <MapPin size={18} className="text-bbq-red shrink-0 group-hover:animate-bounce" />
-                <span>{settings?.location || 'Yeppoon, QLD'}<br/><span className="text-xs text-gray-600">(Check socials for truck location)</span></span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Mail size={18} className="text-bbq-red shrink-0" />
-                <a href={`mailto:${settings?.contactEmail || settings?.adminEmail || 'hugheseysbbq2021@gmail.com'}`} className="hover:text-white transition">
-                  {settings?.contactEmail || settings?.adminEmail || 'hugheseysbbq2021@gmail.com'}
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Socials */}
-          <div>
-            <h4 className="font-bold text-bbq-gold uppercase tracking-widest text-xs mb-6">Community</h4>
-            <div className="flex gap-4">
-              {settings?.facebookUrl && (
-                <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-[#1877F2] transition text-white border border-white/10">
-                  <Facebook size={20} />
-                </a>
-              )}
-              {settings?.instagramUrl && (
-                <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-gradient-to-tr hover:from-yellow-500 hover:to-purple-600 transition text-white border border-white/10">
-                  <Instagram size={20} />
-                </a>
-              )}
-              {settings?.tiktokUrl && (
-                <a href={settings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-black transition text-white border border-white/10">
-                  <Music2 size={20} />
-                </a>
-              )}
+        <div className="relative z-10 pt-16 pb-24 md:pb-8">
+          <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-4 gap-12">
+            {/* Brand */}
+            <div className="space-y-4">
+               <div className="w-16 h-16 flex items-center justify-center overflow-visible">
+                   {settings?.logoUrl && !logoError ? (
+                      <img
+                          src={settings.logoUrl}
+                          alt={settings?.businessName || 'Hughesys Que'}
+                          className="w-full h-full object-contain drop-shadow-2xl"
+                          onError={() => setLogoError(true)}
+                      />
+                   ) : (
+                      <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center overflow-hidden border-2 border-bbq-red shadow-2xl">
+                         <Flame className="text-bbq-red" size={32} />
+                      </div>
+                   )}
+               </div>
+               <h3 className="font-display font-bold text-2xl tracking-wide uppercase text-white">
+                 {settings?.businessName || 'Hughesys Que'}
+               </h3>
+               <p className="text-gray-500 text-sm leading-relaxed">
+                 {settings?.tagline || 'Low & Slow BBQ — Authentic smoked meats for every occasion.'}
+               </p>
             </div>
-            <p className="text-xs text-gray-600 mt-8 font-mono">
-              © {new Date().getFullYear()} {settings?.businessName || 'Hughesys Que'}.<br/>All rights reserved.
-            </p>
+
+            {/* Links */}
+            <div>
+              <h4 className="font-bold text-bbq-gold uppercase tracking-widest text-xs mb-6">Explore</h4>
+              <ul className="space-y-3 text-gray-400 text-sm font-medium">
+                <li><Link to="/" className="hover:text-white hover:translate-x-1 transition-all inline-block">Home</Link></li>
+                <li><Link to="/menu" className="hover:text-white hover:translate-x-1 transition-all inline-block">Full Menu</Link></li>
+                <li><Link to="/rewards" className="hover:text-white hover:translate-x-1 transition-all inline-block">Rewards Club</Link></li>
+                <li><Link to="/gallery" className="hover:text-white hover:translate-x-1 transition-all inline-block">Gallery</Link></li>
+                <li><Link to="/live" className="hover:text-white hover:translate-x-1 transition-all inline-block">Live Stream</Link></li>
+                <li><Link to="/contact" className="hover:text-white hover:translate-x-1 transition-all inline-block">Contact</Link></li>
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="font-bold text-bbq-gold uppercase tracking-widest text-xs mb-6">Contact</h4>
+              <ul className="space-y-4 text-gray-400 text-sm">
+                <li className="flex items-start gap-3 group">
+                  <MapPin size={18} className="text-bbq-red shrink-0 group-hover:animate-bounce" />
+                  <span>{settings?.location || 'Yeppoon, QLD'}<br/><span className="text-xs text-gray-600">(Check socials for truck location)</span></span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Mail size={18} className="text-bbq-red shrink-0" />
+                  <a href={`mailto:${settings?.contactEmail || settings?.adminEmail || 'hugheseysbbq2021@gmail.com'}`} className="hover:text-white transition">
+                    {settings?.contactEmail || settings?.adminEmail || 'hugheseysbbq2021@gmail.com'}
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Socials */}
+            <div>
+              <h4 className="font-bold text-bbq-gold uppercase tracking-widest text-xs mb-6">Community</h4>
+              <div className="flex gap-4">
+                {settings?.facebookUrl && (
+                  <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-[#1877F2] transition text-white border border-white/10">
+                    <Facebook size={20} />
+                  </a>
+                )}
+                {settings?.instagramUrl && (
+                  <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-gradient-to-tr hover:from-yellow-500 hover:to-purple-600 transition text-white border border-white/10">
+                    <Instagram size={20} />
+                  </a>
+                )}
+                {settings?.tiktokUrl && (
+                  <a href={settings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 p-3 rounded-xl hover:bg-black transition text-white border border-white/10">
+                    <Music2 size={20} />
+                  </a>
+                )}
+              </div>
+              <p className="text-xs text-gray-600 mt-8 font-mono">
+                © {new Date().getFullYear()} {settings?.businessName || 'Hughesys Que'}.<br/>All rights reserved.
+              </p>
+            </div>
           </div>
         </div>
       </footer>

@@ -1,82 +1,9 @@
 /**
  * Square Webhook handler for Cloudflare Pages Functions.
- * Uses Web Crypto API for HMAC verification (no nodejs_compat needed for this file).
- * Reads raw body text BEFORE parsing to preserve signature integrity.
+ * Uses D1 for order lookup/update (replaces old Firestore version).
+ * HMAC signature verification via Web Crypto API.
  */
-
-const FIRESTORE_BASE_TPL = (projectId: string) =>
-  `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
-
-async function getAuthToken(env: any): Promise<string> {
-  const apiKey = env.VITE_FIREBASE_API_KEY || env.FIREBASE_API_KEY || '';
-  const email = env.WEBHOOK_USER_EMAIL || '';
-  const password = env.WEBHOOK_USER_PASSWORD || '';
-  if (!apiKey || !email || !password) {
-    throw new Error('Missing FIREBASE_API_KEY, WEBHOOK_USER_EMAIL, or WEBHOOK_USER_PASSWORD env vars');
-  }
-  const res = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, returnSecureToken: true }) }
-  );
-  if (!res.ok) { const e: any = await res.json().catch(() => ({})); throw new Error(`Firebase Auth failed: ${e?.error?.message || res.status}`); }
-  return (await res.json()).idToken;
-}
-
-async function firestoreQuery(projectId: string, collection: string, field: string, value: string, token: string) {
-  const base = FIRESTORE_BASE_TPL(projectId);
-  const res = await fetch(`${base}:runQuery`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ structuredQuery: { from: [{ collectionId: collection }], where: { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: { stringValue: value } } }, limit: 1 } }),
-  });
-  if (!res.ok) throw new Error(`Firestore query failed: ${res.status} ${await res.text()}`);
-  return res.json();
-}
-
-async function firestoreGet(projectId: string, path: string, token: string) {
-  const base = FIRESTORE_BASE_TPL(projectId);
-  const res = await fetch(`${base}/${path}`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) throw new Error(`Firestore get failed: ${res.status}`);
-  return res.json();
-}
-
-async function firestoreUpdate(projectId: string, path: string, fields: Record<string, any>, token: string) {
-  const base = FIRESTORE_BASE_TPL(projectId);
-  const params = Object.keys(fields).map(k => `updateMask.fieldPaths=${k}`).join('&');
-  const firestoreFields: Record<string, any> = {};
-  for (const [k, v] of Object.entries(fields)) {
-    if (typeof v === 'string') firestoreFields[k] = { stringValue: v };
-    else if (typeof v === 'number') firestoreFields[k] = { integerValue: String(v) };
-    else if (typeof v === 'boolean') firestoreFields[k] = { booleanValue: v };
-  }
-  const res = await fetch(`${base}/${path}?${params}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ fields: firestoreFields }),
-  });
-  if (!res.ok) throw new Error(`Firestore update failed: ${res.status} ${await res.text()}`);
-  return res.json();
-}
-
-function decodeFields(fields: Record<string, any>): Record<string, any> {
-  const out: Record<string, any> = {};
-  for (const [k, v] of Object.entries(fields)) {
-    if ('stringValue' in v) out[k] = v.stringValue;
-    else if ('integerValue' in v) out[k] = Number(v.integerValue);
-    else if ('doubleValue' in v) out[k] = v.doubleValue;
-    else if ('booleanValue' in v) out[k] = v.booleanValue;
-    else if ('mapValue' in v) out[k] = decodeFields(v.mapValue.fields || {});
-    else if ('arrayValue' in v) out[k] = (v.arrayValue.values || []).map((item: any) => {
-      if ('mapValue' in item) return decodeFields(item.mapValue.fields || {});
-      if ('stringValue' in item) return item.stringValue;
-      if ('integerValue' in item) return Number(item.integerValue);
-      return item;
-    });
-    else if ('nullValue' in v) out[k] = null;
-    else out[k] = v;
-  }
-  return out;
-}
+import { getDB, parseJson, rowToOrder } from '../_lib/db';
 
 async function verifySignature(rawBody: string, signature: string, signatureKey: string, notificationUrl: string): Promise<boolean> {
   const combined = notificationUrl + rawBody;
@@ -97,6 +24,7 @@ export const onRequest = async (context: any) => {
     const rawBody = await request.text();
     const event = JSON.parse(rawBody);
 
+    // Verify HMAC signature if key is configured
     const signature = request.headers.get('x-square-hmacsha256-signature');
     const webhookSignatureKey = env.SQUARE_WEBHOOK_SIGNATURE_KEY;
     if (webhookSignatureKey) {
@@ -125,60 +53,76 @@ export const onRequest = async (context: any) => {
     const squareOrderId = payment.order_id;
     console.log(`[Square Webhook] Payment COMPLETED for Square order: ${squareOrderId}`);
 
-    const projectId = env.VITE_FIREBASE_PROJECT_ID || env.FIREBASE_PROJECT_ID || 'hughesys-que-bbq';
-    const token = await getAuthToken(env);
+    // Look up order in D1
+    const db = getDB(env);
+    const orderRow = await db.prepare(
+      'SELECT * FROM orders WHERE square_checkout_id = ? LIMIT 1'
+    ).bind(squareOrderId).first();
 
-    const queryResults = await firestoreQuery(projectId, 'orders', 'squareCheckoutId', squareOrderId, token);
-    const matchedDoc = queryResults?.find((r: any) => r.document);
-    if (!matchedDoc?.document) {
-      console.warn(`[Square Webhook] No matching order for squareCheckoutId: ${squareOrderId}`);
+    if (!orderRow) {
+      console.warn(`[Square Webhook] No matching order for square_checkout_id: ${squareOrderId}`);
       return json({ received: true, matched: false });
     }
 
-    const docName = matchedDoc.document.name;
-    const orderId = docName.split('/').pop();
-    const order = decodeFields(matchedDoc.document.fields || {});
+    const order = rowToOrder(orderRow);
 
     if (order.status !== 'Awaiting Payment') {
-      console.log(`[Square Webhook] Order ${orderId} status is '${order.status}', skipping.`);
+      console.log(`[Square Webhook] Order ${order.id} status is '${order.status}', skipping.`);
       return json({ received: true, matched: true, skipped: true });
     }
 
-    await firestoreUpdate(projectId, `orders/${orderId}`, { status: 'Paid', paymentIntentId: payment.id }, token);
-    console.log(`[Square Webhook] Order ${orderId} updated to 'Paid'`);
+    // Update order to Paid
+    await db.prepare(
+      'UPDATE orders SET status = ?, payment_intent_id = ? WHERE id = ?'
+    ).bind('Paid', payment.id, order.id).run();
+    console.log(`[Square Webhook] Order ${order.id} updated to 'Paid'`);
 
-    const settingsDoc = await firestoreGet(projectId, 'settings/general', token);
-    const settings = settingsDoc?.fields ? decodeFields(settingsDoc.fields) : null;
+    // Load settings for email/SMS confirmations
+    const settingsRow: any = await db.prepare("SELECT data FROM settings WHERE key = 'general'").first();
+    const settings = settingsRow ? parseJson(settingsRow.data, {}) : {};
 
     const baseUrl = `https://${new URL(request.url).host}`;
     const confirmResults: string[] = [];
     const amountPaid = ((payment.amount_money?.amount || 0) / 100).toFixed(2);
 
-    if (order.customerEmail && settings?.emailSettings?.enabled) {
+    // Send email confirmation
+    if (order.customerEmail && settings.emailSettings?.enabled) {
       try {
         const emailRes = await fetch(`${baseUrl}/api/v1/email/payment-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ settings: settings.emailSettings, order: { ...order, id: orderId, status: 'Paid' }, businessName: settings.businessName || 'My Business', invoiceSettings: settings.invoiceSettings || {}, amountPaid }),
+          body: JSON.stringify({
+            settings: settings.emailSettings,
+            order: { ...order, status: 'Paid' },
+            businessName: settings.businessName || 'Hughesys Que',
+            invoiceSettings: settings.invoiceSettings || {},
+            amountPaid,
+          }),
         });
         if (emailRes.ok) confirmResults.push('email');
         else console.warn('[Square Webhook] Confirmation email failed:', await emailRes.text());
       } catch (e) { console.warn('[Square Webhook] Confirmation email error:', e); }
     }
 
-    if (order.customerPhone && settings?.smsSettings?.enabled) {
+    // Send SMS confirmation
+    if (order.customerPhone && settings.smsSettings?.enabled) {
       try {
         const smsRes = await fetch(`${baseUrl}/api/v1/sms/payment-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ settings: settings.smsSettings, order: { ...order, id: orderId, status: 'Paid' }, businessName: settings.businessName || 'My Business', amountPaid }),
+          body: JSON.stringify({
+            settings: settings.smsSettings,
+            order: { ...order, status: 'Paid' },
+            businessName: settings.businessName || 'Hughesys Que',
+            amountPaid,
+          }),
         });
         if (smsRes.ok) confirmResults.push('sms');
         else console.warn('[Square Webhook] Confirmation SMS failed:', await smsRes.text());
       } catch (e) { console.warn('[Square Webhook] Confirmation SMS error:', e); }
     }
 
-    return json({ received: true, matched: true, orderId, status: 'Paid', confirmations: confirmResults });
+    return json({ received: true, matched: true, orderId: order.id, status: 'Paid', confirmations: confirmResults });
   } catch (error: any) {
     console.error('[Square Webhook] Error:', error);
     return json({ error: error.message }, 500);
