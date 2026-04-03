@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, MenuItem, Order, CookDay, UserRole, CartItem, SocialPost, AppSettings, CalendarEvent, GalleryPost } from '../types';
-import { parseLocalDate } from '../utils/dateUtils';
+import { parseLocalDate, isEventPastCutoff } from '../utils/dateUtils';
 import { INITIAL_MENU, INITIAL_COOK_DAYS, INITIAL_ADMIN_USER, INITIAL_DEV_USER, INITIAL_SETTINGS, INITIAL_EVENTS } from '../constants';
 import { setGeminiApiKey } from '../services/gemini';
 import { useAuth as useClerkAuth, useUser } from '@clerk/react';
@@ -53,7 +53,7 @@ interface AppContextType {
   updateCalendarEvent: (event: CalendarEvent) => void;
   removeCalendarEvent: (eventId: string) => void;
   checkAvailability: (date: string) => boolean;
-  isDatePastCutoff: (dateStr: string) => boolean;
+  isDatePastCutoff: (dateStr: string, event?: CalendarEvent) => boolean;
 
   orders: Order[];
   createOrder: (order: Order) => void;
@@ -330,17 +330,25 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
     setCalendarEvents(prev => prev.filter(e => e.id !== eventId));
   };
 
-  const isDatePastCutoff = (dateStr: string): boolean => {
+  const isDatePastCutoff = (dateStr: string, event?: CalendarEvent): boolean => {
+    if (event) return isEventPastCutoff(event);
+    // Fallback for cook days when no event object passed: 24hrs before
     const cookDate = parseLocalDate(dateStr);
     const cutoff = new Date(cookDate);
-    cutoff.setDate(cookDate.getDate() - 1);
-    cutoff.setHours(9, 0, 0, 0);
+    cutoff.setHours(0, 0, 0, 0);
+    cutoff.setDate(cutoff.getDate() - 1);
     return new Date() > cutoff;
   };
 
   const checkAvailability = (dateStr: string): boolean => {
     if (calendarEvents.find(e => e.date === dateStr && e.type === 'BLOCKED')) return false;
     if (orders.filter(o => o.cookDay === dateStr && o.type === 'CATERING').length >= 2) return false;
+    // Catering requires at least 7 days notice
+    const selected = parseLocalDate(dateStr);
+    const minDate = new Date();
+    minDate.setHours(0, 0, 0, 0);
+    minDate.setDate(minDate.getDate() + 7);
+    if (selected < minDate) return false;
     return true;
   };
 

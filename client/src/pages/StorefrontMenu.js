@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStorefront } from '../context/AppContext';
-import { parseLocalDate } from '../utils/dateUtils';
+import { parseLocalDate, isEventPastCutoff } from '../utils/dateUtils';
 import SmartHeroImg from '../components/SmartHeroImg';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, Package, Users, Calendar, X, Plus, Minus, Check, Truck, Info, Clock, Utensils, AlertCircle } from 'lucide-react';
@@ -146,8 +146,7 @@ const StorefrontMenu = () => {
     .filter(evt => {
       if (evt.type !== 'ORDER_PICKUP' && evt.type !== 'PUBLIC_EVENT') return false;
       if (parseLocalDate(evt.date) < new Date(new Date().setHours(0, 0, 0, 0))) return false;
-      // Cutoff only applies to cook days, not pop-up events
-      if (evt.type === 'ORDER_PICKUP' && isDatePastCutoff(evt.date)) return false;
+      if (isEventPastCutoff(evt)) return false;
       return true;
     })
     .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
@@ -291,7 +290,7 @@ const StorefrontMenu = () => {
           <div className="bg-red-900/30 border border-red-800 p-3 rounded-lg flex items-center gap-3 mx-auto max-w-2xl">
             <AlertCircle className="text-red-500 shrink-0" size={20} />
             <p className="text-red-200 text-xs font-bold leading-relaxed">
-              IMPORTANT: Orders close strictly at 9:00 AM the day BEFORE cooking to ensure stock availability. Don't miss out!
+              IMPORTANT: Pre-orders close 24 hours before cook days. Pop-up events accept walk-ups until 1 hour before close. Don't miss out!
             </p>
           </div>
         )}
