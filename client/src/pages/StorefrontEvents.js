@@ -10,7 +10,7 @@ const StorefrontEvents = () => {
   const { brandName } = useClientConfig();
 
   const publicEvents = calendarEvents
-    .filter(evt => new Date(evt.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
+    .filter(evt => evt.type !== 'BLOCKED' && new Date(evt.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const handleShare = (evt) => {
