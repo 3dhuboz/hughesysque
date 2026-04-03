@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStorefront } from '../context/AppContext';
+import { parseLocalDate } from '../utils/dateUtils';
 import SmartHeroImg from '../components/SmartHeroImg';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, Package, Users, Calendar, X, Plus, Minus, Check, Truck, Info, Clock, Utensils, AlertCircle } from 'lucide-react';
@@ -144,12 +145,12 @@ const StorefrontMenu = () => {
   const orderEvents = calendarEvents
     .filter(evt => {
       if (evt.type !== 'ORDER_PICKUP' && evt.type !== 'PUBLIC_EVENT') return false;
-      if (new Date(evt.date) < new Date(new Date().setHours(0, 0, 0, 0))) return false;
+      if (parseLocalDate(evt.date) < new Date(new Date().setHours(0, 0, 0, 0))) return false;
       // Cutoff only applies to cook days, not pop-up events
       if (evt.type === 'ORDER_PICKUP' && isDatePastCutoff(evt.date)) return false;
       return true;
     })
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
+    .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
 
   const selectedEvent = orderEvents.find(e => e.date === selectedOrderDate);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -265,7 +266,7 @@ const StorefrontMenu = () => {
               <div className="text-white font-bold text-lg leading-none flex items-center gap-2">
                 {selectedEvent ? (
                   <>
-                    {new Date(selectedEvent.date).toLocaleDateString('en-AU', { weekday: 'long', month: 'short', day: 'numeric' })}
+                    {parseLocalDate(selectedEvent.date).toLocaleDateString('en-AU', { weekday: 'long', month: 'short', day: 'numeric' })}
                     <button onClick={() => setSelectedOrderDate(null)} className="bg-gray-800 rounded-full p-0.5 hover:bg-gray-600 transition" title="Clear Date">
                       <X size={12} />
                     </button>
@@ -278,7 +279,7 @@ const StorefrontMenu = () => {
             {orderEvents.map(evt => (
               <button key={evt.id} onClick={() => handleDateSelect(evt.date)}
                 className={`whitespace-nowrap px-4 py-2 rounded-lg font-bold text-sm transition border ${selectedOrderDate === evt.date ? 'bg-white text-black border-white shadow-lg transform scale-105' : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500 hover:text-white'}`}>
-                {new Date(evt.date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}
+                {parseLocalDate(evt.date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}
                 <span className="text-[10px] ml-1 opacity-70 block">{evt.type === 'PUBLIC_EVENT' ? `📍 ${evt.location || 'Pop-up'}` : evt.location}</span>
               </button>
             ))}
@@ -343,7 +344,7 @@ const StorefrontMenu = () => {
                         )}
                         {item.availabilityType === 'specific_date' && (
                           <div className="absolute bottom-2 left-2 bg-black/80 text-bbq-gold text-[10px] font-bold px-2 py-1 rounded border border-bbq-gold z-20" style={{ backdropFilter: 'blur(8px)' }}>
-                            {item.specificDate ? new Date(item.specificDate).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' }) : 'Special'} ONLY
+                            {item.specificDate ? parseLocalDate(item.specificDate).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' }) : 'Special'} ONLY
                           </div>
                         )}
                       </div>
@@ -386,7 +387,7 @@ const StorefrontMenu = () => {
               <Clock size={14} className="text-bbq-gold" /> Next Collection
             </h4>
             {selectedEvent ? (() => {
-              const pickupDate = new Date(selectedEvent.date);
+              const pickupDate = parseLocalDate(selectedEvent.date);
               pickupDate.setDate(pickupDate.getDate() + 1);
               return (
                 <div>
@@ -397,7 +398,7 @@ const StorefrontMenu = () => {
               );
             })() : orderEvents.length > 0 ? (() => {
               const nextEvt = orderEvents[0];
-              const pickupDate = new Date(nextEvt.date);
+              const pickupDate = parseLocalDate(nextEvt.date);
               pickupDate.setDate(pickupDate.getDate() + 1);
               return (
                 <div>
@@ -465,7 +466,7 @@ const StorefrontMenu = () => {
                 <Calendar size={20} className="text-bbq-gold" />
                 <div>
                   <p className="text-xs text-gray-400 uppercase font-bold">Next Cook</p>
-                  <p className="text-white font-bold text-sm">{new Date(orderEvents[0].date).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                  <p className="text-white font-bold text-sm">{parseLocalDate(orderEvents[0].date).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
                 </div>
               </div>
               <button onClick={() => handleDateSelect(orderEvents[0].date)} className="text-xs bg-white text-black px-3 py-1.5 rounded font-bold">Order Now</button>

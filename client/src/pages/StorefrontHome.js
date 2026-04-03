@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, Flame, ChefHat, Utensils, MapPin, Calendar, Star, Truck, Bot, MessageSquare, Ticket, Gift, Eye, Radio, Send, MessageCircle, Share2 } from 'lucide-react';
 import { useClientConfig } from '../context/AppContext';
 import { useStorefront } from '../context/AppContext';
+import { parseLocalDate } from '../utils/dateUtils';
 import SmartHeroImg from '../components/SmartHeroImg';
 import { getStreamStatus, getChatMessages, sendChatMessage } from '../services/api';
 
@@ -157,8 +158,8 @@ const StorefrontHome = () => {
 
   const today = new Date(new Date().setHours(0, 0, 0, 0));
   const nextCookDay = calendarEvents
-    .filter(e => e.type === 'ORDER_PICKUP' && new Date(e.date) >= today)
-    .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+    .filter(e => e.type === 'ORDER_PICKUP' && parseLocalDate(e.date) >= today)
+    .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date))[0];
 
   const handleImageError = (e) => { e.target.src = PLACEHOLDER_IMG; };
 
@@ -402,7 +403,7 @@ const StorefrontHome = () => {
               <div>
                 <span className="text-[10px] text-gray-500 uppercase font-bold tracking-[0.2em]">Next Cook Day</span>
                 <div className="text-white font-display font-bold text-xl md:text-2xl flex items-baseline gap-3">
-                  {new Date(nextCookDay.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                  {parseLocalDate(nextCookDay.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
                   {nextCookDay.location && (
                     <span className="text-bbq-gold text-xs font-bold flex items-center gap-1"><MapPin size={12} />{nextCookDay.location}</span>
                   )}

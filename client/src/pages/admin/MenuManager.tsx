@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { parseLocalDate } from '../../utils/dateUtils';
 import { useToast } from '../../components/Toast';
 import { Plus, Edit2, Calendar, Wand2, Loader2, Image as ImageIcon, Trash2, Package, CheckSquare, Square, ChevronDown, ChevronUp, HelpCircle, ChefHat } from 'lucide-react';
 import { MenuItem, PackGroup } from '../../types';
@@ -53,8 +54,8 @@ const MenuManager: React.FC = () => {
 
   // Filter for valid Order Pickup days from the planner
   const orderDays = calendarEvents
-    .filter(evt => evt.type === 'ORDER_PICKUP' && new Date(evt.date) >= new Date(new Date().setHours(0,0,0,0)))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    .filter(evt => evt.type === 'ORDER_PICKUP' && parseLocalDate(evt.date) >= new Date(new Date().setHours(0,0,0,0)))
+    .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime());
 
   // Group items by category for the picker (excluding Rubs & Sauces, Merch)
   const itemsByCategory = menu.reduce((acc, item) => {
@@ -502,7 +503,7 @@ const MenuManager: React.FC = () => {
                             className="rounded text-bbq-red focus:ring-bbq-red bg-gray-900 border-gray-600"
                           />
                           <span className="text-xs text-white">
-                             {new Date(evt.date).toLocaleDateString()} - {evt.location} ({evt.title})
+                             {parseLocalDate(evt.date).toLocaleDateString()} - {evt.location} ({evt.title})
                           </span>
                         </label>
                         );
@@ -541,8 +542,8 @@ const MenuManager: React.FC = () => {
                 {item.availabilityType === 'specific_date' && (
                   <div className="text-xs text-bbq-gold flex items-center gap-1 mt-1">
                     <Calendar size={12} /> Only: {item.specificDates && item.specificDates.length > 0 
-                        ? item.specificDates.map(d => new Date(d).toLocaleDateString()).join(', ') 
-                        : (item.specificDate ? new Date(item.specificDate).toLocaleDateString() : 'N/A')}
+                        ? item.specificDates.map(d => parseLocalDate(d).toLocaleDateString()).join(', ')
+                        : (item.specificDate ? parseLocalDate(item.specificDate).toLocaleDateString() : 'N/A')}
                   </div>
                 )}
                 {item.availabilityType === 'everyday' && (
