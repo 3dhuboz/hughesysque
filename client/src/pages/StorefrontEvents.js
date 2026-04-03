@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import SmartHeroImg from '../components/SmartHeroImg';
 import { useStorefront } from '../context/AppContext';
 import { useClientConfig } from '../context/AppContext';
-import { parseLocalDate } from '../utils/dateUtils';
+import { parseLocalDate, isEventPastCutoff } from '../utils/dateUtils';
 import { Calendar, MapPin, Clock, Share2, Bell, Check, BellOff, Megaphone, Utensils, Star, Flame, Coffee } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -11,7 +11,7 @@ const StorefrontEvents = () => {
   const { brandName } = useClientConfig();
 
   const publicEvents = calendarEvents
-    .filter(evt => evt.type !== 'BLOCKED' && parseLocalDate(evt.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
+    .filter(evt => evt.type !== 'BLOCKED' && !isEventPastCutoff(evt) && parseLocalDate(evt.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
     .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
 
   const handleShare = (evt) => {

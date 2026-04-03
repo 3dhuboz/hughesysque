@@ -19,3 +19,40 @@ export function formatDate(dateStr: string, options?: Intl.DateTimeFormatOptions
   const defaults: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
   return parseLocalDate(dateStr).toLocaleDateString('en-AU', options || defaults);
 }
+
+/**
+ * Check if an event's ordering window has passed, based on event type:
+ * - ORDER_PICKUP (cook day): 24hrs before (midnight the day before)
+ * - PUBLIC_EVENT (pop-up): 1hr before the event's end time
+ * - BLOCKED: always past cutoff
+ */
+export function isEventPastCutoff(event: { date: string; type: string; endTime?: string }): boolean {
+  const now = new Date();
+
+  if (event.type === 'BLOCKED') return true;
+
+  if (event.type === 'ORDER_PICKUP') {
+    // Cutoff = midnight the day before the cook date
+    const cookDate = parseLocalDate(event.date);
+    const cutoff = new Date(cookDate);
+    cutoff.setHours(0, 0, 0, 0);
+    cutoff.setDate(cutoff.getDate() - 1);
+    return now > cutoff;
+  }
+
+  if (event.type === 'PUBLIC_EVENT') {
+    // Cutoff = 1hr before event end time
+    const eventDate = parseLocalDate(event.date);
+    if (event.endTime) {
+      const [h, m] = event.endTime.split(':').map(Number);
+      eventDate.setHours(h, m || 0, 0, 0);
+    } else {
+      // No end time set — assume end of day
+      eventDate.setHours(23, 59, 0, 0);
+    }
+    const cutoff = new Date(eventDate.getTime() - 60 * 60 * 1000); // minus 1 hour
+    return now > cutoff;
+  }
+
+  return false;
+}
