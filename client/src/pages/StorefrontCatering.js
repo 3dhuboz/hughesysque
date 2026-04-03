@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SmartHeroImg from '../components/SmartHeroImg';
 import { useStorefront } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
+import { toLocalDateStr, parseLocalDate } from '../utils/dateUtils';
 import {
   ChefHat, Users, Clock, ArrowRight, ArrowLeft, Calendar, CheckCircle,
   AlertCircle, Truck, MapPin, Flame, Snowflake, Package, Plus, Minus,
-  Ticket, Check, X
+  Ticket, Check, X, ChevronLeft, ChevronRight, Coffee, UtensilsCrossed
 } from 'lucide-react';
 
 const DELIVERY_FEE = 25.00;
@@ -17,48 +18,146 @@ const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80',
 ];
 
+/* ── Catering Menu Data (from Hughesey Que Catering Package 2025/26 PDF) ── */
+
+const CATERING_MEATS = [
+  'Sliced Brisket', 'Pulled Brisket', 'Pulled Pork', 'Pulled Lamb',
+  'Beef Ribs *', 'Pork Ribs *', 'Beef Cheeks', 'Chicken Thighs (Bone-in)',
+  'Chicken Lollipops', 'Chicken Wing Nibbles', 'Smoked Sausages / Hot Links',
+  'Pork Belly *', 'Lamb Shanks', 'Pork Belly Burnt Ends',
+];
+
+const CATERING_SIDES = [
+  'Potato Bake', 'Mac N Cheese', 'HQ Slaw', 'BBQ Pit Beans', 'Potato Salad',
+  'Corn Elote Pasta Salad', 'Corn Pasta Salad', 'Smoked Corn Elote Salad',
+  'Corn on the Cob (Cobettes)', 'Texas Caviar Salad', 'Caesar Salad',
+  'Fire Kissed Green Beans & Charred Lime Salad',
+  'Texas Style Pit Roasted Pumpkin & Beetroot Salad',
+];
+
+const CATERING_DESSERTS = [
+  'Smoked Turkish Delight Brownie with Vanilla Bean Ice Cream & Raspberry Coulis',
+  'Smoked Apple Crumble with Smoked Caramel Drizzle & Maple Vanilla Custard',
+  'Vanilla Bean Panna Cotta with Char Pineapple & Meringue',
+];
+
 const DEFAULT_PACKAGES = [
   {
-    id: 'pkg_2m2s',
-    name: '2 Meats & 2 Sides',
+    id: 'pkg_2m2s', name: '2 Meats & 2 Sides', price: 38, minPax: 40, meatLimit: 2, sideLimit: 2,
     description: "A solid spread for casual events. Choose 2 of our signature smoked meats and 2 sides. Includes bread, cutlery, plates and napkins.",
-    price: 38,
-    minPax: 40,
-    meatLimit: 2,
-    sideLimit: 2,
-    image: 'https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80'
+    image: 'https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80',
   },
   {
-    id: 'pkg_2m3s',
-    name: '2 Meats & 3 Sides',
+    id: 'pkg_2m3s', name: '2 Meats & 3 Sides', price: 44, minPax: 40, meatLimit: 2, sideLimit: 3,
     description: 'Extra sides to round out the feast. Choose 2 smoked meats and 3 sides. Includes bread, cutlery, plates and napkins.',
-    price: 44,
-    minPax: 40,
-    meatLimit: 2,
-    sideLimit: 3,
-    image: 'https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80'
+    image: 'https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80',
   },
   {
-    id: 'pkg_3m3s',
-    name: '3 Meats & 3 Sides',
+    id: 'pkg_3m3s', name: '3 Meats & 3 Sides', price: 56, minPax: 40, meatLimit: 3, sideLimit: 3,
     description: 'Our most popular package. A balanced spread of 3 smoked meats and 3 sides. Includes bread, cutlery, plates and napkins.',
-    price: 56,
-    minPax: 40,
-    meatLimit: 3,
-    sideLimit: 3,
-    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80'
+    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
   },
   {
-    id: 'pkg_4m3s',
-    name: '4 Meats & 3 Sides',
+    id: 'pkg_4m3s', name: '4 Meats & 3 Sides', price: 68, minPax: 40, meatLimit: 4, sideLimit: 3,
     description: 'The ultimate feast. Choose 4 premium smoked meats with 3 sides. Full set up with bread, cutlery, plates and napkins.',
-    price: 68,
-    minPax: 40,
-    meatLimit: 4,
-    sideLimit: 3,
-    image: 'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80'
-  }
+    image: 'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80',
+  },
 ];
+
+const COCKTAIL_PACKAGES = [
+  { id: 'cocktail_teaser', name: 'The Teaser', pieces: 4, price: 40, cold: 2, hot: 2, substantial: 0, duration: '30–60 min', description: 'Pre-dinner nibbles.' },
+  { id: 'cocktail_starter', name: 'The Starter', pieces: 5, price: 49, cold: 2, hot: 3, substantial: 0, duration: '60–90 min', description: 'Light cocktail grazing.' },
+  { id: 'cocktail_classic', name: 'The Classic', pieces: 6, price: 59, cold: 3, hot: 3, substantial: 0, duration: '1.5–2 hr', description: 'Standard cocktail events.' },
+  { id: 'cocktail_crowd', name: 'The Crowd Pleaser', pieces: 7, price: 69, cold: 3, hot: 4, substantial: 0, duration: '2–2.5 hr', description: 'When you want it to feel like enough food.' },
+  { id: 'cocktail_feed', name: 'The Proper Feed', pieces: 8, price: 79, cold: 3, hot: 4, substantial: 1, duration: '2.5–3 hr', description: 'When canapes are the main meal.' },
+];
+
+/* ── Inline Calendar Picker ── */
+const CalendarPicker = ({ value, onChange, minDate }) => {
+  const [viewDate, setViewDate] = useState(() => {
+    if (value) return parseLocalDate(value);
+    if (minDate) return new Date(minDate);
+    return new Date();
+  });
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const days = [];
+  for (let i = 0; i < firstDay; i++) days.push(null);
+  for (let i = 1; i <= daysInMonth; i++) days.push(i);
+
+  const changeMonth = (delta) => setViewDate(new Date(year, month + delta, 1));
+
+  const isDisabled = (day) => {
+    if (!day) return true;
+    const d = new Date(year, month, day);
+    d.setHours(0,0,0,0);
+    const min = new Date(minDate); min.setHours(0,0,0,0);
+    return d < min;
+  };
+
+  const selectDay = (day) => {
+    const d = new Date(year, month, day);
+    const str = toLocalDateStr(d);
+    onChange(str);
+    setOpen(false);
+  };
+
+  const selectedStr = value || '';
+  const displayText = value
+    ? parseLocalDate(value).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+    : 'Select a date...';
+
+  return (
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => setOpen(!open)}
+        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-left text-white focus:border-bbq-red outline-none hover:border-gray-500 transition">
+        <Calendar className="absolute left-3 top-3.5 text-bbq-red" size={18} />
+        <span className={value ? 'text-white' : 'text-gray-500'}>{displayText}</span>
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full mt-2 left-0 right-0 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-4 animate-in fade-in zoom-in-95">
+          <div className="flex items-center justify-between mb-3">
+            <button type="button" onClick={() => changeMonth(-1)} className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white"><ChevronLeft size={18} /></button>
+            <span className="text-white font-bold text-sm">{viewDate.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}</span>
+            <button type="button" onClick={() => changeMonth(1)} className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white"><ChevronRight size={18} /></button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center">
+            {['S','M','T','W','T','F','S'].map((d,i) => <div key={i} className="text-[10px] text-gray-500 font-bold py-1">{d}</div>)}
+            {days.map((day, i) => {
+              if (!day) return <div key={`e${i}`} />;
+              const disabled = isDisabled(day);
+              const dayStr = toLocalDateStr(new Date(year, month, day));
+              const isSelected = dayStr === selectedStr;
+              const isToday = dayStr === toLocalDateStr(new Date());
+              return (
+                <button key={day} type="button" disabled={disabled}
+                  onClick={() => selectDay(day)}
+                  className={`w-9 h-9 rounded-lg text-sm font-bold transition
+                    ${disabled ? 'text-gray-700 cursor-not-allowed' : 'hover:bg-bbq-red/30 text-gray-300 cursor-pointer'}
+                    ${isSelected ? 'bg-bbq-red text-white' : ''}
+                    ${isToday && !isSelected ? 'ring-1 ring-bbq-red text-white' : ''}`}>
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-gray-500 mt-2 text-center">Catering requires at least 7 days notice.</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const StorefrontCatering = () => {
   const { menu, checkAvailability, createOrder, user, settings, isDatePastCutoff } = useStorefront();
@@ -69,7 +168,7 @@ const StorefrontCatering = () => {
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState('');
   const [pickupTime, setPickupTime] = useState('12:00 PM');
-  const [guestCount, setGuestCount] = useState(10);
+  const [guestCount, setGuestCount] = useState(40);
   const [fulfillment, setFulfillment] = useState('PICKUP');
   const [temperature, setTemperature] = useState('HOT');
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -261,14 +360,11 @@ const StorefrontCatering = () => {
               <div className="space-y-5">
                 <div>
                   <label className="block text-gray-400 mb-2 text-sm font-bold">Event Date</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-3.5 text-bbq-red" size={18} />
-                    <input type="date" min={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })()} value={selectedDate}
-                      onChange={e => { setSelectedDate(e.target.value); setIsAvailable(null); }}
-                      style={{ colorScheme: 'dark' }}
-                      className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:cursor-pointer" />
-                    <p className="text-[10px] text-gray-500 mt-1">Catering requires at least 7 days notice.</p>
-                  </div>
+                  <CalendarPicker
+                    value={selectedDate}
+                    onChange={(val) => { setSelectedDate(val); setIsAvailable(null); }}
+                    minDate={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return d; })()}
+                  />
                 </div>
                 <div>
                   <label className="block text-gray-400 mb-2 text-sm font-bold">Eat Time</label>
@@ -286,9 +382,9 @@ const StorefrontCatering = () => {
                   <label className="block text-gray-400 mb-2 text-sm font-bold">Number of Guests</label>
                   <div className="relative">
                     <Users className="absolute left-3 top-3.5 text-bbq-red" size={18} />
-                    <input type="number" min="10" value={guestCount} onChange={e => setGuestCount(parseInt(e.target.value) || 10)}
+                    <input type="number" min="40" value={guestCount} onChange={e => setGuestCount(parseInt(e.target.value) || 40)}
                       className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none" />
-                    <span className="absolute right-4 top-3.5 text-xs text-gray-500">Min 10 pax</span>
+                    <span className="absolute right-4 top-3.5 text-xs text-gray-500">Min 40 pax</span>
                   </div>
                 </div>
               </div>
@@ -334,7 +430,7 @@ const StorefrontCatering = () => {
             )}
 
             <button onClick={checkDate}
-              disabled={!selectedDate || !pickupTime || guestCount < 10 || (fulfillment === 'DELIVERY' && !deliveryAddress)}
+              disabled={!selectedDate || !pickupTime || guestCount < 40 || (fulfillment === 'DELIVERY' && !deliveryAddress)}
               className="w-full bg-white text-black font-bold py-4 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition shadow-lg mt-8 text-lg flex items-center justify-center gap-2">
               Next: Choose Menu <ArrowRight size={20} />
             </button>
