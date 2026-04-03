@@ -381,26 +381,48 @@ const Planner: React.FC = () => {
 
                       {editingEvent.type === 'PUBLIC_EVENT' && (
                         <div className="space-y-4 pt-2 border-t border-gray-700 animate-in fade-in">
-                             <div className="grid grid-cols-2 gap-4">
-                                <div>
+                             <div>
                                     <label className="block text-xs text-gray-400 font-bold mb-1">Location</label>
-                                    <input 
+                                    <input
                                         value={editingEvent.location || ''}
                                         onChange={e => setEditingEvent({...editingEvent, location: e.target.value})}
-                                        placeholder="e.g. Green Beacon"
+                                        placeholder="e.g. Green Beacon Brewing"
+                                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white"
+                                    />
+                             </div>
+                             <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-gray-400 font-bold mb-1">Start Time</label>
+                                    <input
+                                        type="time"
+                                        value={editingEvent.startTime || ''}
+                                        onChange={e => {
+                                            const st = e.target.value;
+                                            const fmt = (t: string) => { const [h,m] = t.split(':').map(Number); const ap = h >= 12 ? 'pm' : 'am'; return `${h % 12 || 12}${m ? `:${String(m).padStart(2,'0')}` : ''}${ap}`; };
+                                            const display = st && editingEvent.endTime ? `${fmt(st)} - ${fmt(editingEvent.endTime)}` : editingEvent.time || '';
+                                            setEditingEvent({...editingEvent, startTime: st, time: display});
+                                        }}
                                         className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-400 font-bold mb-1">Display Time</label>
-                                    <input 
-                                        value={editingEvent.time || ''}
-                                        onChange={e => setEditingEvent({...editingEvent, time: e.target.value})}
-                                        placeholder="e.g. 12pm - 8pm"
+                                    <label className="block text-xs text-gray-400 font-bold mb-1">End Time</label>
+                                    <input
+                                        type="time"
+                                        value={editingEvent.endTime || ''}
+                                        onChange={e => {
+                                            const et = e.target.value;
+                                            const fmt = (t: string) => { const [h,m] = t.split(':').map(Number); const ap = h >= 12 ? 'pm' : 'am'; return `${h % 12 || 12}${m ? `:${String(m).padStart(2,'0')}` : ''}${ap}`; };
+                                            const display = editingEvent.startTime && et ? `${fmt(editingEvent.startTime)} - ${fmt(et)}` : editingEvent.time || '';
+                                            setEditingEvent({...editingEvent, endTime: et, time: display});
+                                        }}
                                         className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white"
                                     />
                                 </div>
                              </div>
+                             {editingEvent.time && (
+                                <p className="text-xs text-gray-500">Displays as: <span className="text-white font-bold">{editingEvent.time}</span></p>
+                             )}
 
                              {/* IMAGE SECTION */}
                              <div>
