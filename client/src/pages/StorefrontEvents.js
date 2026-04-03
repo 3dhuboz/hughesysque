@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import SmartHeroImg from '../components/SmartHeroImg';
 import { useStorefront } from '../context/AppContext';
 import { useClientConfig } from '../context/AppContext';
+import { parseLocalDate } from '../utils/dateUtils';
 import { Calendar, MapPin, Clock, Share2, Bell, Check, BellOff, Megaphone, Utensils, Star, Flame, Coffee } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -10,14 +11,14 @@ const StorefrontEvents = () => {
   const { brandName } = useClientConfig();
 
   const publicEvents = calendarEvents
-    .filter(evt => evt.type !== 'BLOCKED' && new Date(evt.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
+    .filter(evt => evt.type !== 'BLOCKED' && parseLocalDate(evt.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
+    .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
 
   const handleShare = (evt) => {
     if (navigator.share) {
       navigator.share({
         title: `${brandName}: ${evt.title}`,
-        text: `Catch ${brandName} at ${evt.location} on ${new Date(evt.date).toLocaleDateString()}!`,
+        text: `Catch ${brandName} at ${evt.location} on ${parseLocalDate(evt.date).toLocaleDateString()}!`,
         url: window.location.href
       }).catch(console.error);
     } else {
@@ -58,8 +59,8 @@ const StorefrontEvents = () => {
             return (
               <div key={evt.id} className="bg-bbq-charcoal border border-gray-800 rounded-2xl overflow-hidden hover:border-bbq-red/50 transition duration-300 flex flex-col md:flex-row group">
                 <div className="md:hidden bg-bbq-red text-white p-4 text-center">
-                  <div className="text-sm font-bold uppercase">{new Date(evt.date).toLocaleDateString(undefined, { month: 'long' })}</div>
-                  <div className="text-3xl font-display font-bold">{new Date(evt.date).getDate()}</div>
+                  <div className="text-sm font-bold uppercase">{parseLocalDate(evt.date).toLocaleDateString(undefined, { month: 'long' })}</div>
+                  <div className="text-3xl font-display font-bold">{parseLocalDate(evt.date).getDate()}</div>
                 </div>
                 <div className="w-full md:w-1/3 h-64 md:h-auto relative overflow-hidden">
                   <img src={evt.image || "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80"} alt={evt.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
@@ -67,7 +68,7 @@ const StorefrontEvents = () => {
                 </div>
                 <div className="p-6 md:p-8 flex-1 flex flex-col justify-center">
                   <div className="hidden md:block text-bbq-red font-bold uppercase tracking-widest text-sm mb-2">
-                    {new Date(evt.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                    {parseLocalDate(evt.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
                   </div>
                   <h2 className="text-3xl font-display font-bold text-white mb-4 group-hover:text-bbq-gold transition">{evt.title}</h2>
                   <div className="space-y-3 mb-6">
