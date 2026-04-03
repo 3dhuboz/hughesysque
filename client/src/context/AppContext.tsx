@@ -338,7 +338,6 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
   };
 
   const checkAvailability = (dateStr: string): boolean => {
-    if (isDatePastCutoff(dateStr)) return false;
     if (calendarEvents.find(e => e.date === dateStr && e.type === 'BLOCKED')) return false;
     if (orders.filter(o => o.cookDay === dateStr && o.type === 'CATERING').length >= 2) return false;
     return true;

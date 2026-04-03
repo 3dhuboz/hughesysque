@@ -143,9 +143,10 @@ const StorefrontMenu = () => {
 
   const orderEvents = calendarEvents
     .filter(evt => {
-      if (evt.type !== 'ORDER_PICKUP') return false;
+      if (evt.type !== 'ORDER_PICKUP' && evt.type !== 'PUBLIC_EVENT') return false;
       if (new Date(evt.date) < new Date(new Date().setHours(0, 0, 0, 0))) return false;
-      if (isDatePastCutoff(evt.date)) return false;
+      // Cutoff only applies to cook days, not pop-up events
+      if (evt.type === 'ORDER_PICKUP' && isDatePastCutoff(evt.date)) return false;
       return true;
     })
     .sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -278,19 +279,21 @@ const StorefrontMenu = () => {
               <button key={evt.id} onClick={() => handleDateSelect(evt.date)}
                 className={`whitespace-nowrap px-4 py-2 rounded-lg font-bold text-sm transition border ${selectedOrderDate === evt.date ? 'bg-white text-black border-white shadow-lg transform scale-105' : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500 hover:text-white'}`}>
                 {new Date(evt.date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })}
-                <span className="text-[10px] ml-1 opacity-70 block">{evt.location}</span>
+                <span className="text-[10px] ml-1 opacity-70 block">{evt.type === 'PUBLIC_EVENT' ? `📍 ${evt.location || 'Pop-up'}` : evt.location}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* CUTOFF WARNING */}
-        <div className="bg-red-900/30 border border-red-800 p-3 rounded-lg flex items-center gap-3 mx-auto max-w-2xl">
-          <AlertCircle className="text-red-500 shrink-0" size={20} />
-          <p className="text-red-200 text-xs font-bold leading-relaxed">
-            IMPORTANT: Orders close strictly at 9:00 AM the day BEFORE cooking to ensure stock availability. Don't miss out!
-          </p>
-        </div>
+        {/* CUTOFF WARNING - only show when cook days exist */}
+        {orderEvents.some(e => e.type === 'ORDER_PICKUP') && (
+          <div className="bg-red-900/30 border border-red-800 p-3 rounded-lg flex items-center gap-3 mx-auto max-w-2xl">
+            <AlertCircle className="text-red-500 shrink-0" size={20} />
+            <p className="text-red-200 text-xs font-bold leading-relaxed">
+              IMPORTANT: Orders close strictly at 9:00 AM the day BEFORE cooking to ensure stock availability. Don't miss out!
+            </p>
+          </div>
+        )}
 
         {!selectedOrderDate && (
           <div className="bg-blue-900/20 border border-blue-800/50 p-4 rounded-xl flex items-center justify-between">

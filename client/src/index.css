@@ -66,6 +66,13 @@ input, textarea, select {
   font-family: inherit;
 }
 
+/* Dark theme date/time pickers */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  color-scheme: dark;
+}
+
 /* Utility Classes */
 .container {
   max-width: 1200px;
