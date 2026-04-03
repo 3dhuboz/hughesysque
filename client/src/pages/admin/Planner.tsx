@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
 import { ChevronLeft, ChevronRight, Lock, Unlock, ShoppingBag, Truck, Plus, Trash2, X, Save, Wand2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { CalendarEvent } from '../../types';
+import { toLocalDateStr } from '../../utils/dateUtils';
 import { generateMarketingImage, generateEventPromotion } from '../../services/gemini';
 
 const Planner: React.FC = () => {
@@ -64,7 +65,7 @@ const Planner: React.FC = () => {
       description: '',
       image: '',
       tags: [],
-      date: new Date().toISOString().split('T')[0]
+      date: toLocalDateStr(new Date())
   });
 
   // Calendar Logic
@@ -102,7 +103,7 @@ const Planner: React.FC = () => {
           description: '',
           image: '',
           tags: [],
-          date: dateStr || new Date().toISOString().split('T')[0]
+          date: dateStr || toLocalDateStr(new Date())
       });
       setIsModalOpen(true);
   };
@@ -235,7 +236,7 @@ const Planner: React.FC = () => {
         {days.map((date, idx) => {
           if (!date) return <div key={`empty-${idx}`} className="bg-bbq-charcoal/50 min-h-[120px]"></div>;
           
-          const dateStr = date.toISOString().split('T')[0];
+          const dateStr = toLocalDateStr(date);
           const events = calendarEvents.filter(e => e.date === dateStr);
           const isBlocked = events.some(e => e.type === 'BLOCKED');
           const isPast = date < new Date(new Date().setHours(0,0,0,0));

@@ -21,6 +21,17 @@ export function formatDate(dateStr: string, options?: Intl.DateTimeFormatOptions
 }
 
 /**
+ * Format a Date as YYYY-MM-DD using local time (not UTC).
+ * Avoids the toISOString() timezone shift that moves dates back a day in AEST.
+ */
+export function toLocalDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
  * Check if an event's ordering window has passed, based on event type:
  * - ORDER_PICKUP (cook day): 24hrs before (midnight the day before)
  * - PUBLIC_EVENT (pop-up): 1hr before the event's end time

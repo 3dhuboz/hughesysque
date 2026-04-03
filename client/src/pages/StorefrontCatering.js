@@ -263,7 +263,7 @@ const StorefrontCatering = () => {
                   <label className="block text-gray-400 mb-2 text-sm font-bold">Event Date</label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3.5 text-bbq-red" size={18} />
-                    <input type="date" min={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })()} value={selectedDate}
+                    <input type="date" min={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })()} value={selectedDate}
                       onChange={e => { setSelectedDate(e.target.value); setIsAvailable(null); }}
                       style={{ colorScheme: 'dark' }}
                       className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:cursor-pointer" />
