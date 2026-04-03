@@ -263,10 +263,11 @@ const StorefrontCatering = () => {
                   <label className="block text-gray-400 mb-2 text-sm font-bold">Event Date</label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3.5 text-bbq-red" size={18} />
-                    <input type="date" min={new Date().toISOString().split('T')[0]} value={selectedDate}
+                    <input type="date" min={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })()} value={selectedDate}
                       onChange={e => { setSelectedDate(e.target.value); setIsAvailable(null); }}
                       style={{ colorScheme: 'dark' }}
                       className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:cursor-pointer" />
+                    <p className="text-[10px] text-gray-500 mt-1">Catering requires at least 7 days notice.</p>
                   </div>
                 </div>
                 <div>
@@ -340,7 +341,7 @@ const StorefrontCatering = () => {
 
             {isAvailable === false && (
               <div className="mt-4 p-4 bg-red-900/30 border border-red-600 text-red-200 rounded-lg flex items-center justify-center gap-2">
-                <AlertCircle size={18} /> Sorry, we are fully booked on this date. Please choose another.
+                <AlertCircle size={18} /> Sorry, this date is unavailable. We require at least 7 days notice and may be fully booked. Please choose another date.
               </div>
             )}
           </div>
