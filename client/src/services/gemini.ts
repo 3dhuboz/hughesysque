@@ -74,37 +74,62 @@ export const generateMarketingImage = async (prompt: string): Promise<string | n
 
   const fullPrompt = `Generate a professional food photography image: ${prompt}. Style: high quality, appetizing, cinematic lighting, no text or watermarks, BBQ themed.`;
 
-  try {
-    const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': SITE_URL,
-        'X-Title': SITE_NAME,
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-preview-05-20',
-        messages: [{ role: 'user', content: fullPrompt }],
-        modalities: ['image', 'text'],
-      }),
-    });
+  // Try image-capable models in order of preference
+  const imageModels = [
+    'google/gemini-2.0-flash-exp:free',
+    'google/gemini-2.5-flash-preview',
+    'google/gemini-2.5-flash-preview-05-20',
+  ];
 
-    if (!res.ok) {
-      console.error('OpenRouter image error:', res.status, await res.text().catch(() => ''));
-      return null;
-    }
+  for (const model of imageModels) {
+    try {
+      const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': SITE_URL,
+          'X-Title': SITE_NAME,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: fullPrompt }],
+          modalities: ['image', 'text'],
+        }),
+      });
 
-    const data = await res.json();
-    const images = data.choices?.[0]?.message?.images;
-    if (images?.[0]?.image_url?.url) {
-      return images[0].image_url.url;
+      if (!res.ok) {
+        console.warn(`OpenRouter image (${model}):`, res.status);
+        continue;
+      }
+
+      const data = await res.json();
+
+      // Check multiple response formats for the image
+      const msg = data.choices?.[0]?.message;
+
+      // Format 1: images array
+      if (msg?.images?.[0]?.image_url?.url) return msg.images[0].image_url.url;
+
+      // Format 2: content parts with image_url
+      if (Array.isArray(msg?.content)) {
+        const imgPart = msg.content.find((p: any) => p.type === 'image_url' || p.image_url);
+        if (imgPart?.image_url?.url) return imgPart.image_url.url;
+      }
+
+      // Format 3: inline base64 in content
+      if (typeof msg?.content === 'string' && msg.content.startsWith('data:image')) {
+        return msg.content;
+      }
+
+      console.warn(`OpenRouter image (${model}): no image in response`);
+    } catch (error: any) {
+      console.warn(`Image gen (${model}) error:`, error?.message || error);
     }
-    return null;
-  } catch (error: any) {
-    console.error('Image generation error:', error?.message || error);
-    return null;
   }
+
+  console.error('All image generation models failed');
+  return null;
 };
 
 export const analyzePostTimes = async () => {
