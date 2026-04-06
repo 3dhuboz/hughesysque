@@ -1845,6 +1845,36 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
           <h4 className="text-xl font-bold mb-2 flex items-center gap-2"><FileCode size={20} className="text-amber-400"/> Invoice Template</h4>
           <p className="text-sm text-gray-400 mb-6">Customise the look of invoices sent via Email and SMS. Payment links are auto-generated from your Square account.</p>
 
+          {/* GST Settings */}
+          <div className="border border-gray-700 rounded-xl p-4 mb-6 flex items-center justify-between flex-wrap gap-4 bg-black/20">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-green-900/40 border border-green-700/40 flex items-center justify-center">
+                <span className="text-green-400 font-black text-xs">%</span>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">GST (Goods & Services Tax)</p>
+                <p className="text-[11px] text-gray-500">Added automatically to Square payment links and email invoices.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] text-gray-500 font-bold uppercase">Rate</label>
+                <div className="flex items-center gap-1">
+                  <input type="number" min={0} max={100} step={0.5}
+                    value={formData.invoiceSettings?.gstRate ?? 10}
+                    onChange={e => setFormData({ ...formData, invoiceSettings: { ...formData.invoiceSettings!, gstRate: parseFloat(e.target.value) || 0 } })}
+                    className="w-16 bg-black/40 border border-gray-700 rounded p-2 text-white text-sm text-center font-mono" />
+                  <span className="text-gray-400 text-sm font-bold">%</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setFormData({ ...formData, invoiceSettings: { ...formData.invoiceSettings!, gstEnabled: !(formData.invoiceSettings?.gstEnabled !== false) } })}
+                className={`relative w-11 h-6 rounded-full transition-colors ${(formData.invoiceSettings?.gstEnabled !== false) ? 'bg-green-600' : 'bg-gray-600'}`}>
+                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${(formData.invoiceSettings?.gstEnabled !== false) ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                   <div>
