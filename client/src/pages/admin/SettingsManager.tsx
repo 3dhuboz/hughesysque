@@ -805,6 +805,37 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                       />
                   </div>
                   <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Hero Tagline</label>
+                      <textarea
+                          value={formData.heroTagline || ''}
+                          onChange={e => setFormData({ ...formData, heroTagline: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white text-sm"
+                          placeholder="Real fire. Real smoke. Real flavour. From backyard birthdays to corporate blowouts — we bring the pit to you."
+                          rows={2}
+                      />
+                      <p className="text-[10px] text-gray-600 mt-1">Shows below the hero heading on the homepage. Leave blank for default.</p>
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Philosophy Heading</label>
+                      <input
+                          value={formData.philosophyHeading || ''}
+                          onChange={e => setFormData({ ...formData, philosophyHeading: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                          placeholder="WE DON'T DO FAST FOOD. WE DO GOOD FOOD."
+                      />
+                      <p className="text-[10px] text-gray-600 mt-1">Leave blank for the styled default with red/gold text.</p>
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Philosophy Description</label>
+                      <textarea
+                          value={formData.philosophyBody || ''}
+                          onChange={e => setFormData({ ...formData, philosophyBody: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white text-sm"
+                          placeholder="Hughesys Que is a family owned operation obsessed with the ritual of fire and meat..."
+                          rows={3}
+                      />
+                  </div>
+                  <div>
                       <label className="text-xs font-bold text-gray-500 uppercase">Google Maps URL</label>
                       <input
                           value={formData.mapsUrl || ''}

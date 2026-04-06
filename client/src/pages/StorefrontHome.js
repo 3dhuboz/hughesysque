@@ -372,7 +372,7 @@ const StorefrontHome = () => {
           </div>
 
           <p className="text-gray-300 text-lg md:text-xl max-w-xl leading-relaxed mb-10 hero-text delay-500">
-            Real fire. Real smoke. Real flavour. From backyard birthdays to corporate blowouts — we bring the pit to you.
+            {settings.heroTagline || 'Real fire. Real smoke. Real flavour. From backyard birthdays to corporate blowouts — we bring the pit to you.'}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 hero-text delay-600">
@@ -496,13 +496,19 @@ const StorefrontHome = () => {
       <section className="py-20 px-6">
         <div data-reveal className="max-w-3xl mx-auto text-center">
           <Flame size={40} className="text-bbq-red/30 mx-auto mb-6" />
-          <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-6 leading-tight">
-            WE DON'T DO <span className="text-bbq-red italic">FAST</span> FOOD.<br />
-            WE DO <span className="text-bbq-gold italic">GOOD</span> FOOD.
-          </h2>
+          {settings.philosophyHeading ? (
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-6 leading-tight">
+              {settings.philosophyHeading}
+            </h2>
+          ) : (
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-6 leading-tight">
+              WE DON'T DO <span className="text-bbq-red italic">FAST</span> FOOD.<br />
+              WE DO <span className="text-bbq-gold italic">GOOD</span> FOOD.
+            </h2>
+          )}
           <div className="h-px w-20 bg-bbq-gold/40 mx-auto my-8" />
           <p className="text-gray-400 text-lg leading-relaxed">
-            {name} is a family owned operation obsessed with the ritual of fire and meat. We treat every cut with respect, smoking it low and slow over seasoned hardwood until it falls apart at the sight of a fork.
+            {settings.philosophyBody || `${name} is a family owned operation obsessed with the ritual of fire and meat. We treat every cut with respect, smoking it low and slow over seasoned hardwood until it falls apart at the sight of a fork.`}
           </p>
         </div>
       </section>
