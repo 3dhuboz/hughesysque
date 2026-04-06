@@ -1368,12 +1368,29 @@ const LiveStreamManager: React.FC = () => {
                       placeholder="e.g. Gladstone Meat Co" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm" />
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">Logo URL</label>
-                    <input value={sponsor.logoUrl} onChange={e => updateSponsor(sponsor.id, 'logoUrl', e.target.value)}
-                      placeholder="https://..." className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm font-mono" />
+                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">Logo</label>
+                    <div className="flex gap-2">
+                      <input value={sponsor.logoUrl} onChange={e => updateSponsor(sponsor.id, 'logoUrl', e.target.value)}
+                        placeholder="URL or upload →" className="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm font-mono" />
+                      <label className="cursor-pointer p-2 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center justify-center transition shrink-0" title="Upload logo">
+                        <Upload size={14} className="text-gray-300" />
+                        <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 500000) { toast('Logo must be under 500KB', 'error'); return; }
+                          const reader = new FileReader();
+                          reader.onload = () => { updateSponsor(sponsor.id, 'logoUrl', reader.result as string); };
+                          reader.readAsDataURL(file);
+                          e.target.value = '';
+                        }} />
+                      </label>
+                    </div>
                     {sponsor.logoUrl && (
-                      <div className="mt-2 p-2 bg-white rounded-lg inline-block">
+                      <div className="mt-2 p-2 bg-white rounded-lg inline-flex items-center gap-2">
                         <img src={sponsor.logoUrl} alt="" style={{ height: 32, maxWidth: 120, objectFit: 'contain' }} onError={(e: any) => { e.target.style.display = 'none'; }} />
+                        <button onClick={() => updateSponsor(sponsor.id, 'logoUrl', '')} className="text-gray-400 hover:text-red-400 transition p-0.5" title="Remove logo">
+                          <X size={12} />
+                        </button>
                       </div>
                     )}
                   </div>
