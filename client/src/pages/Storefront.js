@@ -70,18 +70,21 @@ const Storefront = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [recentlyAdded, setRecentlyAdded] = useState(null);
 
-  const accent = primaryColor || '#D9381E';
+  const [siteSettings, setSiteSettings] = useState({});
+  const accent = primaryColor || siteSettings.brandPrimaryColor || '#D9381E';
   const gold = '#fbbf24';
-  const name = brandName || 'Food Truck';
-  const tagline = brandTagline || 'Low & Slow BBQ';
+  const name = brandName || siteSettings.brandName || 'Food Truck';
+  const tagline = brandTagline || siteSettings.brandTagline || 'Low & Slow BBQ';
 
   useEffect(() => {
     Promise.all([
       api.get('/foodtruck/public/menu').catch(() => ({ data: [] })),
       api.get('/foodtruck/public/cookdays').catch(() => ({ data: [] })),
-    ]).then(([menuRes, cookRes]) => {
+      api.get('/settings').catch(() => ({ data: {} })),
+    ]).then(([menuRes, cookRes, settingsRes]) => {
       setMenuItems(menuRes.data);
       setCookDays(cookRes.data);
+      setSiteSettings(settingsRes.data || {});
       setLoading(false);
     });
   }, []);
@@ -180,6 +183,22 @@ const Storefront = () => {
         {page === 'home' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
 
+            {/* HERO HEADING */}
+            {(siteSettings.heroHeading || siteSettings.heroSubtitle) && (
+              <section style={{ textAlign: 'center', maxWidth: '56rem', margin: '0 auto', padding: '0 1.5rem' }}>
+                {siteSettings.heroHeading && (
+                  <h2 style={{ fontFamily: "'Oswald',sans-serif", fontSize: '2.25rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', marginBottom: '0.75rem', lineHeight: 1.1 }}>
+                    {siteSettings.heroHeading}
+                  </h2>
+                )}
+                {siteSettings.heroSubtitle && (
+                  <p style={{ color: '#d1d5db', fontSize: '1.125rem', lineHeight: 1.6, maxWidth: '40rem', margin: '0 auto' }}>
+                    {siteSettings.heroSubtitle}
+                  </p>
+                )}
+              </section>
+            )}
+
             {/* HERO SPLIT */}
             <section className="sf-hero">
               {/* Left: Catering */}
@@ -256,12 +275,18 @@ const Storefront = () => {
               <div style={{ position: 'absolute', top: 0, left: 0, opacity: 0.08, pointerEvents: 'none', transform: 'translate(-3rem, -3rem)' }}>
                 <Flame size={200} />
               </div>
-              <h2 style={{ fontFamily: "'Oswald',sans-serif", fontSize: '2.5rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', marginBottom: '2rem', lineHeight: 1.1 }}>
-                WE DON'T DO <span style={{ color: accent, fontStyle: 'italic' }}>FAST</span> FOOD.<br/>
-                WE DO <span style={{ color: gold, fontStyle: 'italic' }}>GOOD</span> FOOD.
-              </h2>
+              {siteSettings.philosophyHeading ? (
+                <h2 style={{ fontFamily: "'Oswald',sans-serif", fontSize: '2.5rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', marginBottom: '2rem', lineHeight: 1.1 }}>
+                  {siteSettings.philosophyHeading}
+                </h2>
+              ) : (
+                <h2 style={{ fontFamily: "'Oswald',sans-serif", fontSize: '2.5rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', marginBottom: '2rem', lineHeight: 1.1 }}>
+                  WE DON'T DO <span style={{ color: accent, fontStyle: 'italic' }}>FAST</span> FOOD.<br/>
+                  WE DO <span style={{ color: gold, fontStyle: 'italic' }}>GOOD</span> FOOD.
+                </h2>
+              )}
               <p style={{ color: '#9ca3af', fontSize: '1.125rem', lineHeight: 1.7, maxWidth: '48rem', margin: '0 auto' }}>
-                We're obsessed with the ritual of fire and meat. Every brisket is treated with respect, smoked for 12+ hours over seasoned hardwood until it falls apart at the sight of a fork. This isn't just lunch — it's a religious experience.
+                {siteSettings.philosophyBody || "We're obsessed with the ritual of fire and meat. Every brisket is treated with respect, smoked for 12+ hours over seasoned hardwood until it falls apart at the sight of a fork. This isn't just lunch — it's a religious experience."}
               </p>
               <div className="sf-stats">
                 <div>

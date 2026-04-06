@@ -887,6 +887,8 @@ const FTSettingsManager = () => {
     headerColor: '#d9381e', accentColor: '#eab308',
     footerNote: 'Thank you for your business! If you have questions about this invoice, reply to this email or give us a call.',
     smsTemplate: 'Hi {name}, you have an invoice for ${total} from {business}. Order #{orderNum}. {payLink}',
+    gstEnabled: true,
+    gstRate: 10,
     ...(settings.invoiceTemplate || {}),
   });
   const [newPrize, setNewPrize] = useState('');
@@ -1182,6 +1184,34 @@ const FTSettingsManager = () => {
       <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-5">
         <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Lock size={14} className="text-yellow-400" /> Invoice Template</h3>
         <p className="text-xs text-gray-500">Customise invoices sent via Email and SMS. Payment links are auto-generated from your Square account.</p>
+
+        {/* GST Settings */}
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-green-900/40 border border-green-700/40 flex items-center justify-center">
+              <span className="text-green-400 font-black text-xs">%</span>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">GST (Goods & Services Tax)</p>
+              <p className="text-[10px] text-gray-500">Added automatically to Square payment links and email invoices.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-gray-500 font-bold uppercase">Rate</label>
+              <div className="flex items-center gap-1">
+                <input type="number" min="0" max="100" step="0.5" value={invoice.gstRate ?? 10} onChange={e => setInvoice(i => ({ ...i, gstRate: parseFloat(e.target.value) || 0 }))}
+                  className="w-16 bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm text-center font-mono" />
+                <span className="text-gray-400 text-sm font-bold">%</span>
+              </div>
+            </div>
+            <button onClick={() => setInvoice(i => ({ ...i, gstEnabled: !i.gstEnabled }))}
+              className={`relative w-11 h-6 rounded-full transition-colors ${invoice.gstEnabled ? 'bg-green-600' : 'bg-gray-600'}`}>
+              <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${invoice.gstEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
@@ -1258,9 +1288,21 @@ const FTSettingsManager = () => {
                 <div className="px-4 py-3 flex justify-between text-xs text-gray-300">
                   <span>BBQ Catering Package</span><span className="font-bold text-white">$350.00</span>
                 </div>
+                {invoice.gstEnabled && (
+                  <>
+                    <div className="px-4 py-2 border-t border-gray-700/50 flex justify-between text-xs">
+                      <span className="text-gray-500">Subtotal</span>
+                      <span className="text-gray-300">$350.00</span>
+                    </div>
+                    <div className="px-4 py-1 flex justify-between text-xs">
+                      <span className="text-gray-500">GST ({invoice.gstRate ?? 10}%)</span>
+                      <span className="text-gray-300">${(350 * (invoice.gstRate ?? 10) / 100).toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="px-4 py-2 border-t border-gray-700/50 flex justify-between text-sm font-bold">
-                  <span className="text-gray-400">TOTAL DUE</span>
-                  <span className="text-white">$350.00</span>
+                  <span className="text-gray-400">{invoice.gstEnabled ? 'TOTAL (INCL. GST)' : 'TOTAL DUE'}</span>
+                  <span className="text-white">${invoice.gstEnabled ? (350 * (1 + (invoice.gstRate ?? 10) / 100)).toFixed(2) : '350.00'}</span>
                 </div>
               </div>
               {invoice.bankDetails && (
@@ -2716,7 +2758,7 @@ const FTDevTools = () => {
       <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-4">
         <div>
           <h3 className="text-xs font-bold text-white uppercase tracking-[0.15em] flex items-center gap-2"><Wand2 size={14} className="text-yellow-400" /> AI Configuration (Gemini)<Tip text="Get a free key at aistudio.google.com/apikey. Once saved, Gemini powers: menu descriptions, catering copy, social posts, image prompts, and the Pitmaster AI chat." /></h3>
-          <p className="text-xs text-gray-500 mt-1">Powers Pitmaster Jay chat, social content generation, AI image generation, and strategic recommendations.</p>
+          <p className="text-xs text-gray-500 mt-1">Powers Pitmaster Macca chat, social content generation, AI image generation, and strategic recommendations.</p>
         </div>
         <div className={`flex items-center justify-between p-4 rounded-xl border ${hasGemini ? 'bg-green-950/20 border-green-800/50' : 'bg-gray-800/50 border-gray-700'}`}>
           <div className="flex items-center gap-3">

@@ -507,7 +507,7 @@ const StorefrontHome = () => {
         </div>
       </section>
 
-      {/* --- AI PITMASTER JAY --- */}
+      {/* --- AI PITMASTER MACCA --- */}
       <section data-reveal="scale" className="mx-4">
         <div className="relative rounded-2xl overflow-hidden border border-white/5 group shadow-2xl">
           <div className="absolute inset-0 bg-gray-950"></div>
@@ -522,7 +522,7 @@ const StorefrontHome = () => {
                   <div className="absolute -bottom-0.5 -right-0.5 bg-green-500 w-3 h-3 rounded-full border-2 border-gray-950"></div>
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-lg uppercase tracking-wider">Pitmaster Jay <span className="text-bbq-gold text-[10px] bg-white/5 px-2 py-0.5 rounded ml-2">AI</span></h3>
+                  <h3 className="text-white font-bold text-lg uppercase tracking-wider">Pitmaster Macca <span className="text-bbq-gold text-[10px] bg-white/5 px-2 py-0.5 rounded ml-2">AI</span></h3>
                   <p className="text-gray-500 text-xs">Online &amp; Ready to Help</p>
                 </div>
               </div>
@@ -530,7 +530,7 @@ const StorefrontHome = () => {
                 GOT A <span className="text-bbq-red">BRISKET</span><br />EMERGENCY?
               </h2>
               <p className="text-gray-400 text-base max-w-md leading-relaxed">
-                Ask Jay about temps, wood pairings, resting times, or how to rescue that dry brisket.
+                Ask Macca about temps, wood pairings, resting times, or how to rescue that dry brisket.
               </p>
               <div className="pt-2">
                 <a href="/contact" className="inline-flex items-center gap-2 bg-white text-black font-bold uppercase tracking-widest text-xs px-6 py-3 rounded-full hover:bg-bbq-gold transition-all">

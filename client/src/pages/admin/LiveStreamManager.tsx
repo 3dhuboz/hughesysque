@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '../../components/Toast';
-import { Video, Radio, Play, Eye, Clock, RefreshCw, Loader2, X, ExternalLink, Camera, CameraOff, Mic, MicOff, Square, Upload, Share2, Facebook, Instagram, Check, MessageCircle, Trash2, Ban, Shield } from 'lucide-react';
+import { Video, Radio, Play, Eye, Clock, RefreshCw, Loader2, X, ExternalLink, Camera, CameraOff, Mic, MicOff, Square, Upload, Share2, Facebook, Instagram, Check, MessageCircle, Trash2, Ban, Shield, Image, Plus, Flame } from 'lucide-react';
 import { createLiveInput, getLiveInputs, getStreamStatus, getRecordings, uploadRecording, upsertSocialPost, getChatMessages, deleteChatMessage, banChatUser, unbanChatUser, getChatBans } from '../../services/api';
 
 interface LiveInput {
@@ -59,6 +59,26 @@ const LiveStreamManager: React.FC = () => {
   const [micOn, setMicOn] = useState(true);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
 
+  // Sponsor ticker state
+  const [sponsors, setSponsors] = useState<{id: string; text: string; logoUrl: string}[]>([]);
+  const [scrollSpeed, setScrollSpeed] = useState(1.2);
+  const [showSponsorPanel, setShowSponsorPanel] = useState(false);
+
+  // Simulcast state
+  const [simulcastOutputs, setSimulcastOutputs] = useState<any[]>([]);
+  const [showSimulcast, setShowSimulcast] = useState(false);
+  const [fbRtmpUrl, setFbRtmpUrl] = useState('');
+  const [fbStreamKey, setFbStreamKey] = useState('');
+  const [addingOutput, setAddingOutput] = useState(false);
+
+  // Canvas watermark refs
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasStreamRef = useRef<MediaStream | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const scrollXRef = useRef(0);
+  const sponsorImagesRef = useRef<Record<string, HTMLImageElement>>({});
+  const logoRef = useRef<HTMLImageElement | null>(null);
+
   // Record-only state
   const [isStartingRecording, setIsStartingRecording] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -115,6 +135,238 @@ const LiveStreamManager: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Load business logo for watermark
+  useEffect(() => {
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { logoRef.current = img; };
+    img.src = '/logo.png';
+  }, []);
+
+  // Load sponsors from settings
+  useEffect(() => {
+    const s = (window as any).__hughesysSettings;
+    // Try loading from API settings if available
+    fetch('/api/v1/settings').then(r => r.json()).then(data => {
+      if (Array.isArray(data?.sponsors) && data.sponsors.length > 0) {
+        setSponsors(data.sponsors);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Load sponsor logo images
+  const loadSponsorImage = useCallback((id: string, url: string) => {
+    if (!url) { delete sponsorImagesRef.current[id]; return; }
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { sponsorImagesRef.current[id] = img; };
+    img.onerror = () => { delete sponsorImagesRef.current[id]; };
+    img.src = url;
+  }, []);
+
+  useEffect(() => {
+    sponsors.forEach(s => {
+      if (s.logoUrl && (!sponsorImagesRef.current[s.id] || sponsorImagesRef.current[s.id].src !== s.logoUrl)) {
+        loadSponsorImage(s.id, s.logoUrl);
+      }
+    });
+  }, [sponsors, loadSponsorImage]);
+
+  // Sponsor management
+  const addSponsor = () => setSponsors(prev => [...prev, { id: Date.now().toString(), text: '', logoUrl: '' }]);
+  const removeSponsor = (id: string) => { setSponsors(prev => prev.filter(s => s.id !== id)); delete sponsorImagesRef.current[id]; };
+  const updateSponsor = (id: string, field: string, value: string) => {
+    setSponsors(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+    if (field === 'logoUrl') loadSponsorImage(id, value);
+  };
+  const saveSponsors = async () => {
+    try {
+      await fetch('/api/v1/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ sponsors }) });
+      toast('Sponsors saved!');
+    } catch { toast('Failed to save sponsors', 'error'); }
+  };
+
+  // Simulcast functions
+  const loadSimulcastOutputs = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/v1/stream/simulcast', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setSimulcastOutputs(data.outputs || []);
+    } catch {}
+  };
+
+  const addSimulcastOutput = async () => {
+    if (!fbRtmpUrl.trim() || !fbStreamKey.trim()) { toast('Enter RTMP URL and Stream Key', 'error'); return; }
+    setAddingOutput(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/v1/stream/simulcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ url: fbRtmpUrl.trim(), streamKey: fbStreamKey.trim() }),
+      });
+      if (res.ok) {
+        toast('Simulcast output added!');
+        setFbRtmpUrl(''); setFbStreamKey('');
+        loadSimulcastOutputs();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast((err as any).error || 'Failed to add output', 'error');
+      }
+    } catch { toast('Failed to add output', 'error'); }
+    setAddingOutput(false);
+  };
+
+  const removeSimulcastOutput = async (outputId: string) => {
+    if (!window.confirm('Remove this simulcast destination?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`/api/v1/stream/simulcast?outputId=${outputId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      toast('Output removed');
+      loadSimulcastOutputs();
+    } catch { toast('Failed to remove', 'error'); }
+  };
+
+  const toggleSimulcastOutput = async (outputId: string, enabled: boolean) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch('/api/v1/stream/simulcast', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ outputId, enabled }),
+      });
+      toast(enabled ? 'Simulcast enabled' : 'Simulcast paused');
+      loadSimulcastOutputs();
+    } catch { toast('Failed to toggle', 'error'); }
+  };
+
+  // Delete a recording
+  const deleteRecording = async (uid: string) => {
+    if (!window.confirm('Permanently delete this recording? This cannot be undone.')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/v1/stream/recordings?id=${uid}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        setRecordings(prev => prev.filter(r => r.uid !== uid));
+        toast('Recording deleted');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast((err as any).error || 'Failed to delete', 'error');
+      }
+    } catch { toast('Failed to delete recording', 'error'); }
+  };
+
+  // Build ticker items for canvas drawing
+  const getTickerItems = useCallback(() => {
+    return sponsors.filter(s => s.text || (s.logoUrl && sponsorImagesRef.current[s.id])).map(s => ({
+      text: s.text || '', img: sponsorImagesRef.current[s.id] || null, id: s.id,
+    }));
+  }, [sponsors]);
+
+  // Canvas frame drawing — watermark + sponsor ticker
+  const drawFrame = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.readyState < 2) {
+      animFrameRef.current = requestAnimationFrame(drawFrame);
+      return;
+    }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { animFrameRef.current = requestAnimationFrame(drawFrame); return; }
+    const w = video.videoWidth || 640;
+    const h = video.videoHeight || 480;
+    canvas.width = w;
+    canvas.height = h;
+
+    // Draw raw video
+    ctx.drawImage(video, 0, 0, w, h);
+    const fontSize = Math.max(12, w * 0.025);
+
+    // Top-left: Logo + "HUGHESYS QUE" watermark
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 4;
+    const logoSize = fontSize * 1.8;
+    const logoX = fontSize * 0.5;
+    const logoY = fontSize * 0.4;
+    let textX = logoX;
+    if (logoRef.current) {
+      ctx.drawImage(logoRef.current, logoX, logoY, logoSize, logoSize);
+      textX = logoX + logoSize + fontSize * 0.4;
+    }
+    ctx.font = `bold ${fontSize * 1.2}px Inter, sans-serif`;
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('HUGHESYS QUE', textX, logoY + (logoSize - fontSize * 1.2) / 2);
+    ctx.restore();
+
+    // Bottom: Scrolling sponsor ticker bar
+    const tickerItems = getTickerItems();
+    if (tickerItems.length > 0) {
+      const barHeight = fontSize * 2.2;
+      const barY = h - barHeight;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      ctx.fillRect(0, barY, w, barHeight);
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.6)';
+      ctx.fillRect(0, barY, w, 2);
+      ctx.globalAlpha = 0.9;
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 2;
+
+      const logoH = barHeight * 0.55;
+      const gap = fontSize * 0.5;
+      const spacing = fontSize * 2.5;
+      ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+      const sepWidth = ctx.measureText('  ·  ').width;
+
+      let totalWidth = 0;
+      const measured = tickerItems.map(item => {
+        let itemWidth = 0;
+        let logoW = 0;
+        if (item.img) {
+          const aspect = item.img.naturalWidth / item.img.naturalHeight;
+          logoW = logoH * aspect;
+          itemWidth += logoW;
+          if (item.text) itemWidth += gap;
+        }
+        let textW = 0;
+        if (item.text) { textW = ctx.measureText(item.text).width; itemWidth += textW; }
+        totalWidth += itemWidth;
+        return { ...item, itemWidth, logoW, logoH, textW };
+      });
+      if (measured.length > 1) totalWidth += (measured.length - 1) * (sepWidth + spacing);
+
+      scrollXRef.current -= scrollSpeed;
+      if (scrollXRef.current < -totalWidth - spacing) scrollXRef.current = w;
+      const centerY = barY + barHeight / 2;
+
+      for (let pass = 0; pass < 2; pass++) {
+        let drawX = scrollXRef.current + pass * (totalWidth + w * 0.3 + spacing);
+        for (let i = 0; i < measured.length; i++) {
+          const item = measured[i];
+          if (item.img) { ctx.drawImage(item.img, drawX, centerY - item.logoH / 2, item.logoW, item.logoH); drawX += item.logoW + gap; }
+          if (item.text) { ctx.fillStyle = 'white'; ctx.font = `bold ${fontSize}px Inter, sans-serif`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(item.text, drawX, centerY); drawX += item.textW; }
+          if (i < measured.length - 1) { drawX += spacing * 0.5; ctx.fillStyle = 'rgba(251, 191, 36, 0.7)'; ctx.fillText('·', drawX, centerY); drawX += sepWidth * 0.3 + spacing * 0.5; }
+        }
+      }
+      ctx.restore();
+    }
+
+    animFrameRef.current = requestAnimationFrame(drawFrame);
+  }, [getTickerItems, scrollSpeed]);
+
+  // Re-bind drawFrame when sponsors change
+  useEffect(() => {
+    if ((isBroadcasting || isRecording) && animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = requestAnimationFrame(drawFrame);
+    }
+  }, [drawFrame, isBroadcasting, isRecording]);
+
   const handleCreateInput = async () => {
     setIsCreating(true);
     try {
@@ -147,12 +399,20 @@ const LiveStreamManager: React.FC = () => {
 
       streamRef.current = mediaStream;
 
-      // Show local preview — must explicitly play on mobile
+      // Show local preview in hidden video, draw watermarked frames to canvas
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.muted = true;
         videoRef.current.playsInline = true;
         try { await videoRef.current.play(); } catch {}
+      }
+
+      // Start canvas drawing loop for watermark + sponsor ticker
+      animFrameRef.current = requestAnimationFrame(drawFrame);
+
+      // Capture canvas stream (watermarked video) + raw audio
+      if (canvasRef.current) {
+        canvasStreamRef.current = canvasRef.current.captureStream(30);
       }
 
       // Create peer connection
@@ -162,10 +422,11 @@ const LiveStreamManager: React.FC = () => {
       });
       pcRef.current = pc;
 
-      // Add tracks — video must be added for Cloudflare to accept
-      mediaStream.getTracks().forEach(track => {
-        pc.addTransceiver(track, { direction: 'sendonly' });
-      });
+      // Add watermarked video from canvas + audio from raw stream
+      const canvasVideoTrack = canvasStreamRef.current?.getVideoTracks()[0];
+      const audioTrack = mediaStream.getAudioTracks()[0];
+      if (canvasVideoTrack) pc.addTransceiver(canvasVideoTrack, { direction: 'sendonly' });
+      if (audioTrack) pc.addTransceiver(audioTrack, { direction: 'sendonly' });
 
       // Create offer
       const offer = await pc.createOffer();
@@ -236,6 +497,10 @@ const LiveStreamManager: React.FC = () => {
     // Stop media tracks
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
+    canvasStreamRef.current = null;
+
+    // Stop canvas animation
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
 
     // Close peer connection
     pcRef.current?.close();
@@ -322,12 +587,26 @@ const LiveStreamManager: React.FC = () => {
         try { await videoRef.current.play(); } catch {}
       }
 
+      // Start canvas drawing for watermark
+      animFrameRef.current = requestAnimationFrame(drawFrame);
+
+      // Record from canvas (watermarked) + raw audio
+      let recordStream: MediaStream;
+      if (canvasRef.current) {
+        const canvasStream = canvasRef.current.captureStream(30);
+        const audioTrack = mediaStream.getAudioTracks()[0];
+        if (audioTrack) canvasStream.addTrack(audioTrack);
+        recordStream = canvasStream;
+      } else {
+        recordStream = mediaStream;
+      }
+
       // Pick best supported mime type
       const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
         ? 'video/webm;codecs=vp9,opus'
         : 'video/webm';
 
-      const recorder = new MediaRecorder(mediaStream, { mimeType });
+      const recorder = new MediaRecorder(recordStream, { mimeType });
       mediaRecorderRef.current = recorder;
       recordingChunksRef.current = [];
 
@@ -361,6 +640,9 @@ const LiveStreamManager: React.FC = () => {
     // Stop media tracks
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
+
+    // Stop canvas animation
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
@@ -653,16 +935,9 @@ const LiveStreamManager: React.FC = () => {
       ) : isRecording ? (
         /* RECORDING — show preview + controls */
         <div className="space-y-4">
-          {/* Video preview */}
+          {/* Video preview — canvas with watermark */}
           <div className="relative rounded-2xl overflow-hidden border-2 border-blue-600/60 shadow-[0_0_30px_rgba(37,99,235,0.2)]">
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).play().catch(() => {}); }}
-              className="w-full aspect-video bg-black object-cover"
-            />
+            <canvas ref={canvasRef} className="w-full aspect-video bg-black object-contain" />
 
             {/* Overlay: REC badge + duration */}
             <div className="absolute top-4 left-4 flex items-center gap-3">
@@ -789,7 +1064,7 @@ const LiveStreamManager: React.FC = () => {
       ) : (
         /* BROADCASTING — show preview + controls */
         <div className="space-y-4">
-          {/* Video preview */}
+          {/* Video preview — show canvas (watermarked) over hidden raw video */}
           <div className="relative rounded-2xl overflow-hidden border-2 border-red-600/60 shadow-[0_0_30px_rgba(220,38,38,0.2)]">
             <video
               ref={videoRef}
@@ -797,8 +1072,9 @@ const LiveStreamManager: React.FC = () => {
               muted
               playsInline
               onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).play().catch(() => {}); }}
-              className="w-full aspect-video bg-black object-cover"
+              style={{ display: 'none' }}
             />
+            <canvas ref={canvasRef} className="w-full aspect-video bg-black object-contain" />
 
             {/* Overlay: duration + viewers */}
             <div className="absolute top-4 left-4 flex items-center gap-3">
@@ -925,13 +1201,22 @@ const LiveStreamManager: React.FC = () => {
                     <h5 className="font-bold text-white text-sm truncate">{rec.title || 'Untitled Stream'}</h5>
                     <p className="text-xs text-gray-500 mt-1">{formatDate(rec.created)}</p>
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openShareModal(rec); }}
-                    className="shrink-0 p-1.5 rounded-lg bg-gray-700 hover:bg-bbq-gold hover:text-black text-gray-400 transition"
-                    title="Share to socials"
-                  >
-                    <Share2 size={14} />
-                  </button>
+                  <div className="shrink-0 flex gap-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openShareModal(rec); }}
+                      className="p-1.5 rounded-lg bg-gray-700 hover:bg-bbq-gold hover:text-black text-gray-400 transition"
+                      title="Share to socials"
+                    >
+                      <Share2 size={14} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteRecording(rec.uid); }}
+                      className="p-1.5 rounded-lg bg-gray-700 hover:bg-red-900 text-gray-400 hover:text-red-400 transition"
+                      title="Delete recording"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1035,6 +1320,180 @@ const LiveStreamManager: React.FC = () => {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Sponsor Ticker Management */}
+      <div>
+        <div className="flex justify-between items-center border-b border-gray-700 pb-2 mb-4">
+          <h4 className="font-bold text-lg text-white flex items-center gap-2">
+            <Image size={18} className="text-bbq-gold" />
+            Sponsor Ticker
+          </h4>
+          <div className="flex items-center gap-2">
+            <button onClick={addSponsor} className="text-xs bg-bbq-gold hover:bg-yellow-400 text-black px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold transition">
+              <Plus size={12} /> Add Sponsor
+            </button>
+            <button onClick={() => setShowSponsorPanel(!showSponsorPanel)}
+              className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition ${showSponsorPanel ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}>
+              {showSponsorPanel ? 'Hide' : 'Show'}
+            </button>
+          </div>
+        </div>
+
+        {showSponsorPanel && (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">Logos and text scroll across the bottom of the stream. Add multiple sponsors — they rotate in a ticker.</p>
+
+            {sponsors.length === 0 ? (
+              <div className="text-center py-8 border-2 border-dashed border-gray-800 rounded-lg text-gray-500">
+                <Image size={32} className="mx-auto mb-2 opacity-40" />
+                <p>No sponsors added. Click "Add Sponsor" to include branding in the stream.</p>
+              </div>
+            ) : (
+              sponsors.map((sponsor, idx) => (
+                <div key={sponsor.id} className="bg-gray-800 rounded-xl p-4 border border-gray-700 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Sponsor {idx + 1}</span>
+                    <button onClick={() => removeSponsor(sponsor.id)} className="text-red-400 hover:text-red-300 p-1 transition">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">Name / Text</label>
+                    <input value={sponsor.text} onChange={e => updateSponsor(sponsor.id, 'text', e.target.value)}
+                      placeholder="e.g. Gladstone Meat Co" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">Logo URL</label>
+                    <input value={sponsor.logoUrl} onChange={e => updateSponsor(sponsor.id, 'logoUrl', e.target.value)}
+                      placeholder="https://..." className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm font-mono" />
+                    {sponsor.logoUrl && (
+                      <div className="mt-2 p-2 bg-white rounded-lg inline-block">
+                        <img src={sponsor.logoUrl} alt="" style={{ height: 32, maxWidth: 120, objectFit: 'contain' }} onError={(e: any) => { e.target.style.display = 'none'; }} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+
+            {/* Scroll speed */}
+            <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-xs font-bold text-gray-400">Scroll Speed</label>
+                <span className="text-xs text-gray-500 font-bold">
+                  {scrollSpeed < 0.8 ? 'Slow' : scrollSpeed < 1.5 ? 'Normal' : scrollSpeed < 2.5 ? 'Fast' : 'Very Fast'}
+                </span>
+              </div>
+              <input type="range" min={0.3} max={3.5} step={0.1} value={scrollSpeed}
+                onChange={e => setScrollSpeed(parseFloat(e.target.value))}
+                className="w-full" style={{ accentColor: '#fbbf24' }} />
+            </div>
+
+            {/* Save */}
+            <button onClick={saveSponsors} className="w-full bg-bbq-gold hover:bg-yellow-400 text-black font-bold py-2.5 rounded-lg transition text-sm">
+              Save Sponsors
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Simulcast / Restream to Facebook */}
+      <div>
+        <div className="flex justify-between items-center border-b border-gray-700 pb-2 mb-4">
+          <h4 className="font-bold text-lg text-white flex items-center gap-2">
+            <Radio size={18} className="text-blue-400" />
+            Simulcast to Facebook / YouTube
+          </h4>
+          <button onClick={() => { setShowSimulcast(!showSimulcast); if (!showSimulcast) loadSimulcastOutputs(); }}
+            className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition ${showSimulcast ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}>
+            {showSimulcast ? 'Hide' : 'Configure'}
+          </button>
+        </div>
+
+        {showSimulcast && (
+          <div className="space-y-4">
+            <div className="bg-blue-900/20 border border-blue-700/40 rounded-xl p-4">
+              <p className="text-xs text-blue-300 font-bold mb-2">How it works</p>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                When you go live, Cloudflare automatically restreams to any destinations you add here. Your stream goes to your site AND Facebook/YouTube simultaneously — no extra setup needed each time.
+              </p>
+            </div>
+
+            {/* Existing outputs */}
+            {simulcastOutputs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Active Destinations</p>
+                {simulcastOutputs.map((out: any) => (
+                  <div key={out.uid} className="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3 border border-gray-700">
+                    <div className="min-w-0">
+                      <p className="text-white text-sm font-bold truncate">{out.url}</p>
+                      <p className="text-xs text-gray-500 font-mono truncate">Key: {out.streamKey?.slice(0, 12)}...</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => toggleSimulcastOutput(out.uid, !out.enabled)}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${out.enabled ? 'bg-green-600' : 'bg-gray-600'}`}>
+                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${out.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+                      </button>
+                      <button onClick={() => removeSimulcastOutput(out.uid)}
+                        className="p-1.5 rounded-lg bg-gray-700 hover:bg-red-900 text-gray-400 hover:text-red-400 transition">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add new destination — easy Facebook setup */}
+            <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 space-y-3">
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Add Destination</p>
+
+              {/* Quick setup buttons */}
+              <div className="flex gap-2">
+                <button onClick={() => setFbRtmpUrl('rtmps://live-api-s.facebook.com:443/rtmp/')}
+                  className="flex-1 py-2 rounded-lg bg-blue-900/40 border border-blue-700/40 text-blue-300 text-xs font-bold hover:bg-blue-900/60 transition flex items-center justify-center gap-2">
+                  <Facebook size={14} /> Facebook Live
+                </button>
+                <button onClick={() => setFbRtmpUrl('rtmp://a.rtmp.youtube.com/live2')}
+                  className="flex-1 py-2 rounded-lg bg-red-900/40 border border-red-700/40 text-red-300 text-xs font-bold hover:bg-red-900/60 transition flex items-center justify-center gap-2">
+                  <Video size={14} /> YouTube Live
+                </button>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">RTMP URL</label>
+                <input value={fbRtmpUrl} onChange={e => setFbRtmpUrl(e.target.value)}
+                  placeholder="rtmps://live-api-s.facebook.com:443/rtmp/"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm font-mono" />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">Stream Key</label>
+                <input type="password" value={fbStreamKey} onChange={e => setFbStreamKey(e.target.value)}
+                  placeholder="Paste stream key from Facebook/YouTube..."
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm font-mono" />
+              </div>
+
+              <button onClick={addSimulcastOutput} disabled={addingOutput || !fbRtmpUrl.trim() || !fbStreamKey.trim()}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-lg transition text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+                {addingOutput ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                {addingOutput ? 'Adding...' : 'Add Destination'}
+              </button>
+
+              {/* Helper */}
+              <div className="bg-gray-900/60 border border-gray-700/50 rounded-lg p-3 space-y-2">
+                <p className="text-[10px] text-gray-500 font-bold uppercase">How to get your Facebook Stream Key</p>
+                <ol className="text-[10px] text-gray-500 space-y-1 list-decimal list-inside leading-relaxed">
+                  <li>Go to <a href="https://www.facebook.com/live/producer" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">facebook.com/live/producer</a></li>
+                  <li>Select your Page (Hughesys Que)</li>
+                  <li>Click "Go Live" then look for "Stream Key" under "Use Stream Key"</li>
+                  <li>Copy the Stream Key and paste it above</li>
+                </ol>
+                <p className="text-[10px] text-gray-500 mt-1">The RTMP URL is pre-filled when you click "Facebook Live" above. You only need the stream key.</p>
               </div>
             </div>
           </div>

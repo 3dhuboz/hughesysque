@@ -200,6 +200,8 @@ const normalizePhone = (raw: string): string => {
         orderId: order.id,
         description: `Order #${order.id?.slice(-6) || order.id}`,
         redirectUrl,
+        includeTax: (settings.invoiceTemplate?.gstEnabled ?? settings.invoiceSettings?.gstEnabled) !== false,
+        taxRate: settings.invoiceTemplate?.gstRate ?? settings.invoiceSettings?.gstRate ?? 10,
       };
       const bodyWithItems = {
         ...baseBody,
@@ -265,7 +267,8 @@ const normalizePhone = (raw: string): string => {
     const results: string[] = [];
 
     // Auto-generate Square payment link if Square is connected
-    let invoiceSettingsWithPayLink = { ...settings.invoiceSettings };
+    const gstFields = { gstEnabled: (settings.invoiceTemplate?.gstEnabled ?? settings.invoiceSettings?.gstEnabled) !== false, taxRate: settings.invoiceTemplate?.gstRate ?? settings.invoiceSettings?.gstRate ?? 10 };
+    let invoiceSettingsWithPayLink = { ...settings.invoiceSettings, ...gstFields };
     const squareResult = await generateSquarePaymentLink(order);
     if (squareResult) {
       invoiceSettingsWithPayLink = { ...invoiceSettingsWithPayLink, paymentUrl: squareResult.url, paymentLabel: invoiceSettingsWithPayLink?.paymentLabel || 'Pay Now' };
@@ -450,7 +453,8 @@ const normalizePhone = (raw: string): string => {
           };
 
           // Auto-generate Square payment link if Square is connected
-          let invoiceSettingsWithPayLink = { ...settings.invoiceSettings };
+          const gstFields2 = { gstEnabled: (settings.invoiceTemplate?.gstEnabled ?? settings.invoiceSettings?.gstEnabled) !== false, taxRate: settings.invoiceTemplate?.gstRate ?? settings.invoiceSettings?.gstRate ?? 10 };
+          let invoiceSettingsWithPayLink = { ...settings.invoiceSettings, ...gstFields2 };
           const squareResult = await generateSquarePaymentLink(editingOrder);
           if (squareResult) {
               invoiceSettingsWithPayLink = { ...invoiceSettingsWithPayLink, paymentUrl: squareResult.url, paymentLabel: invoiceSettingsWithPayLink?.paymentLabel || 'Pay Now' };

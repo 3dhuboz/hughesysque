@@ -156,7 +156,7 @@ const Pitmaster: React.FC = () => {
                 onClick={() => setActiveTab('ai')}
                 className={`px-4 py-2 rounded-t-lg font-bold flex items-center gap-2 ${activeTab === 'ai' ? 'bg-bbq-red text-white' : 'bg-transparent text-gray-400 hover:text-white'}`}
             >
-                <MessageSquare size={18} /> Ask Jay
+                <MessageSquare size={18} /> Ask Macca
             </button>
         </div>
 

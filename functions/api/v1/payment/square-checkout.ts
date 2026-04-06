@@ -28,7 +28,7 @@ export const onRequest = async (context: any) => {
 
   try {
     const sq = await getSquareSettings(env);
-    const { amount, currency, orderId, description, redirectUrl, items } = await request.json();
+    const { amount, currency, orderId, description, redirectUrl, items, includeTax, taxRate } = await request.json();
 
     if (!amount) return json({ error: 'Missing required field: amount' }, 400);
 
@@ -58,12 +58,30 @@ export const onRequest = async (context: any) => {
 
       if (lineItems.length > 0) {
         const refId = orderId ? orderId.substring(0, 40) : undefined;
+
+        // Add GST (10%) as a tax on the order if requested
+        const taxes: any[] = [];
+        if (includeTax !== false) {
+          const pct = String(taxRate || 10);
+          taxes.push({
+            uid: 'gst_10',
+            name: 'GST',
+            percentage: pct,
+            scope: 'ORDER',
+          });
+          // Apply tax to each line item
+          for (const li of lineItems) {
+            li.applied_taxes = [{ tax_uid: 'gst_10' }];
+          }
+        }
+
         requestBody = {
           idempotency_key: idempotencyKey,
           order: {
             location_id: sq.locationId,
             ...(refId ? { reference_id: refId } : {}),
             line_items: lineItems,
+            ...(taxes.length > 0 ? { taxes } : {}),
           },
           checkout_options: {
             allow_tipping: false,
@@ -76,11 +94,14 @@ export const onRequest = async (context: any) => {
 
     if (!requestBody) {
       usedQuickPay = true;
+      // For quick_pay, if GST is needed, add it to the amount
+      const gstMultiplier = includeTax !== false ? 1 + (Number(taxRate || 10) / 100) : 1;
+      const totalWithTax = Math.round(amount * gstMultiplier * 100);
       requestBody = {
         idempotency_key: idempotencyKey,
         quick_pay: {
-          name: description || `Order #${(orderId || '').slice(-6)}`,
-          price_money: { amount: Math.round(amount * 100), currency: cur },
+          name: `${description || `Order #${(orderId || '').slice(-6)}`}${gstMultiplier > 1 ? ' (incl. GST)' : ''}`,
+          price_money: { amount: totalWithTax, currency: cur },
           location_id: sq.locationId,
         },
         checkout_options: {

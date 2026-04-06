@@ -4,7 +4,7 @@ import {
   Plus, Edit, Trash2, ChevronDown, ChevronUp, DollarSign, Clock,
   CheckCircle, XCircle, Package, MapPin, Search, Filter,
   TrendingUp, AlertCircle, Eye, ChefHat, Settings, Save, Loader2,
-  Palette, Globe, Image, Layers, ExternalLink
+  Palette, Globe, Image, Layers, ExternalLink, Flame, CreditCard, Check, Copy
 } from 'lucide-react';
 import api from '../api';
 import toast from 'react-hot-toast';
@@ -642,6 +642,32 @@ const FoodTruck = () => {
                   </div>
                 </div>
 
+                {/* Homepage Content */}
+                <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
+                  <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#d1d5db', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Flame size={16} style={{ color: '#ef4444' }} /> Homepage Content
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-group">
+                      <label>Hero Heading</label>
+                      <input value={siteSettings.heroHeading || ''} onChange={e => updateSetting('heroHeading', e.target.value)} placeholder="Slow-Smoked BBQ Built on Craft, Community and Heart" />
+                    </div>
+                    <div className="form-group">
+                      <label>Hero Subtitle</label>
+                      <input value={siteSettings.heroSubtitle || ''} onChange={e => updateSetting('heroSubtitle', e.target.value)} placeholder="Award-winning BBQ catering crafted with experience..." />
+                    </div>
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label>Philosophy Heading</label>
+                      <input value={siteSettings.philosophyHeading || ''} onChange={e => updateSetting('philosophyHeading', e.target.value)} placeholder="WE DON'T DO FAST FOOD. WE DO GOOD FOOD." />
+                      <span style={{ fontSize: '0.6875rem', color: '#6b7280', marginTop: '0.25rem', display: 'block' }}>Leave blank for default. Shows in bold on homepage.</span>
+                    </div>
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label>Philosophy Description</label>
+                      <textarea value={siteSettings.philosophyBody || ''} onChange={e => updateSetting('philosophyBody', e.target.value)} placeholder="We're obsessed with the ritual of fire and meat..." rows={3} style={{ resize: 'vertical' }} />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Business Info */}
                 <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
                   <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#d1d5db', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -672,6 +698,46 @@ const FoodTruck = () => {
                       <label>ABN</label>
                       <input value={siteSettings.businessABN || ''} onChange={e => updateSetting('businessABN', e.target.value)} placeholder="12 345 678 901" />
                     </div>
+                  </div>
+                </div>
+
+                {/* Square Payments */}
+                <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
+                  <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#d1d5db', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <CreditCard size={16} style={{ color: '#10b981' }} /> Square Payments
+                  </h3>
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem' }}>
+                    Connect your Square account to accept card payments for orders and catering deposits.
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: siteSettings.squareAccessToken ? 'rgba(16,185,129,0.08)' : 'rgba(107,114,128,0.08)', border: `1px solid ${siteSettings.squareAccessToken ? 'rgba(16,185,129,0.3)' : 'rgba(107,114,128,0.3)'}`, borderRadius: '0.75rem', marginBottom: '1rem' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '0.5rem', background: siteSettings.squareAccessToken ? 'rgba(16,185,129,0.15)' : 'rgba(107,114,128,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <CreditCard size={16} style={{ color: siteSettings.squareAccessToken ? '#10b981' : '#6b7280' }} />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#fff' }}>Square</p>
+                      <p style={{ fontSize: '0.6875rem', color: siteSettings.squareAccessToken ? '#10b981' : '#6b7280' }}>
+                        {siteSettings.squareAccessToken ? '● Connected' : 'Not connected'}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-group">
+                      <label>Application ID</label>
+                      <input value={siteSettings.squareApplicationId || ''} onChange={e => updateSetting('squareApplicationId', e.target.value)} placeholder="sq0idp-..." style={{ fontFamily: 'monospace', fontSize: '0.8rem' }} />
+                    </div>
+                    <div className="form-group">
+                      <label>Location ID</label>
+                      <input value={siteSettings.squareLocationId || ''} onChange={e => updateSetting('squareLocationId', e.target.value)} placeholder="LEG88M0C3BZA..." style={{ fontFamily: 'monospace', fontSize: '0.8rem' }} />
+                    </div>
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label>Access Token</label>
+                      <input type="password" value={siteSettings.squareAccessToken || ''} onChange={e => updateSetting('squareAccessToken', e.target.value)} placeholder="EAAAl..." style={{ fontFamily: 'monospace', fontSize: '0.8rem' }} />
+                    </div>
+                  </div>
+                  <div style={{ padding: '0.75rem', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '0.5rem', marginTop: '0.5rem' }}>
+                    <p style={{ fontSize: '0.6875rem', color: '#6b7280' }}>
+                      Get your keys from <a href="https://developer.squareup.com/apps" target="_blank" rel="noreferrer" style={{ color: '#10b981', textDecoration: 'underline' }}>developer.squareup.com/apps</a>. Use <strong style={{ color: '#fff' }}>Production</strong> credentials for live payments (Access Token starts with <code style={{ color: '#fbbf24' }}>EAAA</code>).
+                    </p>
                   </div>
                 </div>
 

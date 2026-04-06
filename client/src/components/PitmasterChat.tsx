@@ -10,7 +10,7 @@ interface ChatMessage {
 
 const PitmasterChat: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
-      { role: 'model', text: "G'day! It's Jay here (well, the digital version of me). I've got the smoker rolling on Ironbark. What can I help you with?" }
+      { role: 'model', text: "G'day! It's Macca here (well, the digital version of me). I've got the smoker rolling on Ironbark. What can I help you with?" }
   ]);
   const [chatInput, setChatInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -40,8 +40,8 @@ const PitmasterChat: React.FC = () => {
                 <Bot className="text-white" size={24} />
             </div>
             <div>
-                <h3 className="font-bold text-white text-lg leading-none">Pitmaster Jay (AI)</h3>
-                <p className="text-xs text-bbq-gold font-mono uppercase tracking-widest mt-1">Powered by Ironbark & Jay's Brain</p>
+                <h3 className="font-bold text-white text-lg leading-none">Pitmaster Macca (AI)</h3>
+                <p className="text-xs text-bbq-gold font-mono uppercase tracking-widest mt-1">Powered by Ironbark & Macca's Brain</p>
             </div>
         </div>
         
@@ -51,7 +51,7 @@ const PitmasterChat: React.FC = () => {
                     <div className={`max-w-[85%] rounded-2xl p-4 shadow-md ${msg.role === 'user' ? 'bg-bbq-red text-white rounded-tr-none' : 'bg-gray-800 text-gray-200 border border-gray-700 rounded-tl-none'}`}>
                         <div className="flex items-center gap-2 mb-2 opacity-50 text-[10px] uppercase font-bold tracking-widest">
                             {msg.role === 'user' ? <User size={10}/> : <Flame size={10}/>}
-                            {msg.role === 'user' ? 'You' : 'Jay'}
+                            {msg.role === 'user' ? 'You' : 'Macca'}
                         </div>
                         <div className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</div>
                     </div>
@@ -60,7 +60,7 @@ const PitmasterChat: React.FC = () => {
             {isTyping && (
                 <div className="flex justify-start">
                     <div className="bg-gray-800 text-gray-400 text-xs p-3 rounded-xl border border-gray-700 italic flex items-center gap-2">
-                        <Loader2 className="animate-spin" size={12}/> Jay is thinking...
+                        <Loader2 className="animate-spin" size={12}/> Macca is thinking...
                     </div>
                 </div>
             )}
@@ -70,7 +70,7 @@ const PitmasterChat: React.FC = () => {
             <input 
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
-                placeholder="Ask Jay about brisket temps, resting times, or wood types..."
+                placeholder="Ask Macca about brisket temps, resting times, or wood types..."
                 className="flex-1 bg-gray-900 border border-gray-600 rounded-xl p-4 text-white focus:border-bbq-red outline-none transition placeholder:text-gray-600"
             />
             <button 

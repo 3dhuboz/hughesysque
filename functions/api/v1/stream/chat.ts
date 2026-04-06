@@ -9,6 +9,7 @@ function rowToChatMessage(r: any) {
     message: r.message,
     createdAt: r.created_at,
     isAdmin: !!r.is_admin,
+    isPinned: !!r.is_pinned,
   };
 }
 
@@ -69,6 +70,28 @@ export const onRequest = async (context: any) => {
         // Delete all messages from this user
         await db.prepare('DELETE FROM live_chat WHERE user_name = ?').bind(userName).run();
         return json({ success: true, banned: userName });
+      }
+
+      // Pin a message (admin only) — only one pinned at a time
+      if (body.action === 'pin') {
+        const auth = await verifyAuth(request, env);
+        requireAuth(auth, 'ADMIN');
+        const { messageId } = body;
+        if (!messageId) return json({ error: 'messageId is required' }, 400);
+        // Unpin all, then pin target
+        await db.prepare('UPDATE live_chat SET is_pinned = 0 WHERE is_pinned = 1').run();
+        await db.prepare('UPDATE live_chat SET is_pinned = 1 WHERE id = ?').bind(messageId).run();
+        return json({ success: true, pinned: messageId });
+      }
+
+      // Unpin a message (admin only)
+      if (body.action === 'unpin') {
+        const auth = await verifyAuth(request, env);
+        requireAuth(auth, 'ADMIN');
+        const { messageId } = body;
+        if (!messageId) return json({ error: 'messageId is required' }, 400);
+        await db.prepare('UPDATE live_chat SET is_pinned = 0 WHERE id = ?').bind(messageId).run();
+        return json({ success: true, unpinned: messageId });
       }
 
       // Unban a user (admin only)

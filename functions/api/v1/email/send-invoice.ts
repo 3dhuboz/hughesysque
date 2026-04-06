@@ -23,7 +23,12 @@ export const onRequest = async (context: any) => {
     const footerNote = inv.footerNote || 'Thank you for your business! If you have questions about this invoice, reply to this email or give us a call.';
     const bankDetails = inv.bankDetails || '';
     const orderNum = order.id?.slice(-6) || order.id || '000000';
-    const total = Number(order.total || 0).toFixed(2);
+    const subtotal = Number(order.total || 0);
+    const gstEnabled = inv.gstEnabled !== false;
+    const gstRate = Number(inv.taxRate ?? 10);
+    const gstAmount = gstEnabled ? Math.round(subtotal * (gstRate / 100) * 100) / 100 : 0;
+    const totalWithGst = (subtotal + gstAmount).toFixed(2);
+    const total = totalWithGst;
 
     const itemsRows = (order.items || []).map((item: any) => {
       const itemName = item.item?.name || item.name || 'Item';
@@ -67,7 +72,7 @@ export const onRequest = async (context: any) => {
         </td></tr>
       </table>`;
     } else {
-      paymentSection = `<p style="text-align:center;color:${accentColor};font-size:22px;font-weight:bold;padding:16px 0;">Amount Due: $${total}</p>`;
+      paymentSection = `<p style="text-align:center;color:${accentColor};font-size:22px;font-weight:bold;padding:16px 0;">Amount Due${gstEnabled ? ' (incl. GST)' : ''}: $${total}</p>`;
     }
 
     const html = `<!DOCTYPE html>
@@ -107,9 +112,19 @@ export const onRequest = async (context: any) => {
           </table>
         </td></tr>
         <tr><td style="background-color:#ffffff;padding:8px 28px 0;border-left:1px solid #e5e5e5;border-right:1px solid #e5e5e5;">
+          ${gstEnabled ? `<table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding:8px 0;font-size:14px;color:#666666;">Subtotal</td>
+              <td style="padding:8px 0;font-size:14px;color:#333333;text-align:right;">$${subtotal.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td style="padding:4px 0;font-size:14px;color:#666666;">GST (${gstRate}%)</td>
+              <td style="padding:4px 0;font-size:14px;color:#333333;text-align:right;">$${gstAmount.toFixed(2)}</td>
+            </tr>
+          </table>` : ''}
           <table width="100%" cellpadding="0" cellspacing="0" style="border-top:2px solid #222222;">
             <tr>
-              <td style="padding:14px 0;font-size:18px;font-weight:bold;color:#111111;">Total Due</td>
+              <td style="padding:14px 0;font-size:18px;font-weight:bold;color:#111111;">${gstEnabled ? 'Total Due (incl. GST)' : 'Total Due'}</td>
               <td style="padding:14px 0;font-size:20px;font-weight:bold;color:${headerColor};text-align:right;">$${total}</td>
             </tr>
           </table>
@@ -124,7 +139,7 @@ export const onRequest = async (context: any) => {
   </table>
 </body></html>`;
 
-    const text = `Invoice from ${name}\n\nHey ${order.customerName || 'there'},\n\n${thankYou}\n\nOrder #${orderNum}\nDate: ${cookDate}\nTotal: $${total}\n\n${paymentUrl ? `${paymentLabel}: ${paymentUrl}` : bankDetails || 'Please arrange payment at your earliest convenience.'}\n\n${footerNote}\n\n— ${name}`;
+    const text = `Invoice from ${name}\n\nHey ${order.customerName || 'there'},\n\n${thankYou}\n\nOrder #${orderNum}\nDate: ${cookDate}\n${gstEnabled ? `Subtotal: $${subtotal.toFixed(2)}\nGST (${gstRate}%): $${gstAmount.toFixed(2)}\nTotal (incl. GST): $${total}` : `Total: $${total}`}\n\n${paymentUrl ? `${paymentLabel}: ${paymentUrl}` : bankDetails || 'Please arrange payment at your earliest convenience.'}\n\n${footerNote}\n\n— ${name}`;
 
     await sendEmail(env, settings, order.customerEmail, `Invoice #${orderNum}: $${total} — ${name}`, text, html);
     return json({ success: true });
