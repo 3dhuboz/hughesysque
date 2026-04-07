@@ -726,10 +726,11 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
       {/* --- GENERAL CONFIGURATION --- */}
       <section className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
           <h4 className="text-xl font-bold mb-6 flex items-center gap-2"><Settings size={20} className="text-gray-400"/> General Configuration</h4>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                  <label className="flex items-center gap-3 cursor-pointer bg-black/20 p-3 rounded border border-gray-700">
+
+          <div className="space-y-4">
+              <ImageSettingRow label="Logo" settingKey="logoUrl" prompt="BBQ restaurant logo, vector style, minimal" maxWidth={400} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="flex items-center gap-3 cursor-pointer bg-black/20 p-3 rounded border border-gray-700 md:col-span-2">
                       <input 
                           type="checkbox"
                           checked={formData.maintenanceMode}
@@ -840,10 +841,6 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                           placeholder="https://www.tiktok.com/@..."
                       />
                   </div>
-              </div>
-
-              <div className="space-y-4">
-                  <ImageSettingRow label="Logo URL" settingKey="logoUrl" prompt="BBQ restaurant logo, vector style, minimal" maxWidth={400} />
               </div>
           </div>
       </section>
