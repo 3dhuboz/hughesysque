@@ -805,33 +805,29 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                       />
                   </div>
                   <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Hero Tagline</label>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Hero Tagline <span className="text-gray-600 normal-case font-normal">— text below hero image</span></label>
                       <textarea
-                          value={formData.heroTagline || ''}
+                          value={formData.heroTagline ?? 'Real fire. Real smoke. Real flavour. From backyard birthdays to corporate blowouts — we bring the pit to you.'}
                           onChange={e => setFormData({ ...formData, heroTagline: e.target.value })}
                           className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white text-sm"
-                          placeholder="Real fire. Real smoke. Real flavour. From backyard birthdays to corporate blowouts — we bring the pit to you."
                           rows={2}
                       />
-                      <p className="text-[10px] text-gray-600 mt-1">Shows below the hero heading on the homepage. Leave blank for default.</p>
                   </div>
                   <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Philosophy Heading</label>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Philosophy Heading <span className="text-gray-600 normal-case font-normal">— bold text mid-page</span></label>
                       <input
-                          value={formData.philosophyHeading || ''}
+                          value={formData.philosophyHeading ?? "WE DON'T DO FAST FOOD. WE DO GOOD FOOD."}
                           onChange={e => setFormData({ ...formData, philosophyHeading: e.target.value })}
                           className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
-                          placeholder="WE DON'T DO FAST FOOD. WE DO GOOD FOOD."
                       />
-                      <p className="text-[10px] text-gray-600 mt-1">Leave blank for the styled default with red/gold text.</p>
+                      <p className="text-[10px] text-gray-600 mt-1">Clear the field to use the styled default with red/gold colours.</p>
                   </div>
                   <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Philosophy Description</label>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Philosophy Description <span className="text-gray-600 normal-case font-normal">— paragraph below heading</span></label>
                       <textarea
-                          value={formData.philosophyBody || ''}
+                          value={formData.philosophyBody ?? `${formData.businessName || 'Hughesys Que'} is a family owned operation obsessed with the ritual of fire and meat. We treat every cut with respect, smoking it low and slow over seasoned hardwood until it falls apart at the sight of a fork.`}
                           onChange={e => setFormData({ ...formData, philosophyBody: e.target.value })}
                           className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white text-sm"
-                          placeholder="Hughesys Que is a family owned operation obsessed with the ritual of fire and meat..."
                           rows={3}
                       />
                   </div>
