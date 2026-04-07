@@ -33,7 +33,7 @@ export function toLocalDateStr(date: Date): string {
 
 /**
  * Check if an event's ordering window has passed, based on event type:
- * - ORDER_PICKUP (cook day): 24hrs before (midnight the day before)
+ * - ORDER_PICKUP (cook day): orders open until event end time (close of cook day)
  * - PUBLIC_EVENT (pop-up): 1hr before the event's end time
  * - BLOCKED: always past cutoff
  */
@@ -43,12 +43,16 @@ export function isEventPastCutoff(event: { date: string; type: string; endTime?:
   if (event.type === 'BLOCKED') return true;
 
   if (event.type === 'ORDER_PICKUP') {
-    // Cutoff = midnight the day before the cook date
+    // Cutoff = event end time on cook day (orders open until close)
     const cookDate = parseLocalDate(event.date);
-    const cutoff = new Date(cookDate);
-    cutoff.setHours(0, 0, 0, 0);
-    cutoff.setDate(cutoff.getDate() - 1);
-    return now > cutoff;
+    if (event.endTime) {
+      const [h, m] = event.endTime.split(':').map(Number);
+      cookDate.setHours(h, m || 0, 0, 0);
+    } else {
+      // No end time — default to end of day
+      cookDate.setHours(23, 59, 0, 0);
+    }
+    return now > cookDate;
   }
 
   if (event.type === 'PUBLIC_EVENT') {

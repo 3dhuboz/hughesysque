@@ -332,12 +332,10 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
 
   const isDatePastCutoff = (dateStr: string, event?: CalendarEvent): boolean => {
     if (event) return isEventPastCutoff(event);
-    // Fallback for cook days when no event object passed: 24hrs before
+    // Fallback: orders open until end of cook day
     const cookDate = parseLocalDate(dateStr);
-    const cutoff = new Date(cookDate);
-    cutoff.setHours(0, 0, 0, 0);
-    cutoff.setDate(cutoff.getDate() - 1);
-    return new Date() > cutoff;
+    cookDate.setHours(23, 59, 0, 0);
+    return new Date() > cookDate;
   };
 
   const checkAvailability = (dateStr: string): boolean => {
