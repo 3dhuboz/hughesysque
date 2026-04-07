@@ -360,6 +360,19 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
       setUser(updated);
       await updateUserProfile(updated);
     }
+
+    // Auto-add Golden Ticket stamp for any purchase meeting minimum
+    if (user && settings.rewards?.enabled) {
+      const minPurchase = settings.rewards.minPurchase || 0;
+      const orderTotal = Number(order.total || 0);
+      if (orderTotal >= minPurchase) {
+        const stamps = user.stamps || 0;
+        const updated = { ...user, stamps: stamps + 1 };
+        setUser(updated);
+        updateUserProfile(updated);
+      }
+    }
+
     clearCart();
   };
 

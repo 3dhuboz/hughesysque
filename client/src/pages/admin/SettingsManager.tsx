@@ -1469,6 +1469,28 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                           />
                           <p className="text-[10px] text-gray-500 mt-1">Stamps needed to earn a prize.</p>
                       </div>
+                      <div>
+                          <label className="text-xs font-bold text-gray-500 uppercase">Min Purchase for Stamp ($)</label>
+                          <input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={formData.rewards?.minPurchase ?? 0}
+                              onChange={e => setFormData({ ...formData, rewards: { ...formData.rewards, minPurchase: parseFloat(e.target.value) || 0 } })}
+                              className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                              placeholder="0"
+                          />
+                          <p className="text-[10px] text-gray-500 mt-1">Minimum order total to earn a stamp. Set to 0 for any purchase.</p>
+                      </div>
+                  </div>
+              </div>
+
+              {/* Auto-stamp info */}
+              <div className="bg-green-900/20 border border-green-700/30 rounded-xl p-4 flex items-start gap-3">
+                  <Gift size={16} className="text-green-400 shrink-0 mt-0.5" />
+                  <div>
+                      <p className="text-sm text-green-300 font-bold">Auto-stamp on purchase</p>
+                      <p className="text-xs text-gray-400 mt-1">Stamps are automatically added for every online order{(formData.rewards?.minPurchase ?? 0) > 0 ? ` over $${formData.rewards?.minPurchase}` : ''}. Staff can also manually add stamps at the counter using the PIN.</p>
                   </div>
               </div>
 
