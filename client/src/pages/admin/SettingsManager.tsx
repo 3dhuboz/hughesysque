@@ -23,7 +23,7 @@ interface LogEntry {
 
 // Helper to compress base64 images to avoid large payloads
 // Updated: Supports custom max width for variable target sizes (prizes vs hero images)
-const compressImage = (base64Str: string, maxWidth = 700, quality = 0.5) => {
+const compressImage = (base64Str: string, maxWidth = 500, quality = 0.4) => {
     return new Promise<string>((resolve) => {
         const img = new Image();
         img.src = base64Str;
@@ -461,7 +461,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
       const prompt = `${promptContext} High quality, appetizing, professional photography, cinematic lighting.`;
       const base64 = await generateMarketingImage(prompt);
       if (base64) {
-          const compressed = await compressImage(base64, 700, 0.5);
+          const compressed = await compressImage(base64, 500, 0.35);
           setFormData(prev => ({ ...prev, [field]: compressed }));
       } else {
           toast('Could not generate image. Please check API key or try again.', 'error');
@@ -622,7 +622,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
   };
 
   // Helper Component for Image Row
-  const ImageSettingRow = ({ label, settingKey, prompt, maxWidth = 1200 }: { label: string, settingKey: keyof AppSettings, prompt: string, maxWidth?: number }) => {
+  const ImageSettingRow = ({ label, settingKey, prompt, maxWidth = 500 }: { label: string, settingKey: keyof AppSettings, prompt: string, maxWidth?: number }) => {
       const inputId = `upload-${settingKey}`;
 
       const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -632,7 +632,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
           const reader = new FileReader();
           reader.onloadend = async () => {
               const base64 = reader.result as string;
-              const compressed = await compressImage(base64, maxWidth, 0.7);
+              const compressed = await compressImage(base64, maxWidth, 0.4);
               setFormData(prev => ({ ...prev, [settingKey]: compressed }));
           };
           reader.readAsDataURL(file);
