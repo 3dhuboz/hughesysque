@@ -141,9 +141,81 @@ const MenuManager: React.FC = () => {
      setIsGeneratingImage(false);
   };
 
+  const [showStocktake, setShowStocktake] = useState(false);
+
+  const handleSetStock = (itemId: string, stock: number | null) => {
+    const item = menu.find(m => m.id === itemId);
+    if (!item) return;
+    updateMenuItem({ ...item, stock, available: stock === null || stock > 0 } as MenuItem);
+  };
+
+  const handleResetAllStock = () => {
+    if (!window.confirm('Reset all stock levels? Items will be marked as available.')) return;
+    menu.forEach(item => {
+      if (item.stock != null || item.available === false) {
+        updateMenuItem({ ...item, stock: null, available: true } as MenuItem);
+      }
+    });
+    toast('All stock reset');
+  };
+
   return (
     <div className="space-y-6">
-      
+
+      {/* STOCKTAKE — Quick stock level management */}
+      <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+        <button onClick={() => setShowStocktake(!showStocktake)}
+          className="w-full flex justify-between items-center p-4 hover:bg-gray-800/80 transition">
+          <div className="flex items-center gap-2">
+            <Package size={18} className="text-bbq-gold" />
+            <span className="font-bold text-white">Day's Stocktake</span>
+            <span className="text-xs text-gray-500">
+              {menu.filter(m => m.stock != null && m.stock > 0).length} items stocked · {menu.filter(m => m.available === false || (m.stock != null && m.stock <= 0)).length} sold out
+            </span>
+          </div>
+          {showStocktake ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+        </button>
+
+        {showStocktake && (
+          <div className="border-t border-gray-700 p-4 space-y-3">
+            <div className="flex justify-between items-center">
+              <p className="text-xs text-gray-500">Set stock quantities for today's trade. Items hitting 0 are automatically marked sold out.</p>
+              <button onClick={handleResetAllStock} className="text-xs text-gray-400 hover:text-white border border-gray-700 px-3 py-1.5 rounded-lg transition">
+                Reset All
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {menu.filter(m => !m.isCatering && m.category !== 'Catering').map(item => (
+                <div key={item.id} className={`flex items-center gap-3 p-3 rounded-lg border ${item.available === false || (item.stock != null && item.stock <= 0) ? 'bg-red-950/20 border-red-800/30' : 'bg-gray-900/50 border-gray-700'}`}>
+                  <img src={item.image || PLACEHOLDER_IMG} alt="" className="w-8 h-8 rounded object-cover shrink-0" onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white truncate">{item.name}</p>
+                    <p className="text-[10px] text-gray-500">{item.category} · ${item.price}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <input
+                      type="number"
+                      min={0}
+                      value={item.stock ?? ''}
+                      onChange={e => {
+                        const val = e.target.value === '' ? null : parseInt(e.target.value);
+                        handleSetStock(item.id, val);
+                      }}
+                      placeholder="∞"
+                      className="w-16 bg-gray-800 border border-gray-700 rounded p-1.5 text-white text-sm text-center font-mono"
+                      title="Stock quantity (blank = unlimited)"
+                    />
+                    {(item.stock != null && item.stock <= 0) && (
+                      <span className="text-[9px] font-black text-red-400 uppercase">Out</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* GUIDE SECTION */}
       <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
           <button 
@@ -527,13 +599,17 @@ const MenuManager: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {menu.map(item => (
-          <div key={item.id} className="flex justify-between items-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+          <div key={item.id} className={`flex justify-between items-center p-4 rounded-lg border ${item.available === false ? 'bg-red-950/20 border-red-800/40 opacity-70' : 'bg-gray-800/50 border-gray-700'}`}>
             <div className="flex items-center gap-4">
-              <img src={item.image || PLACEHOLDER_IMG} alt={item.name} className="w-12 h-12 rounded object-cover" onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
+              <div className="relative">
+                <img src={item.image || PLACEHOLDER_IMG} alt={item.name} className="w-12 h-12 rounded object-cover" onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
+                {item.available === false && <div className="absolute inset-0 bg-black/50 rounded flex items-center justify-center"><span className="text-[8px] font-black text-red-400 uppercase">Sold Out</span></div>}
+              </div>
               <div>
                 <div className="font-bold flex items-center gap-2">
                     {item.name}
                     {item.isPack && <span className="text-[10px] bg-purple-900 text-purple-200 px-1 rounded border border-purple-500">PACK</span>}
+                    {item.available === false && <span className="text-[10px] bg-red-900 text-red-200 px-1.5 py-0.5 rounded border border-red-600">SOLD OUT</span>}
                 </div>
                 <div className="text-sm text-gray-400">
                     ${item.price} • {item.category}
@@ -552,14 +628,21 @@ const MenuManager: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button 
+              <button
+                onClick={() => updateMenuItem({ ...item, available: item.available === false ? true : false })}
+                className={`p-2 rounded transition ${item.available === false ? 'text-red-400 hover:text-green-400 bg-red-900/20' : 'text-green-400 hover:text-red-400'}`}
+                title={item.available === false ? 'Mark as available' : 'Mark as sold out'}
+              >
+                {item.available === false ? <Package size={18} /> : <CheckSquare size={18} />}
+              </button>
+              <button
                 onClick={() => { setIsEditing(true); setEditItem(item); }}
                 className="p-2 text-gray-400 hover:text-white"
                 title="Edit"
               >
                 <Edit2 size={18} />
               </button>
-              <button 
+              <button
                 onClick={() => { if (window.confirm(`Delete "${item.name}"? This cannot be undone.`)) deleteMenuItem(item.id); }}
                 className="p-2 text-red-500 hover:text-red-300 hover:bg-red-900/30 rounded"
                 title="Delete"

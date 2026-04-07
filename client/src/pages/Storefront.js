@@ -352,15 +352,20 @@ const Storefront = () => {
                     <div className="sf-cat-line" />
                   </div>
                   <div className="sf-menu-grid">
-                    {items.map(item => (
-                      <div key={item._id} className="sf-menu-card" onClick={() => setSelectedItem(item)}>
+                    {items.map(item => {
+                      const isSoldOut = item.available === false || (item.stock != null && item.stock <= 0);
+                      return (
+                      <div key={item._id} className="sf-menu-card" style={isSoldOut ? { opacity: 0.5, pointerEvents: 'none' } : {}} onClick={() => !isSoldOut && setSelectedItem(item)}>
                         <div className="sf-menu-card-img">
                           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4), transparent)', zIndex: 10 }} />
                           <img src={item.image || PLACEHOLDER_IMG} alt={item.name} onError={e => { e.target.src = PLACEHOLDER_IMG; }} />
-                          {item.tags?.includes('popular') && (
+                          {isSoldOut && (
+                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.8)', color: '#ef4444', fontSize: '0.875rem', fontWeight: 800, padding: '0.5rem 1.25rem', borderRadius: 6, zIndex: 30, textTransform: 'uppercase', letterSpacing: '0.1em', border: '1px solid rgba(239,68,68,0.4)' }}>Sold Out</div>
+                          )}
+                          {!isSoldOut && item.tags?.includes('popular') && (
                             <div style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', background: gold, color: '#000', fontSize: '0.625rem', fontWeight: 700, padding: '0.25rem 0.5rem', borderRadius: 4, zIndex: 20, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Popular</div>
                           )}
-                          {item.tags?.includes('signature') && (
+                          {!isSoldOut && item.tags?.includes('signature') && (
                             <div style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', background: accent, color: '#fff', fontSize: '0.625rem', fontWeight: 700, padding: '0.25rem 0.5rem', borderRadius: 4, zIndex: 20, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Signature</div>
                           )}
                         </div>
@@ -371,16 +376,21 @@ const Storefront = () => {
                           </div>
                           <p className="sf-menu-card-desc">{item.description}</p>
                           <div className="sf-menu-card-footer">
-                            <button
-                              className={`sf-add-btn ${recentlyAdded === item._id ? 'added' : ''}`}
-                              onClick={(e) => { e.stopPropagation(); addToCart(item); }}
-                            >
-                              {recentlyAdded === item._id ? (<>✓ Added!</>) : (<><Plus size={16} /> Select</>)}
-                            </button>
+                            {isSoldOut ? (
+                              <span style={{ color: '#ef4444', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase' }}>Sold Out</span>
+                            ) : (
+                              <button
+                                className={`sf-add-btn ${recentlyAdded === item._id ? 'added' : ''}`}
+                                onClick={(e) => { e.stopPropagation(); addToCart(item); }}
+                              >
+                                {recentlyAdded === item._id ? (<>✓ Added!</>) : (<><Plus size={16} /> Select</>)}
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );

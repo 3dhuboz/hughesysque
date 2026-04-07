@@ -359,6 +359,19 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
       await updateUserProfile(updated);
     }
 
+    // Auto-decrement stock for ordered items
+    if (order.items?.length > 0) {
+      for (const li of order.items) {
+        const itemId = li.item?.id || li.item?._id;
+        if (!itemId) continue;
+        const menuItem = menu.find(m => m.id === itemId);
+        if (menuItem && menuItem.stock != null && menuItem.stock > 0) {
+          const newStock = Math.max(0, menuItem.stock - (li.quantity || 1));
+          await updateMenuItem({ ...menuItem, stock: newStock, available: newStock > 0 } as any);
+        }
+      }
+    }
+
     // Auto-add Golden Ticket stamp for any purchase meeting minimum
     if (user && settings.rewards?.enabled) {
       const minPurchase = settings.rewards.minPurchase || 0;
