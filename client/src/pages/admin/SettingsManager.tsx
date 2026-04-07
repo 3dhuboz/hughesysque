@@ -805,33 +805,6 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                       />
                   </div>
                   <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Hero Tagline <span className="text-gray-600 normal-case font-normal">— text below hero image</span></label>
-                      <textarea
-                          value={formData.heroTagline ?? 'Real fire. Real smoke. Real flavour. From backyard birthdays to corporate blowouts — we bring the pit to you.'}
-                          onChange={e => setFormData({ ...formData, heroTagline: e.target.value })}
-                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white text-sm"
-                          rows={2}
-                      />
-                  </div>
-                  <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Philosophy Heading <span className="text-gray-600 normal-case font-normal">— bold text mid-page</span></label>
-                      <input
-                          value={formData.philosophyHeading ?? "WE DON'T DO FAST FOOD. WE DO GOOD FOOD."}
-                          onChange={e => setFormData({ ...formData, philosophyHeading: e.target.value })}
-                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
-                      />
-                      <p className="text-[10px] text-gray-600 mt-1">Clear the field to use the styled default with red/gold colours.</p>
-                  </div>
-                  <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Philosophy Description <span className="text-gray-600 normal-case font-normal">— paragraph below heading</span></label>
-                      <textarea
-                          value={formData.philosophyBody ?? `${formData.businessName || 'Hughesys Que'} is a family owned operation obsessed with the ritual of fire and meat. We treat every cut with respect, smoking it low and slow over seasoned hardwood until it falls apart at the sight of a fork.`}
-                          onChange={e => setFormData({ ...formData, philosophyBody: e.target.value })}
-                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white text-sm"
-                          rows={3}
-                      />
-                  </div>
-                  <div>
                       <label className="text-xs font-bold text-gray-500 uppercase">Google Maps URL</label>
                       <input
                           value={formData.mapsUrl || ''}
@@ -871,6 +844,44 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
 
               <div className="space-y-4">
                   <ImageSettingRow label="Logo URL" settingKey="logoUrl" prompt="BBQ restaurant logo, vector style, minimal" maxWidth={400} />
+              </div>
+          </div>
+      </section>
+
+      {/* --- HOMEPAGE CONTENT --- */}
+      <section className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
+          <h4 className="text-xl font-bold mb-2 flex items-center gap-2"><Home size={20} className="text-bbq-red"/> Homepage Content</h4>
+          <p className="text-sm text-gray-400 mb-6">Edit the text that appears on your public homepage.</p>
+
+          <div className="space-y-4">
+              <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase">Hero Tagline <span className="text-gray-600 normal-case font-normal">— text below hero image</span></label>
+                  <textarea
+                      value={formData.heroTagline ?? 'Real fire. Real smoke. Real flavour. From backyard birthdays to corporate blowouts — we bring the pit to you.'}
+                      onChange={e => setFormData({ ...formData, heroTagline: e.target.value })}
+                      className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white text-sm"
+                      rows={2}
+                  />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Philosophy Heading <span className="text-gray-600 normal-case font-normal">— bold text mid-page</span></label>
+                      <input
+                          value={formData.philosophyHeading ?? "WE DON'T DO FAST FOOD. WE DO GOOD FOOD."}
+                          onChange={e => setFormData({ ...formData, philosophyHeading: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
+                      />
+                      <p className="text-[10px] text-gray-600 mt-1">Clear the field to use the styled default with red/gold colours.</p>
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Philosophy Description <span className="text-gray-600 normal-case font-normal">— paragraph below heading</span></label>
+                      <textarea
+                          value={formData.philosophyBody ?? `${formData.businessName || 'Hughesys Que'} is a family owned operation obsessed with the ritual of fire and meat. We treat every cut with respect, smoking it low and slow over seasoned hardwood until it falls apart at the sight of a fork.`}
+                          onChange={e => setFormData({ ...formData, philosophyBody: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white text-sm"
+                          rows={3}
+                      />
+                  </div>
               </div>
           </div>
       </section>
