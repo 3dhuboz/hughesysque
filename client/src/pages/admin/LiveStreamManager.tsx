@@ -283,14 +283,14 @@ const LiveStreamManager: React.FC = () => {
     ctx.drawImage(video, 0, 0, w, h);
     const fontSize = Math.max(12, w * 0.025);
 
-    // Top-left: Logo + "HUGHESYS QUE" watermark
+    // Top-left: Logo + "HUGHESYS QUE" watermark — positioned below the LIVE badge area
     ctx.save();
     ctx.globalAlpha = 0.7;
     ctx.shadowColor = 'rgba(0,0,0,0.6)';
     ctx.shadowBlur = 4;
     const logoSize = fontSize * 1.8;
     const logoX = fontSize * 0.5;
-    const logoY = fontSize * 0.4;
+    const logoY = fontSize * 3.5; // Below LIVE badge + timer
     let textX = logoX;
     if (logoRef.current) {
       ctx.drawImage(logoRef.current, logoX, logoY, logoSize, logoSize);
