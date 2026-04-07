@@ -214,6 +214,14 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
           const aiKey = (s as any).openrouterApiKey || (s as any).geminiApiKey;
           if (aiKey) setGeminiApiKey(aiKey);
           setSettings(prev => ({ ...prev, ...s } as AppSettings));
+          // Update favicon from logo
+          const logoUrl = (s as any).logoUrl;
+          if (logoUrl) {
+            const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+            if (link) link.href = logoUrl;
+            const appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
+            if (appleLink) appleLink.href = logoUrl;
+          }
         }
         markLoaded('Settings');
 

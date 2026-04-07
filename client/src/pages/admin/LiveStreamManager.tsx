@@ -1150,6 +1150,81 @@ const LiveStreamManager: React.FC = () => {
         </div>
       )}
 
+      {/* Sponsor Ticker Management — at top for live preview */}
+      <div>
+        <div className="flex justify-between items-center border-b border-gray-700 pb-2 mb-4">
+          <h4 className="font-bold text-lg text-white flex items-center gap-2">
+            <Image size={18} className="text-bbq-gold" />
+            Sponsor Ticker
+          </h4>
+          <div className="flex items-center gap-2">
+            <button onClick={addSponsor} className="text-xs bg-bbq-gold hover:bg-yellow-400 text-black px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold transition">
+              <Plus size={12} /> Add Sponsor
+            </button>
+            <button onClick={() => setShowSponsorPanel(!showSponsorPanel)}
+              className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition ${showSponsorPanel ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}>
+              {showSponsorPanel ? 'Hide' : 'Show'}
+            </button>
+          </div>
+        </div>
+        {showSponsorPanel && (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">Logos and text scroll across the bottom of the stream. Add multiple sponsors — they rotate in a ticker.</p>
+            {sponsors.length === 0 ? (
+              <div className="text-center py-8 border-2 border-dashed border-gray-800 rounded-lg text-gray-500">
+                <Image size={32} className="mx-auto mb-2 opacity-40" />
+                <p>No sponsors added. Click "Add Sponsor" to include branding in the stream.</p>
+              </div>
+            ) : (
+              sponsors.map((sponsor, idx) => (
+                <div key={sponsor.id} className="bg-gray-800 rounded-xl p-4 border border-gray-700 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Sponsor {idx + 1}</span>
+                    <button onClick={() => removeSponsor(sponsor.id)} className="text-red-400 hover:text-red-300 p-1 transition"><Trash2 size={14} /></button>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">Name / Text</label>
+                    <input value={sponsor.text} onChange={e => updateSponsor(sponsor.id, 'text', e.target.value)}
+                      placeholder="e.g. Gladstone Meat Co" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">Logo</label>
+                    <div className="flex gap-2">
+                      <input value={sponsor.logoUrl} onChange={e => updateSponsor(sponsor.id, 'logoUrl', e.target.value)}
+                        placeholder="URL or upload →" className="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm font-mono" />
+                      <label className="cursor-pointer p-2 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center justify-center transition shrink-0" title="Upload logo">
+                        <Upload size={14} className="text-gray-300" />
+                        <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(e) => {
+                          const file = e.target.files?.[0]; if (!file) return;
+                          if (file.size > 500000) { toast('Logo must be under 500KB', 'error'); return; }
+                          const reader = new FileReader();
+                          reader.onload = () => { updateSponsor(sponsor.id, 'logoUrl', reader.result as string); };
+                          reader.readAsDataURL(file); e.target.value = '';
+                        }} />
+                      </label>
+                    </div>
+                    {sponsor.logoUrl && (
+                      <div className="mt-2 p-2 bg-white rounded-lg inline-flex items-center gap-2">
+                        <img src={sponsor.logoUrl} alt="" style={{ height: 32, maxWidth: 120, objectFit: 'contain' }} onError={(e: any) => { e.target.style.display = 'none'; }} />
+                        <button onClick={() => updateSponsor(sponsor.id, 'logoUrl', '')} className="text-gray-400 hover:text-red-400 transition p-0.5" title="Remove"><X size={12} /></button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+            <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-xs font-bold text-gray-400">Scroll Speed</label>
+                <span className="text-xs text-gray-500 font-bold">{scrollSpeed < 0.8 ? 'Slow' : scrollSpeed < 1.5 ? 'Normal' : scrollSpeed < 2.5 ? 'Fast' : 'Very Fast'}</span>
+              </div>
+              <input type="range" min={0.3} max={3.5} step={0.1} value={scrollSpeed} onChange={e => setScrollSpeed(parseFloat(e.target.value))} className="w-full" style={{ accentColor: '#fbbf24' }} />
+            </div>
+            <button onClick={saveSponsors} className="w-full bg-bbq-gold hover:bg-yellow-400 text-black font-bold py-2.5 rounded-lg transition text-sm">Save Sponsors</button>
+          </div>
+        )}
+      </div>
+
       {/* Past Recordings */}
       <div>
         <div className="flex justify-between items-center border-b border-gray-700 pb-2 mb-4">
@@ -1322,99 +1397,6 @@ const LiveStreamManager: React.FC = () => {
                 )}
               </div>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Sponsor Ticker Management */}
-      <div>
-        <div className="flex justify-between items-center border-b border-gray-700 pb-2 mb-4">
-          <h4 className="font-bold text-lg text-white flex items-center gap-2">
-            <Image size={18} className="text-bbq-gold" />
-            Sponsor Ticker
-          </h4>
-          <div className="flex items-center gap-2">
-            <button onClick={addSponsor} className="text-xs bg-bbq-gold hover:bg-yellow-400 text-black px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold transition">
-              <Plus size={12} /> Add Sponsor
-            </button>
-            <button onClick={() => setShowSponsorPanel(!showSponsorPanel)}
-              className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition ${showSponsorPanel ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}>
-              {showSponsorPanel ? 'Hide' : 'Show'}
-            </button>
-          </div>
-        </div>
-
-        {showSponsorPanel && (
-          <div className="space-y-3">
-            <p className="text-xs text-gray-500">Logos and text scroll across the bottom of the stream. Add multiple sponsors — they rotate in a ticker.</p>
-
-            {sponsors.length === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed border-gray-800 rounded-lg text-gray-500">
-                <Image size={32} className="mx-auto mb-2 opacity-40" />
-                <p>No sponsors added. Click "Add Sponsor" to include branding in the stream.</p>
-              </div>
-            ) : (
-              sponsors.map((sponsor, idx) => (
-                <div key={sponsor.id} className="bg-gray-800 rounded-xl p-4 border border-gray-700 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Sponsor {idx + 1}</span>
-                    <button onClick={() => removeSponsor(sponsor.id)} className="text-red-400 hover:text-red-300 p-1 transition">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">Name / Text</label>
-                    <input value={sponsor.text} onChange={e => updateSponsor(sponsor.id, 'text', e.target.value)}
-                      placeholder="e.g. Gladstone Meat Co" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">Logo</label>
-                    <div className="flex gap-2">
-                      <input value={sponsor.logoUrl} onChange={e => updateSponsor(sponsor.id, 'logoUrl', e.target.value)}
-                        placeholder="URL or upload →" className="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm font-mono" />
-                      <label className="cursor-pointer p-2 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center justify-center transition shrink-0" title="Upload logo">
-                        <Upload size={14} className="text-gray-300" />
-                        <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          if (file.size > 500000) { toast('Logo must be under 500KB', 'error'); return; }
-                          const reader = new FileReader();
-                          reader.onload = () => { updateSponsor(sponsor.id, 'logoUrl', reader.result as string); };
-                          reader.readAsDataURL(file);
-                          e.target.value = '';
-                        }} />
-                      </label>
-                    </div>
-                    {sponsor.logoUrl && (
-                      <div className="mt-2 p-2 bg-white rounded-lg inline-flex items-center gap-2">
-                        <img src={sponsor.logoUrl} alt="" style={{ height: 32, maxWidth: 120, objectFit: 'contain' }} onError={(e: any) => { e.target.style.display = 'none'; }} />
-                        <button onClick={() => updateSponsor(sponsor.id, 'logoUrl', '')} className="text-gray-400 hover:text-red-400 transition p-0.5" title="Remove logo">
-                          <X size={12} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-
-            {/* Scroll speed */}
-            <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-xs font-bold text-gray-400">Scroll Speed</label>
-                <span className="text-xs text-gray-500 font-bold">
-                  {scrollSpeed < 0.8 ? 'Slow' : scrollSpeed < 1.5 ? 'Normal' : scrollSpeed < 2.5 ? 'Fast' : 'Very Fast'}
-                </span>
-              </div>
-              <input type="range" min={0.3} max={3.5} step={0.1} value={scrollSpeed}
-                onChange={e => setScrollSpeed(parseFloat(e.target.value))}
-                className="w-full" style={{ accentColor: '#fbbf24' }} />
-            </div>
-
-            {/* Save */}
-            <button onClick={saveSponsors} className="w-full bg-bbq-gold hover:bg-yellow-400 text-black font-bold py-2.5 rounded-lg transition text-sm">
-              Save Sponsors
-            </button>
           </div>
         )}
       </div>

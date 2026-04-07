@@ -62,11 +62,22 @@ const StorefrontLive: React.FC = () => {
       .finally(() => setIsLoading(false));
   }, []);
 
-  // Poll stream status
+  // Poll stream status — refresh recordings when stream ends
+  const wasLiveRef = useRef(false);
   useEffect(() => {
     const fetchStatus = () => {
       getStreamStatus()
-        .then((data: any) => setStatus(data))
+        .then((data: any) => {
+          const nowLive = data?.live;
+          // Stream just ended — refresh recordings to show new replay
+          if (wasLiveRef.current && !nowLive) {
+            getRecordings()
+              .then((d: any) => { if (d?.recordings) setRecordings(d.recordings); })
+              .catch(() => {});
+          }
+          wasLiveRef.current = !!nowLive;
+          setStatus(data);
+        })
         .catch(() => {});
     };
     fetchStatus();
