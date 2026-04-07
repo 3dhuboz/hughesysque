@@ -43,8 +43,9 @@ const compressImage = (base64Str: string, maxWidth = 700, quality = 0.5) => {
             const ctx = canvas.getContext('2d');
             ctx?.drawImage(img, 0, 0, width, height);
             
-            // Return compressed JPEG base64
-            resolve(canvas.toDataURL('image/jpeg', quality));
+            // Preserve PNG for transparency, use JPEG for photos
+            const isPng = base64Str.includes('image/png') || base64Str.includes('image/svg');
+            resolve(canvas.toDataURL(isPng ? 'image/png' : 'image/jpeg', quality));
         };
         img.onerror = () => {
             // Fallback if loading fails, return original
