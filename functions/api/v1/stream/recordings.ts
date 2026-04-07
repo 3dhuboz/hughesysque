@@ -36,10 +36,9 @@ export const onRequest = async (context: any) => {
     const limit = parseInt(url.searchParams.get('limit') || '20', 10);
     const search = url.searchParams.get('search') || '';
 
-    // Fetch recorded live stream videos from Cloudflare Stream
+    // Fetch all videos from Cloudflare Stream (live recordings + uploads)
     const apiUrl = new URL(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/stream`);
     apiUrl.searchParams.set('limit', String(limit));
-    apiUrl.searchParams.set('type', 'live');
     if (search) {
       apiUrl.searchParams.set('search', search);
     }
