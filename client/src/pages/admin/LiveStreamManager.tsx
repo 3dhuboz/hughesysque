@@ -1236,62 +1236,46 @@ const LiveStreamManager: React.FC = () => {
         </div>
 
         {isLoadingRecordings ? (
-          <div className="flex items-center justify-center py-8 text-gray-500">
-            <Loader2 size={20} className="animate-spin mr-2" /> Loading recordings...
+          <div className="flex items-center justify-center py-4 text-gray-500">
+            <Loader2 size={16} className="animate-spin mr-2" /> Loading...
           </div>
         ) : recordings.length === 0 ? (
-          <div className="text-center py-12 border-2 border-dashed border-gray-800 rounded-lg text-gray-500">
-            <Play size={32} className="mx-auto mb-2 opacity-40" />
-            <p>No recordings yet. Past streams will appear here automatically.</p>
+          <div className="text-center py-8 border-2 border-dashed border-gray-800 rounded-lg text-gray-500">
+            <Play size={24} className="mx-auto mb-2 opacity-40" />
+            <p className="text-sm">No recordings yet. Past streams will appear here automatically.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-2">
             {recordings.map(rec => (
-              <div
-                key={rec.uid}
-                onClick={() => setPreviewRecording(rec)}
-                className="bg-gray-800 rounded-xl overflow-hidden border border-gray-700 group cursor-pointer hover:border-gray-500 transition"
-              >
-                <div className="aspect-video relative bg-black">
+              <div key={rec.uid} className="flex items-center gap-3 bg-gray-800/50 rounded-lg border border-gray-700 p-2 hover:border-gray-500 transition group">
+                {/* Thumbnail */}
+                <div className="w-24 h-14 rounded-lg overflow-hidden bg-black shrink-0 relative cursor-pointer" onClick={() => setPreviewRecording(rec)}>
                   {rec.thumbnail ? (
-                    <img src={rec.thumbnail} className="w-full h-full object-cover" alt={rec.title} />
+                    <img src={rec.thumbnail} className="w-full h-full object-cover" alt="" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Video size={32} className="text-gray-700" />
-                    </div>
+                    <div className="w-full h-full flex items-center justify-center"><Video size={16} className="text-gray-700" /></div>
                   )}
-                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Play size={24} className="text-white ml-1" />
-                    </div>
+                  <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition flex items-center justify-center">
+                    <Play size={14} className="text-white opacity-0 group-hover:opacity-100 transition" />
                   </div>
                   {rec.duration > 0 && (
-                    <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded font-mono flex items-center gap-1">
-                      <Clock size={10} /> {formatDuration(rec.duration)}
-                    </div>
+                    <div className="absolute bottom-0.5 right-0.5 bg-black/80 text-white text-[9px] px-1 py-0.5 rounded font-mono">{formatDuration(rec.duration)}</div>
                   )}
                 </div>
-                <div className="p-3 flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h5 className="font-bold text-white text-sm truncate">{rec.title || 'Untitled Stream'}</h5>
-                    <p className="text-xs text-gray-500 mt-1">{formatDate(rec.created)}</p>
-                  </div>
-                  <div className="shrink-0 flex gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openShareModal(rec); }}
-                      className="p-1.5 rounded-lg bg-gray-700 hover:bg-bbq-gold hover:text-black text-gray-400 transition"
-                      title="Share to socials"
-                    >
-                      <Share2 size={14} />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteRecording(rec.uid); }}
-                      className="p-1.5 rounded-lg bg-gray-700 hover:bg-red-900 text-gray-400 hover:text-red-400 transition"
-                      title="Delete recording"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                {/* Title + Date */}
+                <div className="flex-1 min-w-0">
+                  <input
+                    value={rec.title || ''}
+                    onChange={e => setRecordings(prev => prev.map(r => r.uid === rec.uid ? { ...r, title: e.target.value } : r))}
+                    className="bg-transparent text-white text-sm font-bold w-full border-0 p-0 focus:outline-none focus:ring-0 placeholder:text-gray-600 truncate"
+                    placeholder="Untitled Stream"
+                  />
+                  <p className="text-[10px] text-gray-500 mt-0.5">{formatDate(rec.created)}</p>
+                </div>
+                {/* Actions */}
+                <div className="shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <button onClick={() => openShareModal(rec)} className="p-1.5 rounded bg-gray-700 hover:bg-bbq-gold hover:text-black text-gray-400 transition" title="Share"><Share2 size={12} /></button>
+                  <button onClick={() => deleteRecording(rec.uid)} className="p-1.5 rounded bg-gray-700 hover:bg-red-900 text-gray-400 hover:text-red-400 transition" title="Delete"><Trash2 size={12} /></button>
                 </div>
               </div>
             ))}
