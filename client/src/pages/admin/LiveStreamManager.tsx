@@ -135,12 +135,22 @@ const LiveStreamManager: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load business logo for watermark
+  // Load business logo for watermark — from settings first, fallback to /logo.png
   useEffect(() => {
-    const img = new window.Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => { logoRef.current = img; };
-    img.src = '/logo.png';
+    const token = localStorage.getItem('token');
+    fetch('/api/v1/settings', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      .then(r => r.json()).then(data => {
+        const logoUrl = data?.logoUrl || '/logo.png';
+        const img = new window.Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => { logoRef.current = img; };
+        img.src = logoUrl;
+      }).catch(() => {
+        const img = new window.Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => { logoRef.current = img; };
+        img.src = '/logo.png';
+      });
   }, []);
 
   // Load sponsors from settings
