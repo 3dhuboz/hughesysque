@@ -74,11 +74,10 @@ export const generateMarketingImage = async (prompt: string): Promise<string | n
 
   const fullPrompt = `Generate a professional food photography image: ${prompt}. Style: high quality, appetizing, cinematic lighting, no text or watermarks, BBQ themed.`;
 
-  // Try image-capable models in order of preference
+  // Use the same model that works on Street Meatz
   const imageModels = [
+    'google/gemini-2.5-flash-image',
     'google/gemini-2.0-flash-exp:free',
-    'google/gemini-2.5-flash-preview',
-    'google/gemini-2.5-flash-preview-05-20',
   ];
 
   for (const model of imageModels) {
@@ -95,6 +94,7 @@ export const generateMarketingImage = async (prompt: string): Promise<string | n
           model,
           messages: [{ role: 'user', content: fullPrompt }],
           modalities: ['image', 'text'],
+          image_config: { aspect_ratio: '1:1', image_size: '1K' },
         }),
       });
 
