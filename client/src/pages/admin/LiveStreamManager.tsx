@@ -145,13 +145,13 @@ const LiveStreamManager: React.FC = () => {
 
   // Load sponsors from settings
   useEffect(() => {
-    const s = (window as any).__hughesysSettings;
-    // Try loading from API settings if available
-    fetch('/api/v1/settings').then(r => r.json()).then(data => {
-      if (Array.isArray(data?.sponsors) && data.sponsors.length > 0) {
-        setSponsors(data.sponsors);
-      }
-    }).catch(() => {});
+    const token = localStorage.getItem('token');
+    fetch('/api/v1/settings', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      .then(r => r.json()).then(data => {
+        if (Array.isArray(data?.sponsors) && data.sponsors.length > 0) {
+          setSponsors(data.sponsors);
+        }
+      }).catch(() => {});
   }, []);
 
   // Load sponsor logo images
