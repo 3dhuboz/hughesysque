@@ -461,7 +461,7 @@ const LiveStreamManager: React.FC = () => {
       }
       // Get camera + mic
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
+        video: { facingMode: 'user' },
         audio: true,
       });
 
@@ -548,12 +548,10 @@ const LiveStreamManager: React.FC = () => {
       toast('You are LIVE!');
 
       // Start sending video to Facebook relay if connected
-      if (fbRelayReady && relayWsRef.current && canvasStreamRef.current) {
+      if (fbRelayReady && relayWsRef.current && streamRef.current) {
         try {
-          const relayStream = canvasStreamRef.current.clone();
-          // Add audio from raw stream
-          const audioTrack = streamRef.current?.getAudioTracks()[0];
-          if (audioTrack) relayStream.addTrack(audioTrack.clone());
+          // Use raw stream for relay — includes both video + audio
+          const relayStream = streamRef.current.clone();
 
           // Detect best format — Safari uses MP4, Chrome/Android use WebM
           const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=h264,opus')
@@ -696,7 +694,7 @@ const LiveStreamManager: React.FC = () => {
 
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
+        video: { facingMode: 'user' },
         audio: true,
       });
 
