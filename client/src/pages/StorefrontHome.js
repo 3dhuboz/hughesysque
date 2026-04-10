@@ -222,20 +222,14 @@ const StorefrontHome = () => {
             {/* Main content — video + chat side by side on desktop, stacked on mobile */}
             <div className="relative z-10 flex flex-col lg:flex-row bg-gray-950">
               {/* Video panel */}
-              <div className="relative flex-[7] min-w-0">
-                {/* Logo watermark on video */}
-                {settings.logoUrl && (
-                  <div className="absolute bottom-4 right-4 z-20 opacity-30 pointer-events-none">
-                    <img src={settings.logoUrl} alt="" className="w-14 h-14 md:w-16 md:h-16 drop-shadow-lg rounded-lg" />
-                  </div>
-                )}
+              <div className="relative flex-[7] min-w-0 bg-black flex items-center justify-center" style={{ minHeight: '300px', maxHeight: '80vh' }}>
                 <iframe
                   src={`${liveStatus.previewUrl}?autoplay=true&muted=true&preload=auto&loop=false&controls=true`}
-                  className="w-full aspect-video bg-black"
+                  className="w-full h-full bg-black"
                   allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                   allowFullScreen
                   title="Live Stream"
-                  style={{ border: 'none', display: 'block' }}
+                  style={{ border: 'none', display: 'block', aspectRatio: 'auto', minHeight: '300px', maxHeight: '80vh' }}
                 />
               </div>
 

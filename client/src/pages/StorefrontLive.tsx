@@ -52,10 +52,23 @@ const StorefrontLive: React.FC = () => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const isLive = status?.live;
-  const isAdmin = !!localStorage.getItem('token');
+  const isAdmin = !!localStorage.getItem('pw_token');
 
-  // Load recordings
+  // Facebook recordings state
+  const [fbRecordings, setFbRecordings] = useState<any[]>([]);
+  const [selectedFbVideo, setSelectedFbVideo] = useState<any>(null);
+
+  // Load recordings — try Facebook first, fall back to Cloudflare
   useEffect(() => {
+    // Fetch Facebook past live videos
+    fetch('/api/v1/stream/fb-recordings')
+      .then(r => r.json())
+      .then((data: any) => {
+        if (data?.recordings?.length > 0) setFbRecordings(data.recordings);
+      })
+      .catch(() => {});
+
+    // Also try Cloudflare recordings as fallback
     getRecordings()
       .then((data: any) => { if (data?.recordings) setRecordings(data.recordings); })
       .catch(() => {})
@@ -352,32 +365,113 @@ const StorefrontLive: React.FC = () => {
         </div>
       </div>
 
-      {/* Recordings Grid */}
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <Play size={22} className="text-bbq-red" />
-          <h2 className="text-2xl font-display font-bold text-white uppercase tracking-wide">Past Cooks & Replays</h2>
-        </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-gray-500">
-            <div className="animate-spin w-6 h-6 border-2 border-gray-600 border-t-bbq-red rounded-full mr-3" />
-            Loading replays...
+      {/* Facebook Past Streams */}
+      {fbRecordings.length > 0 && (
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center gap-3 mb-6">
+            <Play size={22} className="text-bbq-red" />
+            <h2 className="text-2xl font-display font-bold text-white uppercase tracking-wide">Past Cooks & Replays</h2>
           </div>
-        ) : recordings.length === 0 ? (
-          <div className="text-center py-16 border-2 border-dashed border-gray-800 rounded-2xl">
-            <Video size={48} className="mx-auto text-gray-700 mb-3" />
-            <p className="text-gray-500 text-lg">No replays available yet.</p>
-            <p className="text-gray-600 text-sm mt-1">Past streams and videos will show up here.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recordings.map(rec => (
-              <RecordingCard key={rec.uid} rec={rec} onSelect={setSelectedRecording} onShare={handleShare} formatDuration={formatDuration} formatDate={formatDate} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {fbRecordings.map((vid: any) => (
+              <div key={vid.id} className="bg-bbq-charcoal rounded-2xl overflow-hidden border border-gray-800 shadow-xl hover:border-gray-600 transition-all group">
+                {/* Embedded FB video */}
+                <div className="aspect-video bg-black relative cursor-pointer" onClick={() => setSelectedFbVideo(vid)}>
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
+                    <div className="text-center">
+                      <div className="w-16 h-16 rounded-full bg-bbq-red/20 border-2 border-bbq-red/40 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                        <Play size={28} className="text-bbq-red ml-1" />
+                      </div>
+                      <p className="text-white font-bold text-sm">{vid.title}</p>
+                    </div>
+                  </div>
+                </div>
+                {/* Info */}
+                <div className="p-4">
+                  <h3 className="font-bold text-white text-base mb-1">{vid.title}</h3>
+                  {vid.description && (
+                    <p className="text-gray-400 text-sm line-clamp-2 mb-3">{vid.description.substring(0, 120)}{vid.description.length > 120 ? '...' : ''}</p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">{formatDate(vid.createdAt)}</span>
+                    <div className="flex items-center gap-2">
+                      {vid.liveViews > 0 && (
+                        <span className="text-xs text-gray-500 flex items-center gap-1"><Eye size={10} /> {vid.liveViews}</span>
+                      )}
+                      {vid.fbVideoUrl && (
+                        <a href={vid.fbVideoUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                          Watch on Facebook
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Fallback: Cloudflare recordings */}
+      {fbRecordings.length === 0 && (
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center gap-3 mb-6">
+            <Play size={22} className="text-bbq-red" />
+            <h2 className="text-2xl font-display font-bold text-white uppercase tracking-wide">Past Cooks & Replays</h2>
+          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16 text-gray-500">
+              <div className="animate-spin w-6 h-6 border-2 border-gray-600 border-t-bbq-red rounded-full mr-3" />
+              Loading replays...
+            </div>
+          ) : recordings.length === 0 ? (
+            <div className="text-center py-16 border-2 border-dashed border-gray-800 rounded-2xl">
+              <Video size={48} className="mx-auto text-gray-700 mb-3" />
+              <p className="text-gray-500 text-lg">No replays available yet.</p>
+              <p className="text-gray-600 text-sm mt-1">Past streams and videos will show up here.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recordings.map(rec => (
+                <RecordingCard key={rec.uid} rec={rec} onSelect={setSelectedRecording} onShare={handleShare} formatDuration={formatDuration} formatDate={formatDate} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Facebook Video Player Modal */}
+      {selectedFbVideo && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedFbVideo(null)}>
+          <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-4xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-800">
+              <div>
+                <h3 className="font-bold text-white text-lg">{selectedFbVideo.title}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">{formatDate(selectedFbVideo.createdAt)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedFbVideo.fbVideoUrl && (
+                  <a href={selectedFbVideo.fbVideoUrl} target="_blank" rel="noopener noreferrer"
+                    className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg transition">
+                    Watch on Facebook
+                  </a>
+                )}
+                <button onClick={() => setSelectedFbVideo(null)} className="text-gray-400 hover:text-white transition p-1"><X size={22} /></button>
+              </div>
+            </div>
+            <div className="aspect-video bg-black">
+              {selectedFbVideo.embedUrl ? (
+                <iframe src={selectedFbVideo.embedUrl} className="w-full h-full" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" allowFullScreen title={selectedFbVideo.title} style={{ border: 'none' }} />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-500">
+                  <a href={selectedFbVideo.fbVideoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Open on Facebook</a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedRecording && <RecordingModal rec={selectedRecording} onClose={() => setSelectedRecording(null)} onShare={handleShare} formatDuration={formatDuration} formatDate={formatDate} />}
     </div>
