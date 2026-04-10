@@ -8,3 +8,6 @@ client/build/
 .DS_Store
 uploads/
 client/dist/
+.wrangler/
+.claude/worktrees/
+hughesysque/
