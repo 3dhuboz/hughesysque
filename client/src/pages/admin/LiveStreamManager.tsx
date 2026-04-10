@@ -59,6 +59,12 @@ const LiveStreamManager: React.FC = () => {
   const [micOn, setMicOn] = useState(true);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
 
+  // Stream metadata + Facebook
+  const [streamTitle, setStreamTitle] = useState('Live from Hughesys Que');
+  const [fbDescription, setFbDescription] = useState('');
+  const [fbSimulcast, setFbSimulcast] = useState(true);
+  const [fbConnected, setFbConnected] = useState(false);
+
   // Sponsor ticker state
   const [sponsors, setSponsors] = useState<{id: string; text: string; logoUrl: string}[]>([]);
   const [scrollSpeed, setScrollSpeed] = useState(1.2);
@@ -160,6 +166,9 @@ const LiveStreamManager: React.FC = () => {
       .then(r => r.json()).then(data => {
         if (Array.isArray(data?.sponsors) && data.sponsors.length > 0) {
           setSponsors(data.sponsors);
+        }
+        if (data?.facebookPageId && data?.facebookPageAccessToken) {
+          setFbConnected(true);
         }
       }).catch(() => {});
   }, []);
@@ -401,6 +410,26 @@ const LiveStreamManager: React.FC = () => {
     setIsGoingLive(true);
 
     try {
+      // Create Facebook Live video + auto-add simulcast if enabled
+      if (fbSimulcast && fbConnected) {
+        try {
+          toast('Setting up Facebook Live...', 'info');
+          const token = localStorage.getItem('token');
+          const fbRes = await fetch('/api/v1/stream/facebook-live', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ title: streamTitle, description: fbDescription || `${streamTitle} - Live from Hughesys Que 🔥🍖` }),
+          });
+          const fbData = await fbRes.json();
+          if (fbRes.ok && fbData.success) {
+            toast('Facebook Live connected!');
+          } else {
+            toast(`Facebook Live failed: ${(fbData as any).error || 'Unknown error'}. Continuing without FB.`, 'warning');
+          }
+        } catch (e: any) {
+          toast(`Facebook setup error: ${e.message}. Continuing without FB.`, 'warning');
+        }
+      }
       // Get camera + mic
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -1014,7 +1043,40 @@ const LiveStreamManager: React.FC = () => {
         </div>
       ) : !isBroadcasting ? (
         /* GO LIVE + RECORD buttons */
-        <div className="text-center py-8">
+        <div className="py-8 space-y-6">
+          {/* Stream settings */}
+          <div className="max-w-lg mx-auto space-y-3">
+            <div>
+              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">Stream Title</label>
+              <input value={streamTitle} onChange={e => setStreamTitle(e.target.value)}
+                placeholder="Live from Hughesys Que"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm" />
+            </div>
+            {fbConnected && (
+              <>
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 block">Facebook Description</label>
+                  <textarea value={fbDescription} onChange={e => setFbDescription(e.target.value)}
+                    placeholder="We're live! Join us for a cook session 🔥🍖"
+                    rows={2}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white text-sm resize-none" />
+                </div>
+                <div className="flex items-center justify-between bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <Facebook size={16} className="text-blue-400" />
+                    <span className="text-sm text-white font-bold">Simulcast to Facebook</span>
+                  </div>
+                  <button onClick={() => setFbSimulcast(!fbSimulcast)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${fbSimulcast ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${fbSimulcast ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+              </>
+            )}
+            {!fbConnected && (
+              <p className="text-xs text-gray-600 text-center">Connect Facebook in Settings to simulcast live streams to your Page.</p>
+            )}
+          </div>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={goLive}

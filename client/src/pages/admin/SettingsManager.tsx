@@ -1406,16 +1406,27 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
       {/* --- FACEBOOK --- */}
       <section className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
           <h4 className="text-xl font-bold mb-3 flex items-center gap-2"><Facebook size={20} className="text-blue-500"/> Facebook / Instagram</h4>
-          <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle size={18} className="text-blue-400 shrink-0 mt-0.5"/>
-              <div>
-                  <p className="text-blue-200 font-bold text-sm">Manage Facebook connection in the Social &amp; AI tab</p>
-                  <p className="text-blue-300/70 text-xs mt-1">The full Facebook login wizard, page selection, connection testing, and Instagram linking are all in the <strong className="text-white">Social &amp; AI</strong> tab to keep everything in one place.</p>
-                  {settings.facebookConnected ? (
-                      <div className="mt-2 flex items-center gap-2 text-green-400 text-xs"><CheckCircle size={12}/> Page currently connected</div>
-                  ) : (
-                      <div className="mt-2 flex items-center gap-2 text-yellow-400 text-xs"><AlertCircle size={12}/> No page connected yet</div>
-                  )}
+          <div className={`border rounded-xl p-4 mb-4 ${formData.facebookPageId && formData.facebookPageAccessToken ? 'bg-green-900/20 border-green-700/40' : 'bg-gray-800/50 border-gray-700'}`}>
+              <div className="flex items-center gap-3 mb-3">
+                  <Facebook size={18} className="text-blue-400" />
+                  <div>
+                      <p className="text-sm font-bold text-white">Facebook Page</p>
+                      <p className="text-[11px] text-gray-500">{formData.facebookPageId && formData.facebookPageAccessToken ? 'Connected — live streams will simulcast to Facebook' : 'Not connected'}</p>
+                  </div>
+              </div>
+              <div className="space-y-3">
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Page ID</label>
+                      <input value={formData.facebookPageId || ''} onChange={e => setFormData({ ...formData, facebookPageId: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white text-sm font-mono" placeholder="123456789012345" />
+                      <p className="text-[10px] text-gray-600 mt-1">Facebook Page → Settings → About → Page ID</p>
+                  </div>
+                  <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Page Access Token</label>
+                      <input type="password" value={formData.facebookPageAccessToken || ''} onChange={e => setFormData({ ...formData, facebookPageAccessToken: e.target.value })}
+                          className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white text-sm font-mono" placeholder="EAAxxxxxxx..." />
+                      <p className="text-[10px] text-gray-600 mt-1">Get from Social AI Studio → Settings → Connected Accounts, or Facebook Developer tools. Must be a long-lived Page token.</p>
+                  </div>
               </div>
           </div>
       </section>
