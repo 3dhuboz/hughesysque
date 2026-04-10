@@ -53,17 +53,26 @@ export const onRequest = async (context: any) => {
     }
 
     const liveVideoId = fbData.id;
-    // Use stream_url (not secure_stream_url) — the secure URL has query params that break simulcast
-    const streamUrl = fbData.stream_url || fbData.secure_stream_url;
 
-    if (!streamUrl) {
-      return json({ error: 'Facebook did not return a stream URL', facebookResponse: fbData }, 500);
+    // The creation response has a stream_url with query params like:
+    // rtmps://...rtmp/123456?s_bl=1&s_ow=10&...
+    // But the ACTUAL stream key is in the FB-xxxx format from the video object.
+    // Fetch the video object to get the correct stream_url with FB- prefix.
+    let streamUrl = '';
+    try {
+      const videoRes = await fetch(
+        `https://graph.facebook.com/v18.0/${liveVideoId}?fields=stream_url&access_token=${pageToken}`
+      );
+      const videoData: any = await videoRes.json();
+      streamUrl = videoData.stream_url || fbData.stream_url || fbData.secure_stream_url || '';
+    } catch {
+      streamUrl = fbData.stream_url || fbData.secure_stream_url || '';
     }
 
-    // Facebook returns full RTMP URL like:
-    // rtmps://live-api-s.facebook.com:443/rtmp/123456?s_bl=1&s_ow=10&...&a=Ab7xxx
-    // Cloudflare simulcast needs: url = server base, streamKey = everything after /rtmp/
-    // The query params in the key are required for Facebook auth
+    if (!streamUrl) {
+      return json({ error: 'Facebook did not return a stream URL' }, 500);
+    }
+
     const rtmpUrl = 'rtmps://live-api-s.facebook.com:443/rtmp/';
     const streamKey = streamUrl.split('/rtmp/')[1] || streamUrl;
 
