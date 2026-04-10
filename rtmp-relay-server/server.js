@@ -186,9 +186,11 @@ server.on('upgrade', (request, socket, head) => {
     // Handle incoming video chunks from browser
     let firstDataReceived = false;
     ws.on('message', (data) => {
-      if (typeof data === 'string') {
+      // Try to parse as JSON (control messages) — could arrive as string or buffer
+      const str = typeof data === 'string' ? data : (data.length < 500 ? data.toString('utf8') : null);
+      if (str && str.startsWith('{')) {
         try {
-          const cmd = JSON.parse(data);
+          const cmd = JSON.parse(str);
           if (cmd.type === 'end') {
             console.log(`[Session ${sessionId.slice(0, 8)}] End requested`);
             if (ffmpeg.stdin.writable) ffmpeg.stdin.end();
@@ -199,9 +201,11 @@ server.on('upgrade', (request, socket, head) => {
           if (cmd.type === 'format') {
             console.log(`[Session ${sessionId.slice(0, 8)}] Browser format: ${cmd.mimeType}`);
           }
+          return; // Don't pass JSON to ffmpeg
         } catch {}
-        return;
       }
+
+      if (typeof data === 'string') return; // Skip any other string messages
 
       // Binary data — WebM/MP4 chunks from MediaRecorder
       const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);

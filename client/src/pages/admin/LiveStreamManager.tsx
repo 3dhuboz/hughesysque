@@ -472,8 +472,25 @@ const LiveStreamManager: React.FC = () => {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.muted = true;
         videoRef.current.playsInline = true;
+
+        // Wait for video to have actual frames before starting canvas
+        await new Promise<void>((resolve) => {
+          const v = videoRef.current!;
+          const onReady = () => {
+            v.removeEventListener('loadeddata', onReady);
+            resolve();
+          };
+          if (v.readyState >= 2) { resolve(); return; }
+          v.addEventListener('loadeddata', onReady);
+          // Timeout fallback
+          setTimeout(resolve, 3000);
+        });
+
         try { await videoRef.current.play(); } catch {}
       }
+
+      // Small delay to ensure video frames are flowing
+      await new Promise(r => setTimeout(r, 500));
 
       // Start canvas drawing loop for watermark + sponsor ticker
       animFrameRef.current = requestAnimationFrame(drawFrame);
@@ -704,8 +721,18 @@ const LiveStreamManager: React.FC = () => {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.muted = true;
         videoRef.current.playsInline = true;
+
+        await new Promise<void>((resolve) => {
+          const v = videoRef.current!;
+          if (v.readyState >= 2) { resolve(); return; }
+          v.addEventListener('loadeddata', () => resolve(), { once: true });
+          setTimeout(resolve, 3000);
+        });
+
         try { await videoRef.current.play(); } catch {}
       }
+
+      await new Promise(r => setTimeout(r, 500));
 
       // Start canvas drawing for watermark
       animFrameRef.current = requestAnimationFrame(drawFrame);
