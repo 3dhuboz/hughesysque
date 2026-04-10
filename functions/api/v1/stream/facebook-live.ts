@@ -75,7 +75,7 @@ export const onRequest = async (context: any) => {
       streamUrl,
       rtmpUrl,
       streamKey,
-      simulcastOutput: simulcastOutput ? { uid: simulcastOutput.uid } : null,
+      relay: 'fly.io',
     });
   } catch (err: any) {
     const status = err.status || 500;
