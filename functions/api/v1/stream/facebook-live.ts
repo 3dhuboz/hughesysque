@@ -67,29 +67,7 @@ export const onRequest = async (context: any) => {
     const rtmpUrl = 'rtmps://live-api-s.facebook.com:443/rtmp/';
     const streamKey = streamUrl.split('/rtmp/')[1] || streamUrl;
 
-    // Auto-add simulcast output to Cloudflare so the stream goes to Facebook
-    let simulcastOutput = null;
-    const liveInputId = settings.streamLiveInputId;
-    if (liveInputId && env.CF_ACCOUNT_ID && env.CF_STREAM_API_TOKEN) {
-      try {
-        const cfRes = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/stream/live_inputs/${liveInputId}/outputs`,
-          {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${env.CF_STREAM_API_TOKEN}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: rtmpUrl, streamKey }),
-          }
-        );
-        const cfData: any = await cfRes.json();
-        if (cfData.success) {
-          simulcastOutput = cfData.result;
-        } else {
-          console.warn('[Facebook Live] Simulcast output creation failed:', cfData.errors);
-        }
-      } catch (e: any) {
-        console.warn('[Facebook Live] Simulcast error:', e.message);
-      }
-    }
+    // Video is relayed via WebSocket → RTMP relay Worker (not Cloudflare simulcast)
 
     return json({
       success: true,
