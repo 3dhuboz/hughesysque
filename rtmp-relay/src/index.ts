@@ -9,6 +9,9 @@
  * 4. Browser sends MediaRecorder data → DO forwards to Facebook
  */
 
+// Cloudflare Workers TCP socket API
+declare function connect(address: { hostname: string; port: number }, options?: { secureTransport?: 'on' | 'off' | 'starttls' }): any;
+
 import {
   buildConnectPayload, buildReleaseStreamPayload, buildFCPublishPayload,
   buildCreateStreamPayload, buildPublishPayload, buildSetChunkSize,

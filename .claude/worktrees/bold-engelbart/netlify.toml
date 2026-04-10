@@ -1,0 +1,24 @@
+[build]
+  command = "npm install && cd client && npm install && npm run build"
+  publish = "client/build"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[functions]
+  node_bundler = "nft"
+  included_files = ["server/**", "package.json"]
+  external_node_modules = ["mongoose", "bcryptjs"]
+
+# API routes → serverless function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# SPA catch-all → index.html (must be LAST)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

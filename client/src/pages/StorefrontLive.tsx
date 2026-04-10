@@ -198,7 +198,7 @@ const StorefrontLive: React.FC = () => {
           <div className="flex-1 min-w-0">
             <div className="aspect-video bg-black rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
               <iframe
-                src={status.previewUrl}
+                src={`${status.previewUrl}?autoplay=true&muted=true&preload=auto&controls=true`}
                 className="w-full h-full"
                 allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen

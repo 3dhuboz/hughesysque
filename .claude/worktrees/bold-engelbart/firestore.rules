@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: is the requester an admin?
+    function isAdmin() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Helper: is the requester logged in?
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    // ── Menu: public read, admin write ──
+    match /menu/{itemId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Orders: logged-in users can create their own, admin can read/write all ──
+    match /orders/{orderId} {
+      allow read: if isAdmin() || (isLoggedIn() && resource.data.customerId == request.auth.uid);
+      allow create: if true;  // Public ordering allowed
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Events / Cook Days: public read, admin write ──
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Gallery: public read, logged-in users can add, admin can delete ──
+    match /gallery_posts/{postId} {
+      allow read: if true;
+      allow create: if isLoggedIn();
+      allow update: if isLoggedIn(); // likes
+      allow delete: if isAdmin();
+    }
+
+    // ── Users: each user can read/write their own doc, admin can read all ──
+    match /users/{userId} {
+      allow read: if isLoggedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isLoggedIn() && request.auth.uid == userId;
+      allow update: if isLoggedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ── Settings: public read, admin write ──
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

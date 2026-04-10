@@ -230,7 +230,7 @@ const StorefrontHome = () => {
                   </div>
                 )}
                 <iframe
-                  src={liveStatus.previewUrl}
+                  src={`${liveStatus.previewUrl}?autoplay=true&muted=true&preload=auto&loop=false&controls=true`}
                   className="w-full aspect-video bg-black"
                   allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                   allowFullScreen
