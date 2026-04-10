@@ -77,6 +77,10 @@ const LiveStreamManager: React.FC = () => {
   const [fbStreamKey, setFbStreamKey] = useState('');
   const [addingOutput, setAddingOutput] = useState(false);
 
+  // Facebook relay refs
+  const relayWsRef = useRef<WebSocket | null>(null);
+  const relayRecorderRef = useRef<MediaRecorder | null>(null);
+
   // Canvas watermark refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasStreamRef = useRef<MediaStream | null>(null);
@@ -410,7 +414,8 @@ const LiveStreamManager: React.FC = () => {
     setIsGoingLive(true);
 
     try {
-      // Create Facebook Live video + auto-add simulcast if enabled
+      // Create Facebook Live video + start RTMP relay if enabled
+      let fbRelayReady = false;
       if (fbSimulcast && fbConnected) {
         try {
           toast('Setting up Facebook Live...', 'info');
@@ -420,11 +425,35 @@ const LiveStreamManager: React.FC = () => {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ title: streamTitle, description: fbDescription || `${streamTitle} - Live from Hughesys Que 🔥🍖` }),
           });
-          const fbData = await fbRes.json();
-          if (fbRes.ok && fbData.success) {
-            toast('Facebook Live connected!');
+          const fbData: any = await fbRes.json();
+          if (fbRes.ok && fbData.success && fbData.streamUrl) {
+            // Start RTMP relay session
+            const relayUrl = 'https://hughesysque-rtmp-relay.steve-700.workers.dev';
+            const relayRes = await fetch(`${relayUrl}/start`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ rtmpUrl: fbData.rtmpUrl, streamKey: fbData.streamKey }),
+            });
+            const relayData: any = await relayRes.json();
+            if (relayData.sessionId) {
+              // Connect WebSocket to relay
+              const wsUrl = `${relayUrl.replace('https://', 'wss://').replace('http://', 'ws://')}/ws/${relayData.sessionId}`;
+              const ws = new WebSocket(wsUrl);
+              ws.binaryType = 'arraybuffer';
+              ws.onopen = () => { toast('Facebook Live relay connected!'); };
+              ws.onmessage = (e) => {
+                try {
+                  const msg = JSON.parse(e.data as string);
+                  if (msg.type === 'connected') toast('Streaming to Facebook!');
+                  if (msg.type === 'error') toast(`FB relay: ${msg.error}`, 'warning');
+                } catch {}
+              };
+              ws.onerror = () => { toast('Facebook relay connection lost', 'warning'); };
+              relayWsRef.current = ws;
+              fbRelayReady = true;
+            }
           } else {
-            toast(`Facebook Live failed: ${(fbData as any).error || 'Unknown error'}. Continuing without FB.`, 'warning');
+            toast(`Facebook Live failed: ${fbData.error || 'Unknown error'}. Continuing without FB.`, 'warning');
           }
         } catch (e: any) {
           toast(`Facebook setup error: ${e.message}. Continuing without FB.`, 'warning');
@@ -517,6 +546,39 @@ const LiveStreamManager: React.FC = () => {
       }, 1000);
 
       toast('You are LIVE!');
+
+      // Start sending video to Facebook relay if connected
+      if (fbRelayReady && relayWsRef.current && canvasStreamRef.current) {
+        try {
+          const relayStream = canvasStreamRef.current.clone();
+          // Add audio from raw stream
+          const audioTrack = streamRef.current?.getAudioTracks()[0];
+          if (audioTrack) relayStream.addTrack(audioTrack.clone());
+
+          const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=h264,opus')
+            ? 'video/webm;codecs=h264,opus'
+            : MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+            ? 'video/webm;codecs=vp8,opus'
+            : 'video/webm';
+
+          const recorder = new MediaRecorder(relayStream, { mimeType, videoBitsPerSecond: 2500000 });
+          relayRecorderRef.current = recorder;
+
+          recorder.ondataavailable = (e) => {
+            if (e.data.size > 0 && relayWsRef.current?.readyState === WebSocket.OPEN) {
+              e.data.arrayBuffer().then(buf => {
+                relayWsRef.current?.send(buf);
+              });
+            }
+          };
+
+          recorder.start(1000); // Send chunks every 1 second
+          console.log('[FB Relay] MediaRecorder started, sending to relay');
+        } catch (e: any) {
+          console.warn('[FB Relay] MediaRecorder error:', e.message);
+        }
+      }
+
       // Refresh status after a short delay
       setTimeout(fetchStatus, 3000);
     } catch (err: any) {
@@ -533,6 +595,17 @@ const LiveStreamManager: React.FC = () => {
   };
 
   const stopBroadcast = () => {
+    // Stop Facebook relay
+    if (relayRecorderRef.current) {
+      try { relayRecorderRef.current.stop(); } catch {}
+      relayRecorderRef.current = null;
+    }
+    if (relayWsRef.current) {
+      try { relayWsRef.current.send(JSON.stringify({ type: 'end' })); } catch {}
+      try { relayWsRef.current.close(); } catch {}
+      relayWsRef.current = null;
+    }
+
     // Stop media tracks
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;

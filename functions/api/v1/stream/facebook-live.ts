@@ -60,12 +60,12 @@ export const onRequest = async (context: any) => {
       return json({ error: 'Facebook did not return a stream URL', facebookResponse: fbData }, 500);
     }
 
-    // Extract RTMP server URL and stream key
-    // Facebook returns full URL like: rtmps://live-api-s.facebook.com:443/rtmp/FB-xxxx-xxxx-Abxxxxx
-    // We need to split into base URL + stream key for Cloudflare simulcast
+    // Facebook returns full RTMP URL like:
+    // rtmps://live-api-s.facebook.com:443/rtmp/123456?s_bl=1&s_ow=10&...&a=Ab7xxx
+    // Cloudflare simulcast needs: url = server base, streamKey = everything after /rtmp/
+    // The query params in the key are required for Facebook auth
     const rtmpUrl = 'rtmps://live-api-s.facebook.com:443/rtmp/';
-    // Stream key is everything after /rtmp/
-    const streamKey = streamUrl.includes('/rtmp/') ? streamUrl.split('/rtmp/')[1] : streamUrl.substring(streamUrl.lastIndexOf('/') + 1);
+    const streamKey = streamUrl.split('/rtmp/')[1] || streamUrl;
 
     // Auto-add simulcast output to Cloudflare so the stream goes to Facebook
     let simulcastOutput = null;

@@ -1,0 +1,13 @@
+name = "hughesysque-rtmp-relay"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[durable_objects]
+bindings = [
+  { name = "RTMP_RELAY", class_name = "RtmpRelaySession" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["RtmpRelaySession"]
