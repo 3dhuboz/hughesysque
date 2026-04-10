@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pennywise-hub-v1';
+const CACHE_NAME = 'hughesysque-v2';
 const PRECACHE_URLS = [
   '/',
   '/my-apps',
