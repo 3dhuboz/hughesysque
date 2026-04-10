@@ -461,7 +461,7 @@ const LiveStreamManager: React.FC = () => {
       }
       // Get camera + mic
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: { ideal: 'environment' } },
         audio: true,
       });
 
@@ -656,7 +656,7 @@ const LiveStreamManager: React.FC = () => {
     const newFacing = facingMode === 'user' ? 'environment' : 'user';
     try {
       const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newFacing, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: newFacing },
         audio: false,
       });
       const newVideoTrack = newStream.getVideoTracks()[0];
@@ -686,7 +686,7 @@ const LiveStreamManager: React.FC = () => {
 
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: { ideal: 'environment' } },
         audio: true,
       });
 
@@ -866,7 +866,7 @@ const LiveStreamManager: React.FC = () => {
     const newFacing = facingMode === 'user' ? 'environment' : 'user';
     try {
       const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newFacing, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: newFacing },
         audio: false,
       });
       const newVideoTrack = newStream.getVideoTracks()[0];
@@ -1049,7 +1049,7 @@ const LiveStreamManager: React.FC = () => {
         <div className="space-y-4">
           {/* Video preview — canvas with watermark */}
           <div className="relative rounded-2xl overflow-hidden border-2 border-blue-600/60 shadow-[0_0_30px_rgba(37,99,235,0.2)]">
-            <canvas ref={canvasRef} className="w-full aspect-video bg-black object-contain" />
+            <canvas ref={canvasRef} className="w-full bg-black" style={{ maxHeight: '70vh', objectFit: 'contain' }} />
 
             {/* Overlay: REC badge + duration */}
             <div className="absolute top-4 left-4 flex items-center gap-3">
@@ -1219,7 +1219,7 @@ const LiveStreamManager: React.FC = () => {
               onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).play().catch(() => {}); }}
               style={{ display: 'none' }}
             />
-            <canvas ref={canvasRef} className="w-full aspect-video bg-black object-contain" />
+            <canvas ref={canvasRef} className="w-full bg-black" style={{ maxHeight: '70vh', objectFit: 'contain' }} />
 
             {/* Overlay: duration + viewers */}
             <div className="absolute top-4 left-4 flex items-center gap-3">
