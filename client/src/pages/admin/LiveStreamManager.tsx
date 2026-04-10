@@ -147,7 +147,7 @@ const LiveStreamManager: React.FC = () => {
 
   // Load business logo for watermark — from settings first, fallback to /logo.png
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('pw_token');
     fetch('/api/v1/settings', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then(r => r.json()).then(data => {
         const logoUrl = data?.logoUrl || '/logo.png';
@@ -165,7 +165,7 @@ const LiveStreamManager: React.FC = () => {
 
   // Load sponsors from settings
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('pw_token');
     fetch('/api/v1/settings', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then(r => r.json()).then(data => {
         if (Array.isArray(data?.sponsors) && data.sponsors.length > 0) {
@@ -204,7 +204,7 @@ const LiveStreamManager: React.FC = () => {
   };
   const saveSponsors = async () => {
     try {
-      await fetch('/api/v1/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ sponsors }) });
+      await fetch('/api/v1/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pw_token')}` }, body: JSON.stringify({ sponsors }) });
       toast('Sponsors saved!');
     } catch { toast('Failed to save sponsors', 'error'); }
   };
@@ -212,7 +212,7 @@ const LiveStreamManager: React.FC = () => {
   // Simulcast functions
   const loadSimulcastOutputs = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('pw_token');
       const res = await fetch('/api/v1/stream/simulcast', { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       setSimulcastOutputs(data.outputs || []);
@@ -223,7 +223,7 @@ const LiveStreamManager: React.FC = () => {
     if (!fbRtmpUrl.trim() || !fbStreamKey.trim()) { toast('Enter RTMP URL and Stream Key', 'error'); return; }
     setAddingOutput(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('pw_token');
       const res = await fetch('/api/v1/stream/simulcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -244,7 +244,7 @@ const LiveStreamManager: React.FC = () => {
   const removeSimulcastOutput = async (outputId: string) => {
     if (!window.confirm('Remove this simulcast destination?')) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('pw_token');
       await fetch(`/api/v1/stream/simulcast?outputId=${outputId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       toast('Output removed');
       loadSimulcastOutputs();
@@ -253,7 +253,7 @@ const LiveStreamManager: React.FC = () => {
 
   const toggleSimulcastOutput = async (outputId: string, enabled: boolean) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('pw_token');
       await fetch('/api/v1/stream/simulcast', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -268,7 +268,7 @@ const LiveStreamManager: React.FC = () => {
   const deleteRecording = async (uid: string) => {
     if (!window.confirm('Permanently delete this recording? This cannot be undone.')) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('pw_token');
       const res = await fetch(`/api/v1/stream/recordings?id=${uid}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         setRecordings(prev => prev.filter(r => r.uid !== uid));
@@ -419,7 +419,7 @@ const LiveStreamManager: React.FC = () => {
       if (fbSimulcast && fbConnected) {
         try {
           toast('Setting up Facebook Live...', 'info');
-          const token = localStorage.getItem('token');
+          const token = localStorage.getItem('pw_token');
           const fbRes = await fetch('/api/v1/stream/facebook-live', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
