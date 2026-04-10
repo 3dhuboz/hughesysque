@@ -1,0 +1,12 @@
+{
+  "name": "hughesysque-rtmp-relay",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "node-media-server": "^2.6.5",
+    "ws": "^8.16.0",
+    "fluent-ffmpeg": "^2.1.3"
+  }
+}

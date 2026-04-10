@@ -428,7 +428,7 @@ const LiveStreamManager: React.FC = () => {
           const fbData: any = await fbRes.json();
           if (fbRes.ok && fbData.success && fbData.streamUrl) {
             // Start RTMP relay session
-            const relayUrl = 'https://hughesysque-rtmp-relay.steve-700.workers.dev';
+            const relayUrl = 'https://hughesysque-rtmp-relay.fly.dev';
             const relayRes = await fetch(`${relayUrl}/start`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
