@@ -555,13 +555,23 @@ const LiveStreamManager: React.FC = () => {
           const audioTrack = streamRef.current?.getAudioTracks()[0];
           if (audioTrack) relayStream.addTrack(audioTrack.clone());
 
+          // Detect best format — Safari uses MP4, Chrome/Android use WebM
           const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=h264,opus')
             ? 'video/webm;codecs=h264,opus'
             : MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
             ? 'video/webm;codecs=vp8,opus'
-            : 'video/webm';
+            : MediaRecorder.isTypeSupported('video/webm')
+            ? 'video/webm'
+            : MediaRecorder.isTypeSupported('video/mp4')
+            ? 'video/mp4'
+            : '';
 
-          const recorder = new MediaRecorder(relayStream, { mimeType, videoBitsPerSecond: 2500000 });
+          if (!mimeType) { console.warn('[FB Relay] No supported recording format'); }
+
+          // Tell relay what format we're sending
+          relayWsRef.current?.send(JSON.stringify({ type: 'format', mimeType }));
+
+          const recorder = new MediaRecorder(relayStream, { ...(mimeType ? { mimeType } : {}), videoBitsPerSecond: 2500000 });
           relayRecorderRef.current = recorder;
 
           recorder.ondataavailable = (e) => {

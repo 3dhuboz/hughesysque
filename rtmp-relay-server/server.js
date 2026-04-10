@@ -98,7 +98,7 @@ const server = http.createServer((req, res) => {
 });
 
 // WebSocket server
-const wss = new WebSocketServer({ server, path: undefined });
+const wss = new WebSocketServer({ noServer: true });
 
 server.on('upgrade', (request, socket, head) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
@@ -123,9 +123,19 @@ server.on('upgrade', (request, socket, head) => {
 
     // Spawn ffmpeg — reads WebM from stdin, outputs FLV to RTMP
     const ffmpeg = spawn('ffmpeg', [
-      '-i', 'pipe:0',           // Read from stdin
-      '-c:v', 'copy',           // Copy video codec (no re-encode)
-      '-c:a', 'aac',            // Transcode audio to AAC (RTMP requires it)
+      '-fflags', '+genpts+discardcorrupt+nobuffer',
+      '-analyzeduration', '2000000',  // 2 seconds to analyze input
+      '-probesize', '1000000',        // 1MB probe size
+      '-i', 'pipe:0',           // Read from stdin (auto-detect format)
+      '-c:v', 'libx264',        // Transcode to H.264 (required for RTMP/FLV)
+      '-preset', 'veryfast',    // Fast encoding for real-time
+      '-tune', 'zerolatency',   // Minimize latency
+      '-b:v', '2500k',          // Video bitrate
+      '-maxrate', '2500k',
+      '-bufsize', '5000k',
+      '-pix_fmt', 'yuv420p',    // Required for compatibility
+      '-g', '60',               // Keyframe every 2 seconds at 30fps
+      '-c:a', 'aac',            // Transcode audio to AAC
       '-ar', '44100',           // Audio sample rate
       '-b:a', '128k',           // Audio bitrate
       '-f', 'flv',              // Output format
@@ -139,15 +149,15 @@ server.on('upgrade', (request, socket, head) => {
 
     ffmpeg.stderr.on('data', (data) => {
       const msg = data.toString();
+      // Log all ffmpeg output for debugging
+      console.log(`[Session ${sessionId.slice(0, 8)}] ffmpeg: ${msg.trim().substring(0, 200)}`);
       // Look for connection success
-      if (msg.includes('Output #0') || msg.includes('muxing started')) {
-        session.status = 'live';
-        ws.send(JSON.stringify({ type: 'connected', status: 'live' }));
-        console.log(`[Session ${sessionId.slice(0, 8)}] LIVE — streaming to Facebook`);
-      }
-      // Log errors
-      if (msg.includes('Error') || msg.includes('error')) {
-        console.error(`[Session ${sessionId.slice(0, 8)}] ffmpeg: ${msg.trim()}`);
+      if (msg.includes('Output #0') || msg.includes('muxing started') || msg.includes('frame=')) {
+        if (session.status !== 'live') {
+          session.status = 'live';
+          try { ws.send(JSON.stringify({ type: 'connected', status: 'live' })); } catch {}
+          console.log(`[Session ${sessionId.slice(0, 8)}] LIVE — streaming to Facebook`);
+        }
       }
     });
 
@@ -174,6 +184,7 @@ server.on('upgrade', (request, socket, head) => {
     }, 5000);
 
     // Handle incoming video chunks from browser
+    let firstDataReceived = false;
     ws.on('message', (data) => {
       if (typeof data === 'string') {
         try {
@@ -185,16 +196,25 @@ server.on('upgrade', (request, socket, head) => {
             ws.close(1000);
             return;
           }
+          if (cmd.type === 'format') {
+            console.log(`[Session ${sessionId.slice(0, 8)}] Browser format: ${cmd.mimeType}`);
+          }
         } catch {}
         return;
       }
 
-      // Binary data — WebM chunks from MediaRecorder
-      session.bytesReceived += data.length;
+      // Binary data — WebM/MP4 chunks from MediaRecorder
+      const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      session.bytesReceived += chunk.length;
+
+      if (!firstDataReceived) {
+        firstDataReceived = true;
+        console.log(`[Session ${sessionId.slice(0, 8)}] First data chunk: ${chunk.length} bytes, header: ${chunk.slice(0, 4).toString('hex')}`);
+      }
 
       if (ffmpeg.stdin.writable) {
-        ffmpeg.stdin.write(data, (err) => {
-          if (err) {
+        ffmpeg.stdin.write(chunk, (err) => {
+          if (err && !err.message.includes('EPIPE')) {
             console.error(`[Session ${sessionId.slice(0, 8)}] stdin write error:`, err.message);
           }
         });
