@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Utensils, ShoppingBag, MapPin, Clock, Calendar, Mail,
-  Plus, X, Flame, ChefHat, ArrowRight, Truck
+  Plus, X, Flame, ChefHat, ArrowRight, Truck, Video, Gift,
+  Radio, Send, Eye, MessageCircle, MoreHorizontal, Phone
 } from 'lucide-react';
 import api from '../api';
 import { useClientConfig } from '../context/ClientConfigContext';
@@ -127,8 +128,16 @@ const Storefront = () => {
   const navItems = [
     { key: 'home', label: 'Home', icon: Flame },
     { key: 'menu', label: 'Menu', icon: Utensils },
-    { key: 'catering', label: 'Catering', icon: ChefHat },
+    { key: 'live', label: 'Live', icon: Radio },
     { key: 'schedule', label: 'Order', icon: Calendar },
+    { key: 'more', label: 'More', icon: MoreHorizontal },
+  ];
+  const [showMore, setShowMore] = useState(false);
+  const moreItems = [
+    { key: 'catering', label: 'Catering', icon: ChefHat },
+    { key: 'gallery', label: 'Gallery', icon: Video },
+    { key: 'rewards', label: 'Rewards', icon: Gift },
+    { key: 'contact', label: 'Contact', icon: Phone },
   ];
 
   return (
@@ -504,6 +513,50 @@ const Storefront = () => {
             )}
           </div>
         )}
+
+        {/* ──────── LIVE ──────── */}
+        {page === 'live' && <SfLivePage accent={accent} gold={gold} />}
+
+        {/* ──────── GALLERY ──────── */}
+        {page === 'gallery' && <SfGalleryPage accent={accent} gold={gold} />}
+
+        {/* ──────── REWARDS ──────── */}
+        {page === 'rewards' && <SfRewardsPage accent={accent} gold={gold} navigate={navigate} />}
+
+        {/* ──────── CONTACT ──────── */}
+        {page === 'contact' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h2 style={{ fontFamily: "'Oswald',sans-serif", fontSize: '2rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', textAlign: 'center' }}>
+              Get in <span style={{ color: accent }}>Touch</span>
+            </h2>
+            <div style={{ maxWidth: '28rem', margin: '0 auto', width: '100%' }}>
+              <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: '1.5rem', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <a href={`tel:${siteSettings.businessPhone || ''}`} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#d1d5db', textDecoration: 'none', fontSize: '1rem' }}>
+                  <Phone size={20} style={{ color: accent }} /> {siteSettings.businessPhone || 'Call us'}
+                </a>
+                <a href={`mailto:${siteSettings.businessEmail || siteSettings.contactEmail || ''}`} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#d1d5db', textDecoration: 'none', fontSize: '1rem' }}>
+                  <Mail size={20} style={{ color: gold }} /> {siteSettings.businessEmail || siteSettings.contactEmail || 'Email us'}
+                </a>
+                {siteSettings.businessFacebook && (
+                  <a href={siteSettings.businessFacebook} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#d1d5db', textDecoration: 'none', fontSize: '1rem' }}>
+                    <MessageCircle size={20} style={{ color: '#3b82f6' }} /> Facebook
+                  </a>
+                )}
+                {siteSettings.businessInstagram && (
+                  <a href={siteSettings.businessInstagram} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#d1d5db', textDecoration: 'none', fontSize: '1rem' }}>
+                    <Video size={20} style={{ color: '#e879f9' }} /> Instagram
+                  </a>
+                )}
+              </div>
+              {siteSettings.businessAddress && (
+                <div style={{ textAlign: 'center', marginTop: '1.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                  <MapPin size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                  {siteSettings.businessAddress}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
 
       {/* ═══ FOOTER ═══ */}
@@ -536,11 +589,31 @@ const Storefront = () => {
       </footer>
 
       {/* ═══ MOBILE BOTTOM NAV ═══ */}
+      {/* ═══ MORE MENU OVERLAY ═══ */}
+      {showMore && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }} onClick={() => setShowMore(false)}>
+          <div style={{ position: 'absolute', bottom: 80, left: '50%', transform: 'translateX(-50%)', width: 'calc(100% - 2rem)', maxWidth: 360, background: '#1a1a2e', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', padding: '0.75rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }} onClick={e => e.stopPropagation()}>
+            {moreItems.map(item => {
+              const Icon = item.icon;
+              return (
+                <button key={item.key} onClick={() => { navigate(item.key); setShowMore(false); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1rem', borderRadius: 12, background: page === item.key ? 'rgba(217,56,30,0.15)' : 'rgba(255,255,255,0.05)', border: page === item.key ? '1px solid rgba(217,56,30,0.3)' : '1px solid rgba(255,255,255,0.08)', color: page === item.key ? '#D9381E' : '#d1d5db', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer' }}>
+                  <Icon size={18} />
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <nav className="sf-bottom-nav sf-glass">
         {navItems.map(n => {
           const Icon = n.icon;
+          const isMore = n.key === 'more';
+          const isActive = isMore ? showMore : page === n.key;
           return (
-            <button key={n.key} className={page === n.key ? 'active' : ''} onClick={() => navigate(n.key)}>
+            <button key={n.key} className={isActive ? 'active' : ''} onClick={() => isMore ? setShowMore(!showMore) : navigate(n.key)}>
               <Icon size={22} strokeWidth={1.5} />
               <span>{n.label}</span>
             </button>
@@ -621,6 +694,133 @@ const Storefront = () => {
 
       {/* ═══ ITEM MODAL ═══ */}
       {selectedItem && <ItemModal item={selectedItem} onClose={() => setSelectedItem(null)} onAdd={addToCart} accent={accent} />}
+    </div>
+  );
+};
+
+// ─── LIVE PAGE (inline) ──────────────────────────────────
+const SfLivePage = ({ accent, gold }) => {
+  const [fbVideos, setFbVideos] = React.useState([]);
+  const [selectedVideo, setSelectedVideo] = React.useState(null);
+  const [streamStatus, setStreamStatus] = React.useState(null);
+
+  React.useEffect(() => {
+    fetch('/api/v1/stream/fb-recordings').then(r => r.json()).then(d => {
+      if (d?.recordings) setFbVideos(d.recordings);
+    }).catch(() => {});
+    fetch('/api/v1/stream/status').then(r => r.json()).then(d => setStreamStatus(d)).catch(() => {});
+  }, []);
+
+  const isLive = streamStatus?.live;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <h2 style={{ fontFamily: "'Oswald',sans-serif", fontSize: '2rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', textAlign: 'center' }}>
+        <span style={{ color: accent }}>Live</span> & Replays
+      </h2>
+
+      {isLive && streamStatus?.previewUrl && (
+        <div style={{ borderRadius: 16, overflow: 'hidden', border: `2px solid ${accent}`, boxShadow: `0 0 30px ${accent}33` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: accent }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', animation: 'sf-fade-in 1s ease-in-out infinite alternate' }} />
+            <span style={{ color: '#fff', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>LIVE NOW</span>
+          </div>
+          <iframe src={`${streamStatus.previewUrl}?autoplay=true&muted=true&controls=true`} style={{ width: '100%', aspectRatio: '16/9', border: 'none', background: '#000' }} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen title="Live" />
+        </div>
+      )}
+
+      {!isLive && (
+        <div style={{ textAlign: 'center', padding: '2rem', background: 'rgba(255,255,255,0.03)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)' }}>
+          <Radio size={32} style={{ color: '#6b7280', margin: '0 auto 0.75rem' }} />
+          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Not live right now</p>
+        </div>
+      )}
+
+      {fbVideos.length > 0 && (
+        <>
+          <h3 style={{ fontFamily: "'Oswald',sans-serif", fontSize: '1.25rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>Past Streams</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {fbVideos.map(vid => (
+              <div key={vid.id} onClick={() => setSelectedVideo(vid)}
+                style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem', background: 'rgba(255,255,255,0.04)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>
+                <div style={{ width: 80, height: 50, borderRadius: 8, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Video size={20} style={{ color: '#4b5563' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{vid.title}</p>
+                  <p style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: 2 }}>{new Date(vid.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {selectedVideo && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.95)', display: 'flex', flexDirection: 'column' }} onClick={() => setSelectedVideo(null)}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem' }} onClick={e => e.stopPropagation()}>
+            <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.875rem' }}>{selectedVideo.title}</p>
+            <button onClick={() => setSelectedVideo(null)} style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}><X size={22} /></button>
+          </div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 0.5rem' }} onClick={e => e.stopPropagation()}>
+            {selectedVideo.embedUrl ? (
+              <iframe src={selectedVideo.embedUrl} style={{ width: '100%', height: '100%', maxHeight: '80vh', border: 'none', borderRadius: 8 }} allow="autoplay; encrypted-media; picture-in-picture; web-share" allowFullScreen title={selectedVideo.title} />
+            ) : (
+              <a href={selectedVideo.fbVideoUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6' }}>Open on Facebook</a>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── GALLERY PAGE (inline) ───────────────────────────────
+const SfGalleryPage = ({ accent, gold }) => {
+  const [posts, setPosts] = React.useState([]);
+  React.useEffect(() => {
+    fetch('/api/v1/gallery').then(r => r.json()).then(d => {
+      if (Array.isArray(d)) setPosts(d);
+      else if (d?.posts) setPosts(d.posts);
+    }).catch(() => {});
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <h2 style={{ fontFamily: "'Oswald',sans-serif", fontSize: '2rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', textAlign: 'center' }}>
+        <span style={{ color: gold }}>Gallery</span>
+      </h2>
+      {posts.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
+          <Video size={40} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
+          <p>No photos yet. Check back soon!</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+          {posts.map((p, i) => (
+            <div key={p.id || i} style={{ aspectRatio: '1', borderRadius: 8, overflow: 'hidden', background: '#111' }}>
+              {p.image && <img src={p.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── REWARDS PAGE (inline) ───────────────────────────────
+const SfRewardsPage = ({ accent, gold, navigate }) => {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center', textAlign: 'center' }}>
+      <h2 style={{ fontFamily: "'Oswald',sans-serif", fontSize: '2rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>
+        Golden <span style={{ color: gold }}>Ticket</span> Club
+      </h2>
+      <p style={{ color: '#9ca3af', fontSize: '0.9375rem', maxWidth: '20rem', lineHeight: 1.6 }}>
+        Earn stamps with every order. Fill your card, scratch for a prize!
+      </p>
+      <a href="/#/rewards" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: gold, color: '#000', fontWeight: 800, padding: '0.875rem 2rem', borderRadius: 9999, textDecoration: 'none', textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: '0.05em' }}>
+        <Gift size={18} /> View My Card
+      </a>
     </div>
   );
 };
