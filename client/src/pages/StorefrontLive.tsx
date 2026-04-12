@@ -343,23 +343,18 @@ const StorefrontLive: React.FC = () => {
   // ═══════════════════════════════════════════════════════
   return (
     <div className="animate-fade-in pb-20">
-      {/* Hero */}
-      <div className="relative rounded-2xl overflow-hidden shadow-2xl mb-8 bg-gradient-to-br from-gray-900 via-bbq-charcoal to-gray-900 border border-gray-800">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-bbq-red rounded-full blur-[120px]" />
-        </div>
-        <div className="relative z-10 flex flex-col items-center justify-center text-center py-16 px-6">
-          <div className="w-16 h-16 rounded-full bg-gray-800 border-2 border-gray-700 flex items-center justify-center mb-5">
-            <Video size={32} className="text-bbq-red" />
-          </div>
-          <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-3 uppercase tracking-tight">
+      {/* Hero — compact on mobile */}
+      <div className="relative rounded-xl overflow-hidden shadow-xl mb-6 bg-gradient-to-br from-gray-900 via-bbq-charcoal to-gray-900 border border-gray-800">
+        <div className="relative z-10 flex flex-col items-center justify-center text-center py-8 md:py-12 px-4">
+          <Video size={28} className="text-bbq-red mb-3" />
+          <h1 className="text-2xl md:text-4xl font-display font-bold text-white mb-2 uppercase tracking-tight">
             Videos & <span className="text-bbq-red">Replays</span>
           </h1>
-          <p className="text-gray-400 text-lg max-w-md">
-            Watch past cooks, comp walkarounds, and behind-the-scenes action from Hughesey.
+          <p className="text-gray-400 text-sm md:text-base max-w-md">
+            Past cooks, walkarounds, and behind-the-scenes from Hughesey.
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 bg-gray-800 border border-gray-700 px-4 py-2 rounded-full text-sm">
-            <Radio size={14} className="text-gray-500" />
+          <div className="mt-3 inline-flex items-center gap-2 bg-gray-800 border border-gray-700 px-3 py-1.5 rounded-full text-xs">
+            <Radio size={12} className="text-gray-500" />
             <span className="text-gray-400">Not live right now</span>
           </div>
         </div>
@@ -375,36 +370,25 @@ const StorefrontLive: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {fbRecordings.map((vid: any) => (
               <div key={vid.id} className="bg-bbq-charcoal rounded-2xl overflow-hidden border border-gray-800 shadow-xl hover:border-gray-600 transition-all group">
-                {/* Embedded FB video */}
-                <div className="aspect-video bg-black relative cursor-pointer" onClick={() => setSelectedFbVideo(vid)}>
+                {/* Thumbnail — click to play */}
+                <div className="aspect-video bg-black relative cursor-pointer overflow-hidden" onClick={() => setSelectedFbVideo(vid)}>
                   <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
-                    <div className="text-center">
-                      <div className="w-16 h-16 rounded-full bg-bbq-red/20 border-2 border-bbq-red/40 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                        <Play size={28} className="text-bbq-red ml-1" />
-                      </div>
-                      <p className="text-white font-bold text-sm">{vid.title}</p>
+                    <div className="w-14 h-14 rounded-full bg-bbq-red/20 border-2 border-bbq-red/40 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Play size={24} className="text-bbq-red ml-0.5" />
                     </div>
                   </div>
                 </div>
-                {/* Info */}
-                <div className="p-4">
-                  <h3 className="font-bold text-white text-base mb-1">{vid.title}</h3>
-                  {vid.description && (
-                    <p className="text-gray-400 text-sm line-clamp-2 mb-3">{vid.description.substring(0, 120)}{vid.description.length > 120 ? '...' : ''}</p>
-                  )}
+                {/* Info — compact */}
+                <div className="p-3">
+                  <h3 className="font-bold text-white text-sm mb-0.5 truncate">{vid.title}</h3>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{formatDate(vid.createdAt)}</span>
-                    <div className="flex items-center gap-2">
-                      {vid.liveViews > 0 && (
-                        <span className="text-xs text-gray-500 flex items-center gap-1"><Eye size={10} /> {vid.liveViews}</span>
-                      )}
-                      {vid.fbVideoUrl && (
-                        <a href={vid.fbVideoUrl} target="_blank" rel="noopener noreferrer"
-                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                          Watch on Facebook
-                        </a>
-                      )}
-                    </div>
+                    <span className="text-[11px] text-gray-500">{formatDate(vid.createdAt)}</span>
+                    {vid.fbVideoUrl && (
+                      <a href={vid.fbVideoUrl} target="_blank" rel="noopener noreferrer"
+                        className="text-[11px] text-blue-400" onClick={e => e.stopPropagation()}>
+                        Facebook
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
@@ -441,34 +425,32 @@ const StorefrontLive: React.FC = () => {
         </div>
       )}
 
-      {/* Facebook Video Player Modal */}
+      {/* Facebook Video Player Modal — mobile friendly */}
       {selectedFbVideo && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedFbVideo(null)}>
-          <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-4xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-gray-800">
-              <div>
-                <h3 className="font-bold text-white text-lg">{selectedFbVideo.title}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">{formatDate(selectedFbVideo.createdAt)}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {selectedFbVideo.fbVideoUrl && (
-                  <a href={selectedFbVideo.fbVideoUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg transition">
-                    Watch on Facebook
-                  </a>
-                )}
-                <button onClick={() => setSelectedFbVideo(null)} className="text-gray-400 hover:text-white transition p-1"><X size={22} /></button>
-              </div>
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col" onClick={() => setSelectedFbVideo(null)}>
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-4 py-3 shrink-0" onClick={e => e.stopPropagation()}>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-bold text-white text-sm truncate">{selectedFbVideo.title}</h3>
+              <p className="text-[10px] text-gray-500">{formatDate(selectedFbVideo.createdAt)}</p>
             </div>
-            <div className="aspect-video bg-black">
-              {selectedFbVideo.embedUrl ? (
-                <iframe src={selectedFbVideo.embedUrl} className="w-full h-full" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" allowFullScreen title={selectedFbVideo.title} style={{ border: 'none' }} />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-500">
-                  <a href={selectedFbVideo.fbVideoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Open on Facebook</a>
-                </div>
+            <div className="flex items-center gap-2 shrink-0 ml-3">
+              {selectedFbVideo.fbVideoUrl && (
+                <a href={selectedFbVideo.fbVideoUrl} target="_blank" rel="noopener noreferrer"
+                  className="text-[10px] bg-blue-600 text-white px-2.5 py-1 rounded-lg">
+                  Facebook
+                </a>
               )}
+              <button onClick={() => setSelectedFbVideo(null)} className="text-gray-400 hover:text-white p-1"><X size={20} /></button>
             </div>
+          </div>
+          {/* Video — fills remaining space */}
+          <div className="flex-1 flex items-center justify-center px-2 pb-4" onClick={e => e.stopPropagation()}>
+            {selectedFbVideo.embedUrl ? (
+              <iframe src={selectedFbVideo.embedUrl} className="w-full max-w-4xl rounded-lg" style={{ height: '100%', maxHeight: '80vh', border: 'none' }} allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" allowFullScreen title={selectedFbVideo.title} />
+            ) : (
+              <a href={selectedFbVideo.fbVideoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-lg">Open on Facebook</a>
+            )}
           </div>
         </div>
       )}
