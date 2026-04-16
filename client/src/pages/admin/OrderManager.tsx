@@ -200,8 +200,8 @@ const normalizePhone = (raw: string): string => {
         orderId: order.id,
         description: `Order #${order.id?.slice(-6) || order.id}`,
         redirectUrl,
-        includeTax: (settings.invoiceTemplate?.gstEnabled ?? settings.invoiceSettings?.gstEnabled) !== false,
-        taxRate: settings.invoiceTemplate?.gstRate ?? settings.invoiceSettings?.gstRate ?? 10,
+        includeTax: settings.invoiceSettings?.gstEnabled !== false, // default on
+        taxRate: settings.invoiceSettings?.gstRate ?? 10,
       };
       const bodyWithItems = {
         ...baseBody,
@@ -267,7 +267,7 @@ const normalizePhone = (raw: string): string => {
     const results: string[] = [];
 
     // Auto-generate Square payment link if Square is connected
-    const gstFields = { gstEnabled: (settings.invoiceTemplate?.gstEnabled ?? settings.invoiceSettings?.gstEnabled) !== false, taxRate: settings.invoiceTemplate?.gstRate ?? settings.invoiceSettings?.gstRate ?? 10 };
+    const gstFields = { gstEnabled: settings.invoiceSettings?.gstEnabled !== false, taxRate: settings.invoiceSettings?.gstRate ?? 10 };
     let invoiceSettingsWithPayLink = { ...settings.invoiceSettings, ...gstFields };
     const squareResult = await generateSquarePaymentLink(order);
     if (squareResult) {
@@ -453,7 +453,7 @@ const normalizePhone = (raw: string): string => {
           };
 
           // Auto-generate Square payment link if Square is connected
-          const gstFields2 = { gstEnabled: (settings.invoiceTemplate?.gstEnabled ?? settings.invoiceSettings?.gstEnabled) !== false, taxRate: settings.invoiceTemplate?.gstRate ?? settings.invoiceSettings?.gstRate ?? 10 };
+          const gstFields2 = { gstEnabled: settings.invoiceSettings?.gstEnabled !== false, taxRate: settings.invoiceSettings?.gstRate ?? 10 };
           let invoiceSettingsWithPayLink = { ...settings.invoiceSettings, ...gstFields2 };
           const squareResult = await generateSquarePaymentLink(editingOrder);
           if (squareResult) {

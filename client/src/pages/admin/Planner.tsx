@@ -22,7 +22,7 @@ const Planner: React.FC = () => {
   const [addressSuggestions, setAddressSuggestions] = useState<{line: string; detail: string; full: string}[]>([]);
   const [showAddressDropdown, setShowAddressDropdown] = useState(false);
   const addressWrapperRef = useRef<HTMLDivElement>(null);
-  const addressDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const addressDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const AU_STATE_MAP: Record<string, string> = { 'Queensland': 'QLD', 'New South Wales': 'NSW', 'Victoria': 'VIC', 'South Australia': 'SA', 'Western Australia': 'WA', 'Tasmania': 'TAS', 'Northern Territory': 'NT', 'Australian Capital Territory': 'ACT' };
 

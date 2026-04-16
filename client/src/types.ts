@@ -27,25 +27,30 @@ export interface PackGroup {
 
 export interface MenuItem {
   id: string;
+  _id?: string; // legacy Mongo id, some server responses still include this
   name: string;
   description: string;
   price: number;
-  unit?: string; 
-  minQuantity?: number; 
-  preparationOptions?: string[]; 
+  unit?: string;
+  minQuantity?: number;
+  preparationOptions?: string[];
   image: string;
   category: 'Burgers' | 'Meats' | 'Sides' | 'Platters' | 'Drinks' | 'Bulk Meats' | 'Catering Packs' | 'Trays' | 'Hot Sides' | 'Cold Sides' | 'Bakery' | 'Service' | 'Family Packs' | 'Rubs & Sauces' | 'Merch' | 'Salads';
   available: boolean;
   availabilityType: 'everyday' | 'specific_date';
-  specificDate?: string; 
+  specificDate?: string;
   specificDates?: string[];
   // Pack Logic
   isPack?: boolean;
   packGroups?: PackGroup[];
   // Catering Logic
   availableForCatering?: boolean;
+  isCatering?: boolean; // true = catering-only item (not shown on stocktake / cook-day menus)
   cateringCategory?: 'Meat' | 'Side' | 'Extra' | 'Drink' | 'Dessert';
   moq?: number;
+  // Stocktake — null/undefined means "not tracked"; a number is the current on-hand count.
+  // When stock hits 0 the item auto-marks unavailable for the day.
+  stock?: number | null;
 }
 
 export interface CateringPackage {
@@ -152,12 +157,13 @@ export interface RewardPrize {
 
 export interface RewardsConfig {
   enabled: boolean;
-  programName: string; 
-  staffPin: string; 
-  maxStamps: number; 
+  programName: string;
+  staffPin: string;
+  maxStamps: number;
   rewardTitle: string; // Deprecated but kept for fallback
   rewardImage: string; // Deprecated but kept for fallback
   possiblePrizes: RewardPrize[]; // New Prize Pool
+  minPurchase?: number; // minimum $ spent to earn a stamp (0 = any purchase)
 }
 
 export interface AppSettings {
@@ -219,6 +225,9 @@ export interface AppSettings {
   contactEmail?: string;
   subtitle?: string;
   heroHeading?: string;
+  heroTagline?: string;          // admin-editable hero tagline on storefront home
+  philosophyHeading?: string;    // admin-editable "Our Philosophy" heading
+  philosophyBody?: string;       // admin-editable body copy under the heading
   mapsUrl?: string;
   logoUrl: string;
   adminUsername?: string;
@@ -257,5 +266,7 @@ export interface AppSettings {
     thankYouMessage: string;
     bankDetails: string;
     smsTemplate: string;
+    gstEnabled?: boolean; // defaults to true (GST-registered business)
+    gstRate?: number;     // percentage, defaults to 10
   };
 }
