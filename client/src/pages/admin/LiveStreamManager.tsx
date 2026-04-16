@@ -567,8 +567,20 @@ const LiveStreamManager: React.FC = () => {
       // Start sending video to Facebook relay if connected
       if (fbRelayReady && relayWsRef.current && streamRef.current) {
         try {
-          // Use raw stream for relay — includes both video + audio
-          const relayStream = streamRef.current.clone();
+          // Build composite stream: watermarked canvas video + raw microphone audio
+          // This way Facebook viewers see the logo + sponsor ticker too
+          const relayStream = new MediaStream();
+          const canvasVideoTrack = canvasStreamRef.current?.getVideoTracks()[0];
+          const audioTrack = streamRef.current.getAudioTracks()[0];
+          if (canvasVideoTrack) {
+            relayStream.addTrack(canvasVideoTrack);
+          } else {
+            // Fallback: raw camera if canvas isn't ready (shouldn't normally happen)
+            const rawVideo = streamRef.current.getVideoTracks()[0];
+            if (rawVideo) relayStream.addTrack(rawVideo);
+            console.warn('[FB Relay] Canvas video track missing, falling back to raw camera');
+          }
+          if (audioTrack) relayStream.addTrack(audioTrack);
 
           // Detect best format — Safari uses MP4, Chrome/Android use WebM
           const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=h264,opus')
