@@ -1,15 +1,18 @@
 /**
  * Fetch past Facebook Live videos for the connected page.
- * GET /api/v1/stream/fb-recordings
- * Returns past live streams from Facebook as playable recordings.
+ * GET  /api/v1/stream/fb-recordings           → list VOD recordings
+ * DELETE /api/v1/stream/fb-recordings?id=...  → permanently delete a FB video (admin only)
  */
 import { getDB, parseJson } from '../_lib/db';
+import { verifyAuth, requireAuth } from '../_lib/auth';
 
 export const onRequest = async (context: any) => {
   const { request, env } = context;
   const json = (d: any, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'Content-Type': 'application/json' } });
 
-  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+  if (request.method !== 'GET' && request.method !== 'DELETE') {
+    return json({ error: 'Method not allowed' }, 405);
+  }
 
   try {
     const db = getDB(env);
@@ -18,6 +21,25 @@ export const onRequest = async (context: any) => {
 
     const pageId = settings.facebookPageId;
     const pageToken = settings.facebookPageAccessToken;
+
+    if (request.method === 'DELETE') {
+      const auth = await verifyAuth(request, env);
+      requireAuth(auth, 'ADMIN');
+      if (!pageToken) return json({ error: 'Facebook Page not configured' }, 500);
+      const url = new URL(request.url);
+      const videoId = url.searchParams.get('id');
+      if (!videoId) return json({ error: 'id is required' }, 400);
+
+      const fbRes = await fetch(
+        `https://graph.facebook.com/v18.0/${encodeURIComponent(videoId)}?access_token=${encodeURIComponent(pageToken)}`,
+        { method: 'DELETE' }
+      );
+      const fbData: any = await fbRes.json().catch(() => ({}));
+      if (!fbRes.ok || fbData.error) {
+        return json({ error: fbData.error?.message || `Facebook delete failed (${fbRes.status})` }, 400);
+      }
+      return json({ success: true });
+    }
 
     if (!pageId || !pageToken) {
       return json({ recordings: [] });

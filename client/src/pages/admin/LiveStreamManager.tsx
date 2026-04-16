@@ -36,6 +36,11 @@ const LiveStreamManager: React.FC = () => {
   const [isLoadingRecordings, setIsLoadingRecordings] = useState(true);
   const [previewRecording, setPreviewRecording] = useState<Recording | null>(null);
 
+  // Facebook Live recordings (VODs on the connected FB Page)
+  type FbRecording = { id: string; title: string; description: string; embedUrl: string | null; fbVideoUrl: string | null; createdAt: string; liveViews: number };
+  const [fbRecordings, setFbRecordings] = useState<FbRecording[]>([]);
+  const [isLoadingFbRecordings, setIsLoadingFbRecordings] = useState(true);
+
   // Share to socials state
   const [shareRecording, setShareRecording] = useState<Recording | null>(null);
   const [shareCaption, setShareCaption] = useState('');
@@ -122,6 +127,38 @@ const LiveStreamManager: React.FC = () => {
       .catch(() => {})
       .finally(() => setIsLoadingRecordings(false));
   }, []);
+
+  // Load Facebook Live recordings
+  const loadFbRecordings = useCallback(() => {
+    setIsLoadingFbRecordings(true);
+    fetch('/api/v1/stream/fb-recordings')
+      .then(r => r.json())
+      .then((data: any) => {
+        if (Array.isArray(data?.recordings)) setFbRecordings(data.recordings);
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingFbRecordings(false));
+  }, []);
+  useEffect(() => { loadFbRecordings(); }, [loadFbRecordings]);
+
+  // Delete an FB Live recording (calls Graph API DELETE via our endpoint)
+  const deleteFbRecording = async (id: string, title: string) => {
+    if (!window.confirm(`Permanently delete "${title}" from the Facebook Page? This cannot be undone.`)) return;
+    try {
+      const token = localStorage.getItem('pw_token');
+      const res = await fetch(`/api/v1/stream/fb-recordings?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setFbRecordings(prev => prev.filter(r => r.id !== id));
+        toast('Facebook recording deleted');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast((err as any).error || 'Failed to delete', 'error');
+      }
+    } catch { toast('Failed to delete recording', 'error'); }
+  };
 
   // Poll stream status every 10 seconds
   const fetchStatus = useCallback(() => {
@@ -1468,6 +1505,61 @@ const LiveStreamManager: React.FC = () => {
                 <div className="shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition">
                   <button onClick={() => openShareModal(rec)} className="p-1.5 rounded bg-gray-700 hover:bg-bbq-gold hover:text-black text-gray-400 transition" title="Share"><Share2 size={12} /></button>
                   <button onClick={() => deleteRecording(rec.uid)} className="p-1.5 rounded bg-gray-700 hover:bg-red-900 text-gray-400 hover:text-red-400 transition" title="Delete"><Trash2 size={12} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Facebook Live Recordings (delete test videos / manage FB VODs) */}
+      <div>
+        <div className="flex justify-between items-center border-b border-gray-700 pb-2 mb-4">
+          <h4 className="font-bold text-lg text-white flex items-center gap-2">
+            <Video size={18} className="text-bbq-gold" />
+            Facebook Live Recordings
+          </h4>
+          <button
+            onClick={loadFbRecordings}
+            className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1.5 rounded-lg transition"
+          >
+            Refresh
+          </button>
+        </div>
+        {isLoadingFbRecordings ? (
+          <div className="flex items-center justify-center py-4 text-gray-500">
+            <Loader2 size={16} className="animate-spin mr-2" /> Loading...
+          </div>
+        ) : fbRecordings.length === 0 ? (
+          <div className="text-center py-8 border-2 border-dashed border-gray-800 rounded-lg text-gray-500">
+            <Video size={24} className="mx-auto mb-2 opacity-40" />
+            <p className="text-sm">No Facebook Live VODs found. Past FB Live streams appear here.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {fbRecordings.map(rec => (
+              <div key={rec.id} className="flex items-center gap-3 bg-gray-800/50 rounded-lg border border-gray-700 p-2 hover:border-gray-500 transition group">
+                <div className="w-24 h-14 rounded-lg overflow-hidden bg-black shrink-0 flex items-center justify-center">
+                  <Video size={16} className="text-gray-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-bold truncate">{rec.title}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    {rec.createdAt ? new Date(rec.createdAt).toLocaleString() : ''}
+                    {rec.liveViews ? ` · ${rec.liveViews} views` : ''}
+                  </p>
+                </div>
+                <div className="shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                  {rec.fbVideoUrl && (
+                    <a href={rec.fbVideoUrl} target="_blank" rel="noopener noreferrer"
+                       className="p-1.5 rounded bg-gray-700 hover:bg-blue-900 text-gray-400 hover:text-blue-400 transition" title="Open on Facebook">
+                      <Play size={12} />
+                    </a>
+                  )}
+                  <button onClick={() => deleteFbRecording(rec.id, rec.title)}
+                          className="p-1.5 rounded bg-gray-700 hover:bg-red-900 text-gray-400 hover:text-red-400 transition" title="Delete from Facebook">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
             ))}
