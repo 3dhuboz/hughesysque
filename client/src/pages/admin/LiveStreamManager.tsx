@@ -496,9 +496,9 @@ const LiveStreamManager: React.FC = () => {
           toast(`Facebook setup error: ${e.message}. Continuing without FB.`, 'warning');
         }
       }
-      // Get camera + mic
+      // Get camera + mic — use selected facing mode (not hardcoded)
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+        video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: true,
       });
 
@@ -509,25 +509,55 @@ const LiveStreamManager: React.FC = () => {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.muted = true;
         videoRef.current.playsInline = true;
+        (videoRef.current as any).autoplay = true;
 
-        // Wait for video to have actual frames before starting canvas
+        // Must call play() FIRST on iOS/Safari — otherwise the video element stays paused
+        // even though it has data, and the canvas just draws a black frame.
+        try { await videoRef.current.play(); } catch {}
+
+        // Now wait for an actual rendered (non-black) frame before starting the canvas.
+        // Strategy: prefer requestVideoFrameCallback (Chrome/Edge, modern Safari 16+),
+        // fall back to the 'playing' event + currentTime advancing, with a hard timeout.
         await new Promise<void>((resolve) => {
           const v = videoRef.current!;
-          const onReady = () => {
-            v.removeEventListener('loadeddata', onReady);
-            resolve();
+          let done = false;
+          const finish = () => { if (!done) { done = true; resolve(); } };
+
+          // Hard timeout — don't block forever on broken devices
+          const timeoutId = setTimeout(finish, 4000);
+
+          // Best: actual decoded frame presented
+          const anyVideo = v as any;
+          if (typeof anyVideo.requestVideoFrameCallback === 'function') {
+            anyVideo.requestVideoFrameCallback(() => {
+              clearTimeout(timeoutId);
+              finish();
+            });
+            return;
+          }
+
+          // Fallback 1: 'playing' event
+          const onPlaying = () => {
+            // Give it one more tick for the first frame to actually render
+            setTimeout(() => { clearTimeout(timeoutId); finish(); }, 150);
+            v.removeEventListener('playing', onPlaying);
           };
-          if (v.readyState >= 2) { resolve(); return; }
-          v.addEventListener('loadeddata', onReady);
-          // Timeout fallback
-          setTimeout(resolve, 3000);
+          v.addEventListener('playing', onPlaying);
+
+          // Fallback 2: poll currentTime advancing (some mobile browsers don't fire 'playing' reliably)
+          const pollStart = Date.now();
+          const poll = setInterval(() => {
+            if (done) { clearInterval(poll); return; }
+            if (v.currentTime > 0 && v.videoWidth > 0) {
+              clearInterval(poll);
+              clearTimeout(timeoutId);
+              finish();
+            } else if (Date.now() - pollStart > 4000) {
+              clearInterval(poll);
+            }
+          }, 100);
         });
-
-        try { await videoRef.current.play(); } catch {}
       }
-
-      // Small delay to ensure video frames are flowing
-      await new Promise(r => setTimeout(r, 500));
 
       // Start canvas drawing loop for watermark + sponsor ticker
       animFrameRef.current = requestAnimationFrame(drawFrame);
@@ -760,7 +790,7 @@ const LiveStreamManager: React.FC = () => {
 
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+        video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: true,
       });
 
