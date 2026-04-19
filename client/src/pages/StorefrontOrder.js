@@ -164,7 +164,7 @@ const StorefrontOrder = () => {
 
   const orderEvents = calendarEvents
     .filter(e => {
-      if (e.type !== 'ORDER_PICKUP') return false;
+      if (e.type !== 'ORDER_PICKUP' && e.type !== 'PUBLIC_EVENT') return false;
       if (new Date(e.date) < new Date(new Date().setHours(0,0,0,0))) return false;
       if (isDatePastCutoff(e.date)) return false;
       return true;
