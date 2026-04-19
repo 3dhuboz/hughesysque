@@ -158,7 +158,7 @@ const StorefrontHome = () => {
 
   const today = new Date(new Date().setHours(0, 0, 0, 0));
   const nextCookDay = calendarEvents
-    .filter(e => e.type === 'ORDER_PICKUP' && parseLocalDate(e.date) >= today)
+    .filter(e => (e.type === 'ORDER_PICKUP' || e.type === 'PUBLIC_EVENT') && parseLocalDate(e.date) >= today)
     .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date))[0];
 
   const handleImageError = (e) => { e.target.src = PLACEHOLDER_IMG; };
