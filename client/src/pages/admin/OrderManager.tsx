@@ -697,7 +697,7 @@ const normalizePhone = (raw: string): string => {
   };
 
   const upcomingEventDates = calendarEvents
-    .filter(e => e.type === 'ORDER_PICKUP' && e.date >= todayStr)
+    .filter(e => (e.type === 'ORDER_PICKUP' || e.type === 'PUBLIC_EVENT') && e.date >= todayStr)
     .map(e => e.date);
 
   const upcomingOrderDates = orders
@@ -725,7 +725,7 @@ const normalizePhone = (raw: string): string => {
         </div>
       )}
       {allUpcomingDates.map(dateStr => {
-        const event = calendarEvents.find(e => e.date === dateStr && e.type === 'ORDER_PICKUP');
+        const event = calendarEvents.find(e => e.date === dateStr && (e.type === 'ORDER_PICKUP' || e.type === 'PUBLIC_EVENT'));
         const dateOrders = orders.filter(o =>
           o.cookDay.split('T')[0] === dateStr && !['Rejected', 'Cancelled', 'Completed'].includes(o.status)
         );
