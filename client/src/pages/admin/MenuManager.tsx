@@ -54,7 +54,7 @@ const MenuManager: React.FC = () => {
 
   // Filter for valid Order Pickup days from the planner
   const orderDays = calendarEvents
-    .filter(evt => evt.type === 'ORDER_PICKUP' && parseLocalDate(evt.date) >= new Date(new Date().setHours(0,0,0,0)))
+    .filter(evt => (evt.type === 'ORDER_PICKUP' || evt.type === 'PUBLIC_EVENT') && parseLocalDate(evt.date) >= new Date(new Date().setHours(0,0,0,0)))
     .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime());
 
   // Group items by category for the picker (excluding Rubs & Sauces, Merch)

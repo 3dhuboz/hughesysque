@@ -88,7 +88,7 @@ const Pitmaster: React.FC = () => {
   
   // -- Meat Math Logic --
   const nextCookEvent = calendarEvents
-    .filter(e => e.type === 'ORDER_PICKUP' && parseLocalDate(e.date) >= new Date(new Date().setHours(0,0,0,0)))
+    .filter(e => (e.type === 'ORDER_PICKUP' || e.type === 'PUBLIC_EVENT') && parseLocalDate(e.date) >= new Date(new Date().setHours(0,0,0,0)))
     .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())[0];
 
   const cookDate = nextCookEvent ? nextCookEvent.date : new Date().toISOString().split('T')[0];

@@ -563,7 +563,7 @@ const normalizePhone = (raw: string): string => {
 
   const handleMarkReady = async (order: Order) => {
       // Resolve pickup location: order override → calendar event → business address → fallback
-      const event = calendarEvents.find(e => e.date === order.cookDay.split('T')[0] && e.type === 'ORDER_PICKUP');
+      const event = calendarEvents.find(e => e.date === order.cookDay.split('T')[0] && (e.type === 'ORDER_PICKUP' || e.type === 'PUBLIC_EVENT'));
       const location = order.pickupLocation || event?.location || settings.businessAddress || "Ipswich, QLD";
       
       if(window.confirm(`Mark order for ${order.customerName} as Ready?\n\nPickup location: ${location}\nThis will send an SMS + email with a map link.`)) {
