@@ -372,9 +372,10 @@ const StorefrontCatering = () => {
         {/* STEP 1: LOGISTICS */}
         {step === 1 && (
           <div className="max-w-3xl mx-auto relative">
-            {/* Outer diffuse glow */}
-            <div aria-hidden className="absolute -inset-6 rounded-[2rem] bg-gradient-to-br from-bbq-red/20 via-bbq-gold/10 to-orange-500/15 blur-3xl opacity-60 pointer-events-none"/>
-            <div className="relative bg-gradient-to-b from-gray-900 to-bbq-charcoal p-6 md:p-10 rounded-2xl border border-gray-800 shadow-[0_20px_80px_-20px_rgba(0,0,0,0.8)]">
+            {/* Outer diffuse glow — two layered blurs for depth */}
+            <div aria-hidden className="absolute -inset-10 rounded-[3rem] bg-gradient-to-br from-bbq-red/30 via-orange-500/15 to-bbq-gold/25 blur-[80px] opacity-70 pointer-events-none animate-pulse-slow"/>
+            <div aria-hidden className="absolute -inset-4 rounded-[2rem] bg-gradient-to-tr from-red-600/10 to-amber-400/10 blur-2xl pointer-events-none"/>
+            <div className="relative bg-gradient-to-b from-gray-900 to-bbq-charcoal p-6 md:p-10 rounded-2xl border border-gray-800/80 ring-1 ring-white/5 shadow-[0_30px_100px_-20px_rgba(0,0,0,0.9)]">
             <h2 className="text-2xl md:text-3xl font-display font-bold mb-8 text-white text-center tracking-wide">Event Logistics</h2>
 
             {/* Row 1 — the three inline inputs */}
@@ -491,8 +492,12 @@ const StorefrontCatering = () => {
 
             <button onClick={checkDate}
               disabled={!selectedDate || !pickupTime || guestCount < 40 || ((fulfillment === 'DELIVERY' || fulfillment === 'SETUP') && !deliveryAddress)}
-              className="w-full bg-white text-black font-bold py-4 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition shadow-lg mt-8 text-lg flex items-center justify-center gap-2">
-              Next: Choose Menu <ArrowRight size={20} />
+              className="group relative w-full font-bold py-4 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-lg mt-8 text-base md:text-lg flex items-center justify-center gap-2 overflow-hidden
+                bg-gradient-to-r from-bbq-red via-red-600 to-orange-500 text-white
+                hover:shadow-[0_0_32px_rgba(239,68,68,0.55)] hover:scale-[1.01] active:scale-100
+                disabled:bg-gray-800 disabled:bg-none disabled:text-gray-500 disabled:shadow-none disabled:hover:scale-100 uppercase tracking-wider">
+              <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out"/>
+              <span className="relative flex items-center gap-2">Next: Choose Menu <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform"/></span>
             </button>
 
             {isAvailable === false && (
