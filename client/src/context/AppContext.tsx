@@ -278,9 +278,23 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
   const login = async (role: UserRole | string, email?: string, password?: string) => {
     const normalizedRole = (role as string).toUpperCase();
     if (normalizedRole === UserRole.ADMIN || normalizedRole === UserRole.DEV) {
-      if (email === 'dev' && password === '123') { setUser(INITIAL_DEV_USER); return; }
-      if (email === settings.adminUsername && password === settings.adminPassword) { setUser(INITIAL_ADMIN_USER); return; }
-      throw new Error('Invalid admin credentials');
+      // The server holds the real creds — settings endpoint strips them for
+      // unauthenticated clients, so we can't compare them in the browser.
+      try {
+        const res = await fetch('/api/v1/auth/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: email, password }),
+        });
+        const data = await res.json().catch(() => ({} as any));
+        if (!res.ok || !data.success) {
+          throw new Error(data?.error || 'Invalid admin credentials');
+        }
+        setUser(data.role === 'DEV' ? INITIAL_DEV_USER : INITIAL_ADMIN_USER);
+        return;
+      } catch (err: any) {
+        throw new Error(err?.message || 'Invalid admin credentials');
+      }
     }
     throw new Error('Please use the sign-in form to log in.');
   };
