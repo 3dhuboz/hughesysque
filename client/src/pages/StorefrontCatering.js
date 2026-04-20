@@ -179,8 +179,11 @@ const StorefrontCatering = () => {
   const [isPackageConfigOpen, setIsPackageConfigOpen] = useState(false);
   const [customCart, setCustomCart] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cateringView, setCateringView] = useState('self-service'); // 'self-service' | 'cocktail' | 'function'
 
-  const activePackage = CATERING_PACKAGES.find(p => p.id === selectedPackageId);
+  const FUNCTION_PACKAGES = settings.functionMenuTiers?.length > 0 ? settings.functionMenuTiers : [];
+  const ALL_PACKAGES = [...CATERING_PACKAGES, ...COCKTAIL_PACKAGES, ...FUNCTION_PACKAGES];
+  const activePackage = ALL_PACKAGES.find(p => p.id === selectedPackageId);
 
   const meatsMenu = menu.filter(m => ['Bulk Meats', 'Meats', 'Trays', 'Burgers', 'Family Packs', 'Platters'].includes(m.category));
   const sidesMenu = menu.filter(m => ['Hot Sides', 'Cold Sides', 'Sides', 'Bakery', 'Salads'].includes(m.category));
@@ -209,9 +212,18 @@ const StorefrontCatering = () => {
     if (pkgId === 'pkg_custom') {
       setPkgSelections({ meats: [], sides: [] });
       setIsPackageConfigOpen(true);
-    } else {
-      setStep(3);
+      return;
     }
+    // For fixed curated packages (2M2S, 3M3S, etc) open the meat+side picker
+    // before heading to confirm — testers said 4/5 want to pick options pre-payment.
+    const pkg = CATERING_PACKAGES.find(p => p.id === pkgId);
+    if (pkg && (pkg.meatLimit || pkg.sideLimit)) {
+      setPkgSelections({ meats: [], sides: [] });
+      setIsPackageConfigOpen(true);
+      return;
+    }
+    // Cocktail / function tiers — no meat/side picker, go straight to confirm
+    setStep(3);
   };
 
   const updateCustomCart = (id, delta, moq = 1) => {
@@ -254,6 +266,10 @@ const StorefrontCatering = () => {
           if (item) orderItems.push({ item, quantity: qty });
         });
       } else if (activePackage) {
+        // Preserve the guest's meat/side picks on the order so admin + kitchen see them
+        const packSelections = {};
+        if (pkgSelections.meats?.length) packSelections.Meats = pkgSelections.meats;
+        if (pkgSelections.sides?.length) packSelections.Sides = pkgSelections.sides;
         orderItems.push({
           item: {
             id: activePackage.id,
@@ -262,6 +278,7 @@ const StorefrontCatering = () => {
             category: 'Catering Packs',
           },
           quantity: guestCount,
+          ...(Object.keys(packSelections).length ? { packSelections } : {}),
         });
       }
 
@@ -446,7 +463,109 @@ const StorefrontCatering = () => {
         {/* STEP 2: SELECTION */}
         {step === 2 && (
           <div>
-            {selectionMode === 'CHOICE' && (
+            {/* Catering view tabs */}
+            {!isPackageConfigOpen && (
+              <div className="max-w-3xl mx-auto mb-10">
+                <div className="flex flex-col sm:flex-row items-stretch gap-2 bg-black/40 border border-gray-800 rounded-xl p-1.5">
+                  {[
+                    { id: 'self-service', label: 'Self Service & Feasting Table', Icon: ChefHat },
+                    { id: 'cocktail',     label: 'Cocktail Menu',                 Icon: Coffee },
+                    { id: 'function',     label: 'Function Menu',                 Icon: UtensilsCrossed },
+                  ].map(({ id, label, Icon }) => {
+                    const active = cateringView === id;
+                    return (
+                      <button key={id} type="button"
+                        onClick={() => { setCateringView(id); setSelectionMode('CHOICE'); setIsPackageConfigOpen(false); setSelectedPackageId(null); }}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide transition ${active ? 'bg-bbq-red text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'}`}>
+                        <Icon size={16}/> {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* === COCKTAIL MENU VIEW === */}
+            {cateringView === 'cocktail' && !isPackageConfigOpen && (
+              <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-10">
+                  <h2 className="text-3xl md:text-4xl font-display font-bold text-white uppercase tracking-wider">Cocktail Menu</h2>
+                  <p className="text-gray-400 text-sm mt-2 max-w-2xl mx-auto">
+                    Built for birthdays, engagement parties, corporate functions, weddings and backyard celebrations.
+                    Choose the vibe and we'll balance the menu for your crowd.
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  {COCKTAIL_PACKAGES.map(pkg => (
+                    <div key={pkg.id} className="bg-bbq-charcoal rounded-2xl border border-gray-800 hover:border-purple-700/60 transition p-6 flex flex-col md:flex-row md:items-center gap-6">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 flex-wrap mb-1">
+                          <h3 className="text-xl font-display font-bold text-white">{pkg.name}</h3>
+                          <span className="text-[10px] bg-purple-900/50 text-purple-300 border border-purple-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pkg.pieces} Pieces</span>
+                        </div>
+                        <p className="text-gray-400 text-sm mb-3">{pkg.description}</p>
+                        <div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
+                          {pkg.cold > 0 && <span className="bg-blue-900/30 text-blue-300 border border-blue-800 px-2 py-1 rounded-full">{pkg.cold} Cold</span>}
+                          {pkg.hot > 0 && <span className="bg-orange-900/30 text-orange-300 border border-orange-800 px-2 py-1 rounded-full">{pkg.hot} Hot</span>}
+                          {pkg.substantial > 0 && <span className="bg-amber-900/30 text-amber-300 border border-amber-800 px-2 py-1 rounded-full">{pkg.substantial} Substantial</span>}
+                          {pkg.duration && <span className="bg-gray-900/50 text-gray-400 border border-gray-700 px-2 py-1 rounded-full">{pkg.duration}</span>}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-purple-400">${pkg.price}</div>
+                        <div className="text-[10px] text-gray-500 uppercase font-bold">Per Person</div>
+                        <button onClick={() => selectPackage(pkg.id)}
+                          className="mt-3 bg-white text-black font-bold px-5 py-2 rounded-lg hover:bg-purple-400 hover:text-white transition flex items-center gap-2 text-sm">
+                          Select <ArrowRight size={14}/>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 text-center mt-6">Cocktail pricing is per person. 50% deposit required to secure booking.</p>
+              </div>
+            )}
+
+            {/* === FUNCTION MENU VIEW === */}
+            {cateringView === 'function' && !isPackageConfigOpen && (
+              <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-10">
+                  <h2 className="text-3xl md:text-4xl font-display font-bold text-white uppercase tracking-wider">Function Menu</h2>
+                  <p className="text-gray-400 text-sm mt-2 max-w-2xl mx-auto">
+                    Plated and alternate-drop options for weddings, awards nights, and formal functions.
+                  </p>
+                </div>
+                {FUNCTION_PACKAGES.length === 0 ? (
+                  <div className="text-center py-16 border-2 border-dashed border-gray-800 rounded-2xl text-gray-500">
+                    <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-40"/>
+                    <p className="font-bold text-gray-400">Function Menu coming soon</p>
+                    <p className="text-xs mt-1">Please use the Cocktail Menu or Self Service options, or contact us directly for a custom quote.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {FUNCTION_PACKAGES.map(pkg => (
+                      <div key={pkg.id} className="bg-bbq-charcoal rounded-2xl border border-gray-800 hover:border-bbq-gold/60 transition p-6 flex flex-col md:flex-row md:items-center gap-6">
+                        <div className="flex-1">
+                          <h3 className="text-xl font-display font-bold text-white mb-1">{pkg.name}</h3>
+                          <p className="text-gray-400 text-sm mb-3">{pkg.description}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-3xl font-bold text-bbq-gold">${pkg.price}</div>
+                          <div className="text-[10px] text-gray-500 uppercase font-bold">Per Person</div>
+                          <button onClick={() => selectPackage(pkg.id)}
+                            className="mt-3 bg-white text-black font-bold px-5 py-2 rounded-lg hover:bg-bbq-gold transition flex items-center gap-2 text-sm">
+                            Select <ArrowRight size={14}/>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* === SELF SERVICE & FEASTING TABLE VIEW === */}
+            {cateringView === 'self-service' && selectionMode === 'CHOICE' && (
               <div className="max-w-5xl mx-auto">
                 <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wider text-center mb-10">How Do You Want To Order?</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -505,7 +624,7 @@ const StorefrontCatering = () => {
               </div>
             )}
 
-            {selectionMode === 'PACKAGES' && (
+            {cateringView === 'self-service' && selectionMode === 'PACKAGES' && (
               <div>
                 <div className="flex items-center justify-between mb-8">
                   <button onClick={() => setSelectionMode('CHOICE')} className="text-gray-400 hover:text-white flex items-center gap-2 font-bold text-sm transition"><ArrowLeft size={16} /> Back</button>
@@ -547,6 +666,104 @@ const StorefrontCatering = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Fixed-package Meat + Side picker (for 2M2S / 3M3S / etc) */}
+            {isPackageConfigOpen && activePackage && selectedPackageId !== 'pkg_custom' && (
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+                  <button onClick={() => { setIsPackageConfigOpen(false); setSelectedPackageId(null); setSelectionMode('CHOICE'); }}
+                    className="text-gray-400 hover:text-white flex items-center gap-2 font-bold text-sm"><ArrowLeft size={16} /> Back</button>
+                  <h2 className="text-xl md:text-2xl font-bold text-white text-center flex-1">{activePackage.name}</h2>
+                  <div className="bg-black/40 px-4 py-2 rounded-lg border border-gray-700 text-right">
+                    <span className="text-xs text-gray-500">Per Head</span>
+                    <p className="text-bbq-gold font-bold">${activePackage.price}</p>
+                  </div>
+                </div>
+
+                <p className="text-gray-400 text-sm text-center mb-8 max-w-2xl mx-auto">
+                  Pick your meats and sides below. You can still change these before we confirm your booking.
+                </p>
+
+                {/* MEATS */}
+                {activePackage.meatLimit > 0 && (
+                  <div className="mb-8">
+                    <div className="flex items-baseline justify-between mb-3">
+                      <h3 className="text-lg font-bold text-white uppercase tracking-wider">
+                        Choose {activePackage.meatLimit} Meat{activePackage.meatLimit > 1 ? 's' : ''}
+                      </h3>
+                      <span className={`text-sm font-bold ${pkgSelections.meats.length === activePackage.meatLimit ? 'text-green-400' : 'text-gray-400'}`}>
+                        {pkgSelections.meats.length} / {activePackage.meatLimit} selected
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {CATERING_MEATS.map(name => {
+                        const selectedCount = pkgSelections.meats.filter(x => x === name).length;
+                        const full = pkgSelections.meats.length >= activePackage.meatLimit;
+                        return (
+                          <div key={name} className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition ${selectedCount > 0 ? 'bg-bbq-red/10 border-bbq-red/50' : 'bg-bbq-charcoal border-gray-800'}`}>
+                            <span className="text-sm text-gray-200">{name}</span>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button type="button" disabled={selectedCount === 0}
+                                onClick={() => removePackageItem(name, 'meats')}
+                                className="w-7 h-7 rounded-full bg-gray-800 text-gray-300 disabled:opacity-30 hover:bg-gray-700 flex items-center justify-center"><Minus size={12}/></button>
+                              <span className="w-5 text-center text-white font-bold text-sm">{selectedCount}</span>
+                              <button type="button" disabled={full}
+                                onClick={() => addPackageItem(name, 'meats', activePackage.meatLimit)}
+                                className="w-7 h-7 rounded-full bg-bbq-red text-white disabled:opacity-30 hover:bg-red-600 flex items-center justify-center"><Plus size={12}/></button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* SIDES */}
+                {activePackage.sideLimit > 0 && (
+                  <div className="mb-8">
+                    <div className="flex items-baseline justify-between mb-3">
+                      <h3 className="text-lg font-bold text-white uppercase tracking-wider">
+                        Choose {activePackage.sideLimit} Side{activePackage.sideLimit > 1 ? 's' : ''}
+                      </h3>
+                      <span className={`text-sm font-bold ${pkgSelections.sides.length === activePackage.sideLimit ? 'text-green-400' : 'text-gray-400'}`}>
+                        {pkgSelections.sides.length} / {activePackage.sideLimit} selected
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {CATERING_SIDES.map(name => {
+                        const selectedCount = pkgSelections.sides.filter(x => x === name).length;
+                        const full = pkgSelections.sides.length >= activePackage.sideLimit;
+                        return (
+                          <div key={name} className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition ${selectedCount > 0 ? 'bg-bbq-gold/10 border-bbq-gold/50' : 'bg-bbq-charcoal border-gray-800'}`}>
+                            <span className="text-sm text-gray-200">{name}</span>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button type="button" disabled={selectedCount === 0}
+                                onClick={() => removePackageItem(name, 'sides')}
+                                className="w-7 h-7 rounded-full bg-gray-800 text-gray-300 disabled:opacity-30 hover:bg-gray-700 flex items-center justify-center"><Minus size={12}/></button>
+                              <span className="w-5 text-center text-white font-bold text-sm">{selectedCount}</span>
+                              <button type="button" disabled={full}
+                                onClick={() => addPackageItem(name, 'sides', activePackage.sideLimit)}
+                                className="w-7 h-7 rounded-full bg-bbq-gold text-black disabled:opacity-30 hover:bg-yellow-400 flex items-center justify-center"><Plus size={12}/></button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  disabled={(activePackage.meatLimit > 0 && pkgSelections.meats.length < activePackage.meatLimit) ||
+                            (activePackage.sideLimit > 0 && pkgSelections.sides.length < activePackage.sideLimit)}
+                  onClick={() => { setIsPackageConfigOpen(false); setStep(3); }}
+                  className="w-full bg-white text-black font-bold py-4 rounded-lg hover:bg-bbq-gold disabled:opacity-50 disabled:cursor-not-allowed transition text-lg flex items-center justify-center gap-2">
+                  Continue to Confirm <ArrowRight size={18}/>
+                </button>
+                <p className="text-xs text-gray-500 text-center mt-3">
+                  You'll see the full quote and 50% deposit on the next step. No payment yet.
+                </p>
               </div>
             )}
 

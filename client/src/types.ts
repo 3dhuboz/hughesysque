@@ -236,6 +236,11 @@ export interface AppSettings {
   openrouterApiKey?: string;
   rewards: RewardsConfig;
   cateringPackages?: CateringPackage[];
+  // Cocktail + Function menu tiers (storefront /catering page sub-tabs).
+  // Cocktail tiers currently fall back to hard-coded defaults in StorefrontCatering.js
+  // when settings.cocktailMenuTiers is empty; function tiers show "coming soon" when empty.
+  cocktailMenuTiers?: CateringPackage[];
+  functionMenuTiers?: CateringPackage[];
   // Email Settings
   emailSettings?: {
     enabled: boolean;
