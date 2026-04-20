@@ -2,7 +2,91 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
 import { CateringPackage, CocktailTier, FunctionTier } from '../../types';
-import { Plus, Trash2, Edit2, Save, X, Wand2, Loader2, Coffee, UtensilsCrossed, ChefHat, Package as PackageIcon, Info, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Wand2, Loader2, Coffee, UtensilsCrossed, ChefHat, Package as PackageIcon, Info, Sparkles, ChevronUp, ChevronDown, Drumstick, Salad, Zap } from 'lucide-react';
+
+/* ── Shared list editor components used across Self Service lists ── */
+
+type Accent = 'red' | 'green' | 'gold' | 'blue';
+const accentMap: Record<Accent, { text: string; dot: string; border: string; gradient: string; ring: string }> = {
+  red:   { text: 'text-bbq-red',     dot: 'bg-bbq-red',     border: 'hover:border-bbq-red/50',     gradient: 'from-red-950/40 to-transparent',     ring: 'focus-within:ring-bbq-red/30' },
+  green: { text: 'text-green-400',   dot: 'bg-green-500',   border: 'hover:border-green-700/50',   gradient: 'from-green-950/40 to-transparent',   ring: 'focus-within:ring-green-500/30' },
+  gold:  { text: 'text-bbq-gold',    dot: 'bg-bbq-gold',    border: 'hover:border-bbq-gold/50',    gradient: 'from-amber-950/40 to-transparent',   ring: 'focus-within:ring-bbq-gold/30' },
+  blue:  { text: 'text-blue-400',    dot: 'bg-blue-500',    border: 'hover:border-blue-700/50',    gradient: 'from-blue-950/40 to-transparent',    ring: 'focus-within:ring-blue-500/30' },
+};
+
+const ListEditor: React.FC<{
+  accent: Accent;
+  title: string;
+  unit: string;
+  count: number;
+  addLabel: string;
+  items: any[];
+  onAdd: () => void;
+  renderItem: (item: any, index: number) => React.ReactNode;
+}> = ({ accent, title, unit, count, addLabel, items, onAdd, renderItem }) => {
+  const a = accentMap[accent];
+  return (
+    <div className="relative overflow-hidden bg-gradient-to-br from-gray-900/60 to-gray-950/60 border border-gray-800 rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-2 h-8 rounded-full ${a.dot}`}/>
+          <div>
+            <h5 className={`text-lg font-display font-bold ${a.text} uppercase tracking-wider leading-none`}>{title}</h5>
+            <p className="text-[11px] text-gray-500 mt-1">{unit}</p>
+          </div>
+        </div>
+        <span className="text-xs text-gray-500 font-bold bg-gray-900 border border-gray-800 rounded-full px-3 py-1">{count}</span>
+      </div>
+
+      <div className="space-y-2">
+        {items.map((item, i) => <React.Fragment key={i}>{renderItem(item, i)}</React.Fragment>)}
+        {items.length === 0 && (
+          <div className="text-center py-8 text-gray-600 text-sm italic">No items yet — hit the button below to add one.</div>
+        )}
+      </div>
+
+      <button type="button" onClick={onAdd}
+        className={`mt-3 w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-800 ${a.border} ${a.text} text-gray-500 hover:${a.text} rounded-xl text-sm font-bold transition group`}>
+        <Plus size={14} className="group-hover:rotate-90 transition-transform"/> {addLabel}
+      </button>
+    </div>
+  );
+};
+
+const ItemCard: React.FC<{
+  accent: Accent;
+  value: string;
+  placeholder: string;
+  onChange: (v: string) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onDelete: () => void;
+  index: number;
+  total: number;
+  extra?: React.ReactNode;
+}> = ({ accent, value, placeholder, onChange, onMoveUp, onMoveDown, onDelete, index, total, extra }) => {
+  const a = accentMap[accent];
+  return (
+    <div className={`group relative flex items-center gap-2 bg-gray-900/70 border border-gray-800 ${a.border} rounded-xl p-2 pr-2 transition-all ${a.ring} focus-within:ring-2`}>
+      <div className={`shrink-0 w-1 h-8 rounded-full ${a.dot} opacity-50 group-hover:opacity-100 transition`}/>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="flex-1 min-w-0 bg-transparent text-white text-sm px-1 py-1.5 focus:outline-none placeholder:text-gray-600"
+      />
+      {extra}
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button type="button" disabled={index === 0} onClick={onMoveUp}
+          className="p-1 text-gray-600 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rounded" title="Move up"><ChevronUp size={12}/></button>
+        <button type="button" disabled={index === total - 1} onClick={onMoveDown}
+          className="p-1 text-gray-600 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rounded" title="Move down"><ChevronDown size={12}/></button>
+      </div>
+      <button type="button" onClick={onDelete}
+        className="p-2 text-gray-600 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition opacity-0 group-hover:opacity-100" title="Delete"><Trash2 size={13}/></button>
+    </div>
+  );
+};
 import { generateMarketingImage, generateCateringDescription } from '../../services/gemini';
 
 // Helper to compress base64 images
@@ -246,115 +330,154 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
     markDirty();
   };
 
+  const moveItem = (arr: any[], setter: any, from: number, to: number) => {
+    if (to < 0 || to >= arr.length) return;
+    const next = [...arr];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setter(next);
+    markDirty();
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h4 className="text-lg font-bold text-white">Self Service & Feasting Table</h4>
-          <p className="text-xs text-gray-500">Drives the 'Build Your Self Service Order' counters and the 'How We Set Up' bullets on the storefront.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {isDirty && <span className="text-[11px] text-yellow-400 font-bold uppercase tracking-wider">● Unsaved changes</span>}
-          <button onClick={resetToDefaults} className="px-3 py-2 text-gray-400 hover:text-white text-xs">Reset to defaults</button>
-          <button onClick={handleSave} disabled={isSaving || !isDirty}
-            className="px-5 py-2 bg-bbq-red text-white rounded font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-600 transition">
-            {isSaving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} Save Changes
-          </button>
-        </div>
-      </div>
-
-      {/* MEATS — row list with inline name edit + surcharge checkbox + delete */}
-      <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
-        <div className="flex items-baseline justify-between mb-3">
-          <label className="text-sm font-bold text-bbq-red uppercase tracking-[0.2em]">Meats (per kg)</label>
-          <span className="text-xs text-gray-500">{meats.length} item{meats.length === 1 ? '' : 's'}</span>
-        </div>
-        <div className="space-y-2">
-          {meats.map((m, i) => (
-            <div key={i} className="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg p-2 hover:border-gray-600 transition">
-              <input
-                value={m.name}
-                onChange={e => { setMeats(meats.map((x, xi) => xi === i ? { ...x, name: e.target.value } : x)); markDirty(); }}
-                placeholder="Meat name (e.g. Sliced Brisket)"
-                className="flex-1 bg-transparent text-white text-sm p-2 focus:outline-none focus:bg-gray-800 rounded"
-              />
-              <label className="flex items-center gap-2 text-xs text-gray-400 whitespace-nowrap cursor-pointer hover:text-white transition px-2">
-                <input type="checkbox" checked={m.surcharge}
-                  onChange={e => { setMeats(meats.map((x, xi) => xi === i ? { ...x, surcharge: e.target.checked } : x)); markDirty(); }}
-                  className="w-4 h-4 rounded accent-bbq-gold"/>
-                <span className={m.surcharge ? 'text-bbq-gold font-bold' : ''}>+$4/pp</span>
-              </label>
-              <button type="button" onClick={() => { setMeats(meats.filter((_, xi) => xi !== i)); markDirty(); }}
-                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/30 rounded transition"><Trash2 size={14}/></button>
+      {/* ── HEADER CARD ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-black border border-gray-800 p-6 md:p-7">
+        <div aria-hidden className="absolute -top-10 -right-10 w-48 h-48 bg-bbq-red/20 rounded-full blur-3xl pointer-events-none"/>
+        <div aria-hidden className="absolute -bottom-10 -left-10 w-48 h-48 bg-bbq-gold/15 rounded-full blur-3xl pointer-events-none"/>
+        <div className="relative flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-bbq-red to-red-900 flex items-center justify-center shadow-lg shrink-0">
+              <ChefHat size={22} className="text-white"/>
             </div>
-          ))}
-        </div>
-        <button type="button" onClick={() => { setMeats([...meats, { name: '', surcharge: false }]); markDirty(); }}
-          className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-700 hover:border-bbq-red hover:text-bbq-red text-gray-400 rounded-lg text-sm font-bold transition">
-          <Plus size={14}/> Add Meat
-        </button>
-      </div>
-
-      {/* SIDES */}
-      <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
-        <div className="flex items-baseline justify-between mb-3">
-          <label className="text-sm font-bold text-green-400 uppercase tracking-[0.2em]">Sides (per tray)</label>
-          <span className="text-xs text-gray-500">{sides.length} item{sides.length === 1 ? '' : 's'}</span>
-        </div>
-        <div className="space-y-2">
-          {sides.map((s, i) => (
-            <div key={i} className="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg p-2 hover:border-gray-600 transition">
-              <input
-                value={s}
-                onChange={e => { setSides(sides.map((x, xi) => xi === i ? e.target.value : x)); markDirty(); }}
-                placeholder="Side name (e.g. Potato Bake)"
-                className="flex-1 bg-transparent text-white text-sm p-2 focus:outline-none focus:bg-gray-800 rounded"
-              />
-              <button type="button" onClick={() => { setSides(sides.filter((_, xi) => xi !== i)); markDirty(); }}
-                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/30 rounded transition"><Trash2 size={14}/></button>
+            <div>
+              <h4 className="text-xl font-display font-bold text-white">Self Service & Feasting Table</h4>
+              <p className="text-sm text-gray-400 mt-0.5 max-w-xl">Drives the 'Build Your Self Service Order' counters and the 'How We Set Up' bullets on the public catering page.</p>
+              <div className="flex gap-4 mt-3 text-[11px] font-bold">
+                <span className="flex items-center gap-1.5 text-bbq-red"><span className="w-1.5 h-1.5 rounded-full bg-bbq-red"/> {meats.length} meat{meats.length === 1 ? '' : 's'}</span>
+                <span className="flex items-center gap-1.5 text-green-400"><span className="w-1.5 h-1.5 rounded-full bg-green-400"/> {sides.length} side{sides.length === 1 ? '' : 's'}</span>
+                <span className="flex items-center gap-1.5 text-bbq-gold"><span className="w-1.5 h-1.5 rounded-full bg-bbq-gold"/> {bullets.length} bullet{bullets.length === 1 ? '' : 's'}</span>
+              </div>
             </div>
-          ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={resetToDefaults} className="px-3 py-2 text-gray-400 hover:text-white text-xs hover:bg-white/5 rounded-lg transition">Reset to defaults</button>
+            <button onClick={handleSave} disabled={isSaving || !isDirty}
+              className={`group relative px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all overflow-hidden ${
+                !isDirty ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-bbq-red via-red-600 to-orange-500 text-white hover:shadow-[0_0_24px_rgba(239,68,68,0.5)] hover:scale-[1.02]'
+              }`}>
+              {isDirty && <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"/>}
+              <span className="relative flex items-center gap-2">
+                {isSaving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>}
+                {isDirty ? 'Save Changes' : 'Saved'}
+                {isDirty && <span className="w-2 h-2 rounded-full bg-white animate-pulse"/>}
+              </span>
+            </button>
+          </div>
         </div>
-        <button type="button" onClick={() => { setSides([...sides, '']); markDirty(); }}
-          className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-700 hover:border-green-500 hover:text-green-400 text-gray-400 rounded-lg text-sm font-bold transition">
-          <Plus size={14}/> Add Side
-        </button>
       </div>
 
-      {/* BULLETS */}
-      <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
-        <div className="flex items-baseline justify-between mb-3">
-          <label className="text-sm font-bold text-bbq-gold uppercase tracking-[0.2em]">Feasting Table — "How We Set Up" bullets</label>
-          <span className="text-xs text-gray-500">{bullets.length} bullet{bullets.length === 1 ? '' : 's'}</span>
-        </div>
-        <div className="space-y-2">
-          {bullets.map((b, i) => (
-            <div key={i} className="flex items-start gap-2 bg-gray-900 border border-gray-800 rounded-lg p-2 hover:border-gray-600 transition">
-              <span className="pt-2 pl-1 text-bbq-gold shrink-0">•</span>
-              <textarea
-                value={b}
-                onChange={e => { setBullets(bullets.map((x, xi) => xi === i ? e.target.value : x)); markDirty(); }}
-                placeholder="Describe one part of how you set up / serve..."
-                rows={2}
-                className="flex-1 bg-transparent text-white text-sm p-2 focus:outline-none focus:bg-gray-800 rounded resize-none"
-              />
-              <button type="button" onClick={() => { setBullets(bullets.filter((_, xi) => xi !== i)); markDirty(); }}
-                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/30 rounded transition"><Trash2 size={14}/></button>
+      {/* ── MEATS + SIDES side-by-side ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        {/* MEATS */}
+        <ListEditor
+          accent="red"
+          title="Meats"
+          unit="per kg"
+          count={meats.length}
+          addLabel="Add a meat"
+          items={meats}
+          onAdd={() => { setMeats([...meats, { name: '', surcharge: false }]); markDirty(); }}
+          renderItem={(m, i) => (
+            <ItemCard
+              accent="red"
+              value={m.name}
+              placeholder="e.g. Sliced Brisket"
+              onChange={v => { setMeats(meats.map((x, xi) => xi === i ? { ...x, name: v } : x)); markDirty(); }}
+              onMoveUp={() => moveItem(meats, setMeats, i, i - 1)}
+              onMoveDown={() => moveItem(meats, setMeats, i, i + 1)}
+              onDelete={() => { setMeats(meats.filter((_, xi) => xi !== i)); markDirty(); }}
+              index={i}
+              total={meats.length}
+              extra={
+                <button type="button" onClick={() => { setMeats(meats.map((x, xi) => xi === i ? { ...x, surcharge: !x.surcharge } : x)); markDirty(); }}
+                  title="Toggle +$4/pp surcharge"
+                  className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition ${m.surcharge ? 'bg-bbq-gold text-black border-bbq-gold shadow-[0_0_12px_rgba(251,191,36,0.3)]' : 'bg-transparent text-gray-500 border-gray-700 hover:border-bbq-gold/60 hover:text-bbq-gold/60'}`}>
+                  +$4/pp
+                </button>
+              }
+            />
+          )}
+        />
+
+        {/* SIDES */}
+        <ListEditor
+          accent="green"
+          title="Sides"
+          unit="per tray"
+          count={sides.length}
+          addLabel="Add a side"
+          items={sides}
+          onAdd={() => { setSides([...sides, '']); markDirty(); }}
+          renderItem={(s, i) => (
+            <ItemCard
+              accent="green"
+              value={s}
+              placeholder="e.g. Potato Bake"
+              onChange={v => { setSides(sides.map((x, xi) => xi === i ? v : x)); markDirty(); }}
+              onMoveUp={() => moveItem(sides, setSides, i, i - 1)}
+              onMoveDown={() => moveItem(sides, setSides, i, i + 1)}
+              onDelete={() => { setSides(sides.filter((_, xi) => xi !== i)); markDirty(); }}
+              index={i}
+              total={sides.length}
+            />
+          )}
+        />
+      </div>
+
+      {/* ── BULLETS ── */}
+      <ListEditor
+        accent="gold"
+        title='"How We Set Up" Bullets'
+        unit="shown under the Feasting Table heading"
+        count={bullets.length}
+        addLabel="Add a bullet"
+        items={bullets}
+        onAdd={() => { setBullets([...bullets, '']); markDirty(); }}
+        renderItem={(b, i) => (
+          <div className="group relative flex items-start gap-3 bg-gray-900/70 border border-gray-800 hover:border-bbq-gold/50 rounded-xl p-3 transition-all">
+            <div className="shrink-0 w-8 h-8 rounded-lg bg-bbq-gold/10 border border-bbq-gold/30 flex items-center justify-center text-bbq-gold font-bold text-sm">{i + 1}</div>
+            <textarea value={b} onChange={e => { setBullets(bullets.map((x, xi) => xi === i ? e.target.value : x)); markDirty(); }}
+              placeholder="Describe one part of how you set up / serve..."
+              rows={2}
+              className="flex-1 bg-transparent text-white text-sm p-1.5 focus:outline-none focus:bg-gray-950 rounded resize-none"/>
+            <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button type="button" disabled={i === 0} onClick={() => moveItem(bullets, setBullets, i, i - 1)}
+                className="p-1 text-gray-500 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rounded"><ChevronUp size={12}/></button>
+              <button type="button" disabled={i === bullets.length - 1} onClick={() => moveItem(bullets, setBullets, i, i + 1)}
+                className="p-1 text-gray-500 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rounded"><ChevronDown size={12}/></button>
             </div>
-          ))}
-        </div>
-        <button type="button" onClick={() => { setBullets([...bullets, '']); markDirty(); }}
-          className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-700 hover:border-bbq-gold hover:text-bbq-gold text-gray-400 rounded-lg text-sm font-bold transition">
-          <Plus size={14}/> Add Bullet
-        </button>
-      </div>
+            <button type="button" onClick={() => { setBullets(bullets.filter((_, xi) => xi !== i)); markDirty(); }}
+              className="p-2 text-gray-600 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition opacity-0 group-hover:opacity-100"><Trash2 size={14}/></button>
+          </div>
+        )}
+      />
 
+      {/* ── Sticky floating save bar (only on dirty) ── */}
       {isDirty && (
-        <div className="sticky bottom-4 z-10">
-          <div className="bg-yellow-900/30 border border-yellow-700 rounded-xl p-3 flex items-center justify-between gap-3 shadow-lg backdrop-blur">
-            <span className="text-sm text-yellow-200 font-bold">You have unsaved changes.</span>
+        <div className="sticky bottom-4 z-20">
+          <div className="relative overflow-hidden rounded-2xl border border-bbq-red/40 bg-gradient-to-r from-red-950/90 via-gray-950/90 to-orange-950/80 backdrop-blur-xl p-4 shadow-[0_20px_60px_-10px_rgba(239,68,68,0.5)] flex items-center justify-between gap-3 flex-wrap">
+            <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-bbq-red/10 via-transparent to-bbq-gold/10 pointer-events-none animate-pulse"/>
+            <div className="relative flex items-center gap-3">
+              <div className="w-3 h-3 rounded-full bg-bbq-red animate-pulse"/>
+              <div>
+                <div className="text-sm text-white font-bold">You have unsaved changes</div>
+                <div className="text-[11px] text-gray-400">Click save to push them live on the storefront.</div>
+              </div>
+            </div>
             <button onClick={handleSave} disabled={isSaving}
-              className="px-4 py-2 bg-bbq-red text-white rounded font-bold flex items-center gap-2 disabled:opacity-50 hover:bg-red-600 transition">
+              className="relative group px-5 py-2.5 bg-gradient-to-r from-bbq-red via-red-600 to-orange-500 text-white rounded-xl font-bold flex items-center gap-2 disabled:opacity-50 hover:shadow-[0_0_24px_rgba(239,68,68,0.6)] hover:scale-[1.02] transition-all">
               {isSaving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} Save Now
             </button>
           </div>
