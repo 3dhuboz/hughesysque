@@ -238,6 +238,12 @@ const StorefrontLogin = () => {
                       className="rounded bg-gray-800 border-gray-700" />
                     Remember me
                   </label>
+                  {mode === 'LOGIN' && (
+                    <button type="button" onClick={() => { setMode('ADMIN_RESET_REQUEST'); setError(''); }}
+                      className="text-bbq-gold hover:text-white text-xs font-bold transition flex items-center gap-1">
+                      <KeyRound size={12}/> Forgot password?
+                    </button>
+                  )}
                 </div>
                 <button type="submit" disabled={isLoading}
                   className="w-full bg-gradient-to-r from-bbq-red to-red-800 text-white py-4 rounded-lg font-bold hover:shadow-[0_0_20px_rgba(217,56,30,0.4)] transition-all shadow-xl flex justify-center items-center gap-2">
