@@ -159,6 +159,12 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
   const [settings, setSettings] = useState<AppSettings>(INITIAL_SETTINGS);
   const [reminders, setReminders] = useState<string[]>([]);
 
+  // Admin HMAC session token — issued by /api/v1/auth/admin-login, sent as Bearer
+  // on every subsequent API call so privileged endpoints can authorise without Clerk.
+  const [adminToken, setAdminToken] = useState<string | null>(() => {
+    try { return localStorage.getItem('hq_admin_token'); } catch { return null; }
+  });
+
   const [cart, setCart] = useState<CartItem[]>(() => {
     try { const s = localStorage.getItem('hq_cart'); return s ? JSON.parse(s) : []; } catch { return []; }
   });
@@ -179,8 +185,34 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
   }, [selectedOrderDate]);
 
   useEffect(() => {
-    initApi(() => getToken());
-  }, [getToken]);
+    // Token resolver priority: admin session first (privileged actions),
+    // then Clerk (customer accounts). Most of this app runs unauthenticated
+    // or as admin, so admin first is the common-case win.
+    initApi(async () => adminToken || await getToken() || null);
+  }, [getToken, adminToken]);
+
+  // Restore admin user state from a persisted session token on mount so
+  // a refresh doesn't log Macca out. Token signature + expiry are verified
+  // server-side on the next privileged call; if it's stale we'll 401 and
+  // the user can log back in.
+  useEffect(() => {
+    if (adminToken && !user) {
+      try {
+        const payload = JSON.parse(atob(adminToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (payload?.exp && Date.now() < payload.exp) {
+          setUser(payload.role === 'DEV' ? INITIAL_DEV_USER : INITIAL_ADMIN_USER);
+        } else {
+          // Expired — wipe it.
+          try { localStorage.removeItem('hq_admin_token'); } catch {}
+          setAdminToken(null);
+        }
+      } catch {
+        try { localStorage.removeItem('hq_admin_token'); } catch {}
+        setAdminToken(null);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!authLoaded) return;
@@ -278,8 +310,6 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
   const login = async (role: UserRole | string, email?: string, password?: string) => {
     const normalizedRole = (role as string).toUpperCase();
     if (normalizedRole === UserRole.ADMIN || normalizedRole === UserRole.DEV) {
-      // The server holds the real creds — settings endpoint strips them for
-      // unauthenticated clients, so we can't compare them in the browser.
       try {
         const res = await fetch('/api/v1/auth/admin-login', {
           method: 'POST',
@@ -289,6 +319,15 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
         const data = await res.json().catch(() => ({} as any));
         if (!res.ok || !data.success) {
           throw new Error(data?.error || 'Invalid admin credentials');
+        }
+        // Persist the HMAC-signed session token so every subsequent admin
+        // API call can be authenticated. 30-day TTL on the server side.
+        if (data.token) {
+          try { localStorage.setItem('hq_admin_token', data.token); } catch {}
+          setAdminToken(data.token);
+        }
+        if (data.mustChangePassword) {
+          try { localStorage.setItem('hq_must_change_password', '1'); } catch {}
         }
         setUser(data.role === 'DEV' ? INITIAL_DEV_USER : INITIAL_ADMIN_USER);
         return;
@@ -300,7 +339,17 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
   };
 
   const logout = async () => {
-    if (user?.id === 'admin1' || user?.id === 'dev1') { setUser(null); return; }
+    // Admin logout — clear the session token so no further privileged API
+    // calls can be made from this browser.
+    if (user?.id === 'admin1' || user?.id === 'dev1') {
+      try {
+        localStorage.removeItem('hq_admin_token');
+        localStorage.removeItem('hq_must_change_password');
+      } catch {}
+      setAdminToken(null);
+      setUser(null);
+      return;
+    }
     await clerkSignOut();
     setUser(null);
   };

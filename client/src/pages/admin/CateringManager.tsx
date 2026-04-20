@@ -846,6 +846,11 @@ const CocktailTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
 /* ─────────────────────────── FUNCTION TIERS ─────────────────────────── */
 
 const FunctionTiersEditor: React.FC<{ settings: any; updateSettings: any; toast: any }> = ({ settings, updateSettings, toast }) => {
+  const defaultTiers: FunctionTier[] = [
+    { id: 'function_two_course', name: 'Two Course Sit-Down', description: 'Alternate-drop mains + shared desserts to the table. Ideal for 40–120 pax weddings and awards nights.', price: 85, courses: '2 courses', servingStyle: 'Alternate drop' },
+    { id: 'function_three_course', name: 'Three Course Sit-Down', description: 'Shared entrée, alternate-drop mains, plated dessert. Full formal service included.', price: 110, courses: '3 courses', servingStyle: 'Alternate drop' },
+    { id: 'function_shared_tables', name: 'Shared Grazing Tables', description: 'Family-style platters down the middle of the table, continually topped up. Social and relaxed.', price: 75, courses: 'Family-style', servingStyle: 'Shared tables' },
+  ];
   const tiers: FunctionTier[] = settings.functionMenuTiers?.length ? settings.functionMenuTiers : [];
   const [isEditing, setIsEditing] = useState(false);
   const [edit, setEdit] = useState<Partial<FunctionTier>>({});
@@ -893,11 +898,20 @@ const FunctionTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
         count={tiers.length}
         countLabel={`tier${tiers.length === 1 ? '' : 's'}`}
         action={
-          <button onClick={() => { setIsEditing(true); setEdit({}); }}
-            className="group relative px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 overflow-hidden bg-gradient-to-r from-amber-500 via-amber-600 to-bbq-gold text-black hover:shadow-[0_0_24px_rgba(251,191,36,0.5)] hover:scale-[1.02] transition-all">
-            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"/>
-            <span className="relative flex items-center gap-2 text-sm"><Plus size={16}/> Add Tier</span>
-          </button>
+          <div className="flex gap-2">
+            {tiers.length === 0 && (
+              <button onClick={async () => {
+                if (!window.confirm('Populate with 3 default function tiers? You can edit or remove them afterwards.')) return;
+                await saveAll(defaultTiers);
+              }}
+                className="px-3 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-xs font-bold flex items-center gap-2 text-white transition"><Wand2 size={14}/> Populate Defaults</button>
+            )}
+            <button onClick={() => { setIsEditing(true); setEdit({}); }}
+              className="group relative px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 overflow-hidden bg-gradient-to-r from-amber-500 via-amber-600 to-bbq-gold text-black hover:shadow-[0_0_24px_rgba(251,191,36,0.5)] hover:scale-[1.02] transition-all">
+              <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"/>
+              <span className="relative flex items-center gap-2 text-sm"><Plus size={16}/> Add Tier</span>
+            </button>
+          </div>
         }
       />
 

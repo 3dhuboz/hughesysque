@@ -1,9 +1,18 @@
 /**
- * Clerk JWT verification for Cloudflare Pages Functions.
- * Uses Web Crypto API — zero Node.js dependencies.
- * Falls back to ADMIN_API_KEY for backdoor admin access.
- * When CLERK_PUBLISHABLE_KEY is not set, auth is relaxed (setup mode).
+ * Auth verification for Cloudflare Pages Functions.
+ *
+ * Order of precedence:
+ *   1. ADMIN_API_KEY env (server-to-server scripts) — deprecated but kept.
+ *   2. Our own HMAC-signed admin session tokens (issued by /auth/admin-login
+ *      and stored in browser localStorage). Covers Macca + staff.
+ *   3. Clerk JWT (customer accounts). Only when CLERK_PUBLISHABLE_KEY is set.
+ *
+ * NOTE: the previous 'setup mode' fallback that treated every unauthenticated
+ * request as ADMIN when Clerk wasn't configured has been removed — it was a
+ * full admin-API bypass for anyone on the internet.
  */
+
+import { verifyAdminSession } from './adminSession';
 
 let cachedJwks: any = null;
 let jwksCachedAt = 0;
@@ -48,21 +57,32 @@ export interface AuthResult {
 export async function verifyAuth(request: Request, env: any): Promise<AuthResult | null> {
   const authHeader = request.headers.get('Authorization');
 
-  // 1. Check for admin API key (backdoor admin access)
+  // 1. Backdoor: explicit admin API key via env (kept for server-to-server scripts)
   const apiKey = env.ADMIN_API_KEY;
   if (apiKey && authHeader === `Bearer ${apiKey}`) {
     return { userId: 'admin1', role: 'ADMIN', email: 'admin@hugheseysque.au' };
   }
 
-  // 2. If Clerk is not configured, allow unauthenticated access as admin (setup mode)
-  const publishableKey = env.CLERK_PUBLISHABLE_KEY;
-  if (!publishableKey) {
-    return { userId: 'setup', role: 'ADMIN', email: 'setup@local' };
-  }
-
-  // 3. Verify Clerk JWT
   if (!authHeader?.startsWith('Bearer ')) return null;
   const token = authHeader.slice(7);
+
+  // 2. Our own admin session token (HMAC-signed, issued by /auth/admin-login)
+  // Format heuristic: three base64url segments with 'HQS' typ in the header.
+  // Try this first so we don't waste a network hop to Clerk JWKS on every admin API call.
+  if (token.split('.').length === 3) {
+    const session = await verifyAdminSession(env, token);
+    if (session) {
+      return {
+        userId: session.sub,
+        role: session.role,
+        email: session.role === 'DEV' ? 'dev@local' : 'admin@hugheseysque.au',
+      };
+    }
+  }
+
+  // 3. Clerk JWT path (customers). Only attempted when Clerk is configured.
+  const publishableKey = env.CLERK_PUBLISHABLE_KEY;
+  if (!publishableKey) return null;
 
   try {
     const [headerB64, payloadB64, signatureB64] = token.split('.');

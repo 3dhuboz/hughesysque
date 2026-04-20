@@ -1,16 +1,26 @@
 
-import React, { useState, useMemo } from 'react';
-import { Utensils, CalendarCheck, Share2, Settings, Users, CalendarDays, Flame, Cloud, WifiOff, Package, Code2, Video } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Utensils, CalendarCheck, Share2, Settings, Users, CalendarDays, Flame, Cloud, WifiOff, Package, Code2, Video, ShieldAlert } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import OrderManager from './OrderManager';
-import MenuManager from './MenuManager';
-import CateringManager from './CateringManager';
-import SocialAIBridge from './SocialAIBridge';
-import SettingsManager from './SettingsManager';
-import CustomerManager from './CustomerManager';
 import Planner from './Planner';
-import Pitmaster from './Pitmaster';
-import LiveStreamManager from './LiveStreamManager';
+import MenuManager from './MenuManager';
+import ForcedPasswordChange from './ForcedPasswordChange';
+
+// Heavy / rarely-first-visited tabs are lazy-loaded so the initial admin
+// paint stays light. Each becomes its own JS chunk.
+const CateringManager   = React.lazy(() => import('./CateringManager'));
+const SocialAIBridge    = React.lazy(() => import('./SocialAIBridge'));
+const SettingsManager   = React.lazy(() => import('./SettingsManager'));
+const CustomerManager   = React.lazy(() => import('./CustomerManager'));
+const Pitmaster         = React.lazy(() => import('./Pitmaster'));
+const LiveStreamManager = React.lazy(() => import('./LiveStreamManager'));
+
+const TabLoading: React.FC = () => (
+  <div className="flex items-center justify-center h-64 text-gray-500 text-sm">
+    <div className="animate-pulse">Loading…</div>
+  </div>
+);
 
 type TabId = 'orders' | 'planner' | 'pitmaster' | 'menu' | 'catering' | 'customers' | 'social' | 'livestream' | 'settings' | 'devtools';
 
@@ -34,6 +44,26 @@ const AdminDashboard: React.FC = () => {
   const isDev = user?.role === 'DEV';
   const tabs = useMemo(() => ALL_TABS.filter(t => !t.devOnly || isDev), [isDev]);
   const [activeTab, setActiveTab] = useState<TabId>('orders');
+
+  // If the server flagged the legacy default password on login we hard-block
+  // the dashboard until the admin picks a real one. Avoids Macca walking
+  // away from the browser with '123' still live.
+  const [mustChange, setMustChange] = useState<boolean>(() => {
+    try { return localStorage.getItem('hq_must_change_password') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    const handler = () => {
+      try { setMustChange(localStorage.getItem('hq_must_change_password') === '1'); } catch {}
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
+  if (mustChange && !isDev) {
+    return <ForcedPasswordChange onComplete={() => {
+      try { localStorage.removeItem('hq_must_change_password'); } catch {}
+      setMustChange(false);
+    }}/>;
+  }
 
   const activeLabel = tabs.find(t => t.id === activeTab)?.label ?? '';
 
@@ -109,16 +139,18 @@ const AdminDashboard: React.FC = () => {
 
         {/* Page content */}
         <div className="flex-1 p-5 md:p-6 overflow-auto">
-          {activeTab === 'orders'    && <OrderManager />}
-          {activeTab === 'planner'   && <Planner />}
-          {activeTab === 'pitmaster' && <Pitmaster />}
-          {activeTab === 'menu'      && <MenuManager />}
-          {activeTab === 'catering'  && <CateringManager />}
-          {activeTab === 'customers' && <CustomerManager />}
-          {activeTab === 'social'    && <SocialAIBridge />}
-          {activeTab === 'livestream' && <LiveStreamManager />}
-          {activeTab === 'settings'  && <SettingsManager mode="admin" />}
-          {activeTab === 'devtools'  && <SettingsManager mode="dev" />}
+          {activeTab === 'orders'  && <OrderManager />}
+          {activeTab === 'planner' && <Planner />}
+          {activeTab === 'menu'    && <MenuManager />}
+          <React.Suspense fallback={<TabLoading />}>
+            {activeTab === 'pitmaster'  && <Pitmaster />}
+            {activeTab === 'catering'   && <CateringManager />}
+            {activeTab === 'customers'  && <CustomerManager />}
+            {activeTab === 'social'     && <SocialAIBridge />}
+            {activeTab === 'livestream' && <LiveStreamManager />}
+            {activeTab === 'settings'   && <SettingsManager mode="admin" />}
+            {activeTab === 'devtools'   && <SettingsManager mode="dev" />}
+          </React.Suspense>
         </div>
       </div>
     </div>

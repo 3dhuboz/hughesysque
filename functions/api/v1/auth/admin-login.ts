@@ -14,6 +14,7 @@
  */
 import { getDB, parseJson } from '../_lib/db';
 import { hashPassword, verifyPassword } from '../_lib/password';
+import { issueAdminSession } from '../_lib/adminSession';
 
 export const onRequestPost = async (context: any) => {
   const { request, env } = context;
@@ -27,7 +28,8 @@ export const onRequestPost = async (context: any) => {
 
     // Dev break-glass
     if (body.username === 'dev' && body.password === '123') {
-      return json({ success: true, role: 'DEV' });
+      const token = await issueAdminSession(env, 'DEV');
+      return json({ success: true, role: 'DEV', token, mustChangePassword: false });
     }
 
     const db = getDB(env);
@@ -43,11 +45,15 @@ export const onRequestPost = async (context: any) => {
     if (settings.adminPasswordRecord) {
       const ok = await verifyPassword(body.password, settings.adminPasswordRecord);
       if (!ok) return json({ error: 'Invalid admin credentials' }, 401);
-      return json({ success: true, role: 'ADMIN' });
+      const token = await issueAdminSession(env, 'ADMIN');
+      return json({ success: true, role: 'ADMIN', token, mustChangePassword: false });
     }
 
     // Fallback: plaintext legacy. If it matches, auto-upgrade to hashed on the way out.
+    // Also flag mustChangePassword so the client can force Macca to rotate off the
+    // default '123' immediately.
     if (settings.adminPassword && body.password === settings.adminPassword) {
+      const isDefaultLike = settings.adminPassword.length <= 4;
       try {
         const record = await hashPassword(body.password);
         const updated = { ...settings, adminPasswordRecord: record };
@@ -57,7 +63,8 @@ export const onRequestPost = async (context: any) => {
       } catch (e) {
         console.error('Auto-upgrade to hashed password failed; leaving plaintext in place.', e);
       }
-      return json({ success: true, role: 'ADMIN' });
+      const token = await issueAdminSession(env, 'ADMIN');
+      return json({ success: true, role: 'ADMIN', token, mustChangePassword: isDefaultLike });
     }
 
     return json({ error: 'Invalid admin credentials' }, 401);
