@@ -295,9 +295,9 @@ const StorefrontCatering = () => {
         pickupTime,
         temperature,
         fulfillmentMethod: fulfillment,
-        deliveryAddress: fulfillment === 'DELIVERY' ? deliveryAddress : '',
+        deliveryAddress: (fulfillment === 'DELIVERY' || fulfillment === 'SETUP') ? deliveryAddress : '',
         deliveryFee: fulfillment === 'DELIVERY' ? DELIVERY_FEE : 0,
-        notes: `Catering request: ${guestCount} guests, ${temperature}, ${fulfillment}`,
+        notes: `Catering request: ${guestCount} guests, ${temperature}, ${fulfillment}${fulfillment === 'SETUP' ? ' (on-site set-up fee to be quoted separately)' : ''}`,
       });
 
       alert(`Catering Request Sent!\n\n50% Deposit: $${deposit.toFixed(2)}\n\nAdmin has been notified. You'll hear back within 24 hours.`);
@@ -409,11 +409,16 @@ const StorefrontCatering = () => {
               <div className="space-y-5">
                 <div>
                   <label className="block text-gray-400 mb-2 text-sm font-bold">Service Type</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[['PICKUP', ChefHat, 'Pickup (Free)'], ['DELIVERY', Truck, `Delivery (+$${DELIVERY_FEE})`]].map(([val, Icon, label]) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      ['PICKUP',   ChefHat, 'Pickup',              'Free'],
+                      ['DELIVERY', Truck,   'Delivery',            `+$${DELIVERY_FEE}`],
+                      ['SETUP',    Users,   'On-Site Set Up',      'Quoted'],
+                    ].map(([val, Icon, label, sub]) => (
                       <button key={val} onClick={() => setFulfillment(val)}
                         className={`p-3 rounded-lg border text-sm font-bold flex flex-col items-center gap-1 transition ${fulfillment === val ? 'bg-bbq-red text-white border-red-500' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'}`}>
                         <Icon size={18} /> {label}
+                        <span className={`text-[10px] font-normal ${fulfillment === val ? 'text-red-100' : 'text-gray-500'}`}>{sub}</span>
                       </button>
                     ))}
                   </div>
@@ -434,20 +439,27 @@ const StorefrontCatering = () => {
               </div>
             </div>
 
-            {fulfillment === 'DELIVERY' && (
+            {(fulfillment === 'DELIVERY' || fulfillment === 'SETUP') && (
               <div className="mt-6">
-                <label className="block text-gray-400 mb-2 text-sm font-bold">Delivery Address</label>
+                <label className="block text-gray-400 mb-2 text-sm font-bold">
+                  {fulfillment === 'SETUP' ? 'Event Address' : 'Delivery Address'}
+                </label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-3.5 text-bbq-red" size={18} />
                   <input value={deliveryAddress} onChange={e => setDeliveryAddress(e.target.value)}
                     placeholder="123 Example St, Suburb..."
                     className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none" />
                 </div>
+                {fulfillment === 'SETUP' && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    We arrive ~12 hours before service, cook on-site, set up the feasting table, top up during service, and pack down. Set-up fee is quoted separately based on location, guest count and access.
+                  </p>
+                )}
               </div>
             )}
 
             <button onClick={checkDate}
-              disabled={!selectedDate || !pickupTime || guestCount < 40 || (fulfillment === 'DELIVERY' && !deliveryAddress)}
+              disabled={!selectedDate || !pickupTime || guestCount < 40 || ((fulfillment === 'DELIVERY' || fulfillment === 'SETUP') && !deliveryAddress)}
               className="w-full bg-white text-black font-bold py-4 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition shadow-lg mt-8 text-lg flex items-center justify-center gap-2">
               Next: Choose Menu <ArrowRight size={20} />
             </button>
@@ -835,7 +847,10 @@ const StorefrontCatering = () => {
                   ['Event Date', selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '-'],
                   ['Eat Time', pickupTime],
                   ['Guests', `${guestCount} people`],
-                  ['Service', fulfillment === 'PICKUP' ? 'Pickup (Free)' : `Delivery to ${deliveryAddress}`],
+                  ['Service',
+                    fulfillment === 'PICKUP'   ? 'Pickup (Free)' :
+                    fulfillment === 'DELIVERY' ? `Delivery to ${deliveryAddress}` :
+                                                 `On-Site Set Up at ${deliveryAddress} (fee quoted separately)`],
                   ['Temperature', temperature === 'HOT' ? 'Ready to Eat (Hot)' : 'Cold (Reheat at home)'],
                   ['Package', activePackage ? `${activePackage.name} @ $${activePackage.price}/head` : 'Custom Build'],
                 ].map(([key, val]) => (
@@ -856,6 +871,12 @@ const StorefrontCatering = () => {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Delivery</span>
                     <span className="text-white">${DELIVERY_FEE.toFixed(2)}</span>
+                  </div>
+                )}
+                {fulfillment === 'SETUP' && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Set-Up Fee</span>
+                    <span className="text-gray-400 italic">Quoted on approval</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-800">
