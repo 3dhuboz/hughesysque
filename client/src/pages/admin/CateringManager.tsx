@@ -885,14 +885,21 @@ const FunctionTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h4 className="text-lg font-bold text-white">Function Menu Tiers</h4>
-          <p className="text-xs text-gray-500">Plated / alternate-drop options shown under the 'Function Menu' tab. Tab shows a 'coming soon' state until you add at least one tier.</p>
-        </div>
-        <button onClick={() => { setIsEditing(true); setEdit({}); }}
-          className="bg-bbq-red px-4 py-2 rounded text-sm font-bold flex items-center gap-2 hover:bg-red-700 text-white"><Plus size={16}/> Add Tier</button>
-      </div>
+      <SectionHeader
+        Icon={UtensilsCrossed}
+        gradientFrom="amber"
+        title="Function Menu Tiers"
+        description="Plated / alternate-drop / buffet options for weddings, awards nights, and formal functions. The Function Menu tab on the storefront stays in a 'coming soon' state until you add at least one tier here."
+        count={tiers.length}
+        countLabel={`tier${tiers.length === 1 ? '' : 's'}`}
+        action={
+          <button onClick={() => { setIsEditing(true); setEdit({}); }}
+            className="group relative px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 overflow-hidden bg-gradient-to-r from-amber-500 via-amber-600 to-bbq-gold text-black hover:shadow-[0_0_24px_rgba(251,191,36,0.5)] hover:scale-[1.02] transition-all">
+            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"/>
+            <span className="relative flex items-center gap-2 text-sm"><Plus size={16}/> Add Tier</span>
+          </button>
+        }
+      />
 
       {isEditing && (
         <form onSubmit={handleSaveTier} className="bg-gray-900 p-6 rounded-lg border border-gray-700 space-y-4">
