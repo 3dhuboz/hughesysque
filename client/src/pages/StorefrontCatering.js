@@ -583,31 +583,39 @@ const StorefrontCatering = () => {
                   </p>
                 </div>
                 <div className="space-y-4">
-                  {COCKTAIL_TIERS.map(pkg => (
-                    <div key={pkg.id} className="bg-bbq-charcoal rounded-2xl border border-gray-800 hover:border-purple-700/60 transition p-6 flex flex-col md:flex-row md:items-center gap-6">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 flex-wrap mb-1">
-                          <h3 className="text-xl font-display font-bold text-white">{pkg.name}</h3>
-                          <span className="text-[10px] bg-purple-900/50 text-purple-300 border border-purple-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{pkg.pieces} Pieces</span>
+                  {COCKTAIL_TIERS.map((pkg, idx) => {
+                    const fallbackImg = FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
+                    return (
+                      <div key={pkg.id} className="group bg-bbq-charcoal rounded-2xl border border-gray-800 hover:border-purple-600/70 transition overflow-hidden flex flex-col md:flex-row shadow-xl">
+                        <div className="w-full md:w-64 h-48 md:h-auto relative shrink-0 overflow-hidden">
+                          <img src={pkg.image || fallbackImg} onError={e => { e.target.src = fallbackImg; }}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={pkg.name}/>
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/60 md:to-transparent"/>
+                          <div className="absolute top-3 left-3 md:top-auto md:bottom-3 bg-purple-600/90 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full backdrop-blur">{pkg.pieces} Pieces</div>
                         </div>
-                        <p className="text-gray-400 text-sm mb-3">{pkg.description}</p>
-                        <div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
-                          {pkg.cold > 0 && <span className="bg-blue-900/30 text-blue-300 border border-blue-800 px-2 py-1 rounded-full">{pkg.cold} Cold</span>}
-                          {pkg.hot > 0 && <span className="bg-orange-900/30 text-orange-300 border border-orange-800 px-2 py-1 rounded-full">{pkg.hot} Hot</span>}
-                          {pkg.substantial > 0 && <span className="bg-amber-900/30 text-amber-300 border border-amber-800 px-2 py-1 rounded-full">{pkg.substantial} Substantial</span>}
-                          {pkg.duration && <span className="bg-gray-900/50 text-gray-400 border border-gray-700 px-2 py-1 rounded-full">{pkg.duration}</span>}
+                        <div className="flex-1 p-6 flex flex-col md:flex-row md:items-center gap-4">
+                          <div className="flex-1">
+                            <h3 className="text-2xl font-display font-bold text-white mb-1">{pkg.name}</h3>
+                            <p className="text-gray-400 text-sm mb-3">{pkg.description}</p>
+                            <div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
+                              {pkg.cold > 0 && <span className="bg-blue-900/30 text-blue-300 border border-blue-800 px-2 py-1 rounded-full">{pkg.cold} Cold</span>}
+                              {pkg.hot > 0 && <span className="bg-orange-900/30 text-orange-300 border border-orange-800 px-2 py-1 rounded-full">{pkg.hot} Hot</span>}
+                              {pkg.substantial > 0 && <span className="bg-amber-900/30 text-amber-300 border border-amber-800 px-2 py-1 rounded-full">{pkg.substantial} Substantial</span>}
+                              {pkg.duration && <span className="bg-gray-900/50 text-gray-400 border border-gray-700 px-2 py-1 rounded-full">{pkg.duration}</span>}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-3xl font-bold text-purple-400">${pkg.price}</div>
+                            <div className="text-[10px] text-gray-500 uppercase font-bold">Per Person</div>
+                            <button onClick={() => selectPackage(pkg.id)}
+                              className="mt-3 bg-white text-black font-bold px-5 py-2 rounded-lg hover:bg-purple-400 hover:text-white transition flex items-center gap-2 text-sm">
+                              Select <ArrowRight size={14}/>
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-3xl font-bold text-purple-400">${pkg.price}</div>
-                        <div className="text-[10px] text-gray-500 uppercase font-bold">Per Person</div>
-                        <button onClick={() => selectPackage(pkg.id)}
-                          className="mt-3 bg-white text-black font-bold px-5 py-2 rounded-lg hover:bg-purple-400 hover:text-white transition flex items-center gap-2 text-sm">
-                          Select <ArrowRight size={14}/>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <p className="text-xs text-gray-500 text-center mt-6">Cocktail pricing is per person. 50% deposit required to secure booking.</p>
               </div>
@@ -630,22 +638,33 @@ const StorefrontCatering = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {FUNCTION_TIERS.map(pkg => (
-                      <div key={pkg.id} className="bg-bbq-charcoal rounded-2xl border border-gray-800 hover:border-bbq-gold/60 transition p-6 flex flex-col md:flex-row md:items-center gap-6">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-display font-bold text-white mb-1">{pkg.name}</h3>
-                          <p className="text-gray-400 text-sm mb-3">{pkg.description}</p>
+                    {FUNCTION_TIERS.map((pkg, idx) => {
+                      const fallbackImg = FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
+                      return (
+                        <div key={pkg.id} className="group bg-bbq-charcoal rounded-2xl border border-gray-800 hover:border-bbq-gold/60 transition overflow-hidden flex flex-col md:flex-row shadow-xl">
+                          <div className="w-full md:w-64 h-48 md:h-auto relative shrink-0 overflow-hidden">
+                            <img src={pkg.image || fallbackImg} onError={e => { e.target.src = fallbackImg; }}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={pkg.name}/>
+                            {pkg.servingStyle && <div className="absolute top-3 left-3 bg-bbq-gold/90 text-black text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full backdrop-blur">{pkg.servingStyle}</div>}
+                          </div>
+                          <div className="flex-1 p-6 flex flex-col md:flex-row md:items-center gap-4">
+                            <div className="flex-1">
+                              <h3 className="text-2xl font-display font-bold text-white mb-1">{pkg.name}</h3>
+                              <p className="text-gray-400 text-sm mb-2">{pkg.description}</p>
+                              {pkg.courses && <span className="text-[10px] bg-amber-900/30 text-amber-300 border border-amber-800 px-2 py-1 rounded-full font-bold uppercase tracking-wider">{pkg.courses}</span>}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="text-3xl font-bold text-bbq-gold">${pkg.price}</div>
+                              <div className="text-[10px] text-gray-500 uppercase font-bold">Per Person</div>
+                              <button onClick={() => selectPackage(pkg.id)}
+                                className="mt-3 bg-white text-black font-bold px-5 py-2 rounded-lg hover:bg-bbq-gold transition flex items-center gap-2 text-sm">
+                                Select <ArrowRight size={14}/>
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-3xl font-bold text-bbq-gold">${pkg.price}</div>
-                          <div className="text-[10px] text-gray-500 uppercase font-bold">Per Person</div>
-                          <button onClick={() => selectPackage(pkg.id)}
-                            className="mt-3 bg-white text-black font-bold px-5 py-2 rounded-lg hover:bg-bbq-gold transition flex items-center gap-2 text-sm">
-                            Select <ArrowRight size={14}/>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

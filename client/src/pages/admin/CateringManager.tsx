@@ -2,7 +2,25 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
 import { CateringPackage, CocktailTier, FunctionTier } from '../../types';
-import { Plus, Trash2, Edit2, Save, X, Wand2, Loader2, Coffee, UtensilsCrossed, ChefHat, Package as PackageIcon, Info, Sparkles, ChevronUp, ChevronDown, Drumstick, Salad, Zap } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Wand2, Loader2, Coffee, UtensilsCrossed, ChefHat, Package as PackageIcon, Info, Sparkles, ChevronUp, ChevronDown, Drumstick, Salad, Zap, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 /* ── Shared list editor components used across Self Service lists ── */
 
@@ -14,6 +32,20 @@ const accentMap: Record<Accent, { text: string; dot: string; border: string; gra
   blue:  { text: 'text-blue-400',    dot: 'bg-blue-500',    border: 'hover:border-blue-700/50',    gradient: 'from-blue-950/40 to-transparent',    ring: 'focus-within:ring-blue-500/30' },
 };
 
+/* Items in a sortable list must have a stable string id. For our plain
+   string[] and {name,surcharge}[] lists we generate synthetic ids
+   based on list-index + content and keep them alongside the data. */
+type Keyed = { __key: string; value: any };
+const useKeyed = (items: any[]) => {
+  // Re-key whenever length changes — a simpler, acceptable heuristic
+  // for lists this small. Stable identity isn't required across renders
+  // because we commit the reorder immediately on drop.
+  return React.useMemo(
+    () => items.map((value, i) => ({ __key: `row-${i}-${typeof value === 'string' ? value : (value?.name ?? '')}`, value } as Keyed)),
+    [items]
+  );
+};
+
 const ListEditor: React.FC<{
   accent: Accent;
   title: string;
@@ -22,9 +54,27 @@ const ListEditor: React.FC<{
   addLabel: string;
   items: any[];
   onAdd: () => void;
+  onReorder: (from: number, to: number) => void;
   renderItem: (item: any, index: number) => React.ReactNode;
-}> = ({ accent, title, unit, count, addLabel, items, onAdd, renderItem }) => {
+}> = ({ accent, title, unit, count, addLabel, items, onAdd, onReorder, renderItem }) => {
   const a = accentMap[accent];
+  const keyed = useKeyed(items);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor,   { activationConstraint: { delay: 150, tolerance: 8 } }),
+    useSensor(KeyboardSensor,{ coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const from = keyed.findIndex(k => k.__key === active.id);
+    const to   = keyed.findIndex(k => k.__key === over.id);
+    if (from < 0 || to < 0) return;
+    onReorder(from, to);
+  };
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-gray-900/60 to-gray-950/60 border border-gray-800 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
@@ -32,18 +82,26 @@ const ListEditor: React.FC<{
           <div className={`w-2 h-8 rounded-full ${a.dot}`}/>
           <div>
             <h5 className={`text-lg font-display font-bold ${a.text} uppercase tracking-wider leading-none`}>{title}</h5>
-            <p className="text-[11px] text-gray-500 mt-1">{unit}</p>
+            <p className="text-[11px] text-gray-500 mt-1">{unit} · drag to reorder</p>
           </div>
         </div>
         <span className="text-xs text-gray-500 font-bold bg-gray-900 border border-gray-800 rounded-full px-3 py-1">{count}</span>
       </div>
 
-      <div className="space-y-2">
-        {items.map((item, i) => <React.Fragment key={i}>{renderItem(item, i)}</React.Fragment>)}
-        {items.length === 0 && (
-          <div className="text-center py-8 text-gray-600 text-sm italic">No items yet — hit the button below to add one.</div>
-        )}
-      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={keyed.map(k => k.__key)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {keyed.map((k, i) => (
+              <SortableRow key={k.__key} id={k.__key}>
+                {renderItem(k.value, i)}
+              </SortableRow>
+            ))}
+            {items.length === 0 && (
+              <div className="text-center py-8 text-gray-600 text-sm italic">No items yet — hit the button below to add one.</div>
+            )}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       <button type="button" onClick={onAdd}
         className={`mt-3 w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-800 ${a.border} ${a.text} text-gray-500 hover:${a.text} rounded-xl text-sm font-bold transition group`}>
@@ -53,21 +111,111 @@ const ListEditor: React.FC<{
   );
 };
 
+/* Wraps a row with @dnd-kit sortable hooks + exposes drag-handle props
+   to its child through React context so the handle sits inside the card
+   rather than overlaying it. */
+const DragHandleContext = React.createContext<{
+  listeners: any;
+  attributes: any;
+  isDragging: boolean;
+} | null>(null);
+
+const SortableRow: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+    opacity: isDragging ? 0.85 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style} className={isDragging ? 'shadow-[0_12px_40px_-10px_rgba(0,0,0,0.8)]' : ''}>
+      <DragHandleContext.Provider value={{ listeners, attributes, isDragging }}>
+        {children}
+      </DragHandleContext.Provider>
+    </div>
+  );
+};
+
+const DragHandle: React.FC<{ accent: Accent }> = ({ accent }) => {
+  const ctx = React.useContext(DragHandleContext);
+  const a = accentMap[accent];
+  return (
+    <button type="button"
+      aria-label="Drag to reorder"
+      {...(ctx?.attributes ?? {})}
+      {...(ctx?.listeners ?? {})}
+      className={`shrink-0 p-1.5 -ml-1 rounded text-gray-600 hover:${a.text} hover:bg-white/5 cursor-grab active:cursor-grabbing touch-none transition`}>
+      <GripVertical size={14}/>
+    </button>
+  );
+};
+
+/* Upload / paste URL / AI-generate image field used by Cocktail + Function tier editors. */
+const ImageField: React.FC<{
+  label: string;
+  value?: string;
+  onChange: (v: string) => void;
+  isGenerating?: boolean;
+  onGenerate?: () => void;
+}> = ({ label, value, onChange, isGenerating, onGenerate }) => {
+  const fileRef = React.useRef<HTMLInputElement>(null);
+  const onFile = (f: File | null) => {
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => onChange(reader.result as string);
+    reader.readAsDataURL(f);
+  };
+  return (
+    <div className="space-y-2">
+      <label className="text-xs text-gray-400 block">{label}</label>
+      <div className="flex items-stretch gap-2 flex-wrap">
+        <div className="w-24 h-24 rounded-lg border border-gray-700 bg-gray-950 overflow-hidden shrink-0 flex items-center justify-center relative group">
+          {value ? (
+            <>
+              <img src={value} className="w-full h-full object-cover" alt="preview"/>
+              <button type="button" onClick={() => onChange('')}
+                className="absolute inset-0 bg-black/70 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition font-bold text-xs">
+                <Trash2 size={14} className="mr-1"/> Remove
+              </button>
+            </>
+          ) : (
+            <span className="text-[10px] text-gray-600 text-center px-2">No image</span>
+          )}
+        </div>
+        <div className="flex-1 min-w-[200px] space-y-2">
+          <input placeholder="Paste image URL…" value={value && !value.startsWith('data:') ? value : ''}
+            onChange={e => onChange(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm"/>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className="flex-1 bg-gray-800 border border-gray-700 hover:border-gray-500 text-white rounded p-2 text-xs font-bold flex items-center justify-center gap-1.5"><Plus size={14}/> Upload</button>
+            {onGenerate && (
+              <button type="button" onClick={onGenerate} disabled={isGenerating}
+                className="flex-1 bg-purple-900/60 border border-purple-700 hover:bg-purple-800 text-purple-100 rounded p-2 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-50">
+                {isGenerating ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14}/>} AI Generate
+              </button>
+            )}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={e => onFile(e.target.files?.[0] ?? null)}/>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ItemCard: React.FC<{
   accent: Accent;
   value: string;
   placeholder: string;
   onChange: (v: string) => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
   onDelete: () => void;
-  index: number;
-  total: number;
   extra?: React.ReactNode;
-}> = ({ accent, value, placeholder, onChange, onMoveUp, onMoveDown, onDelete, index, total, extra }) => {
+}> = ({ accent, value, placeholder, onChange, onDelete, extra }) => {
   const a = accentMap[accent];
   return (
     <div className={`group relative flex items-center gap-2 bg-gray-900/70 border border-gray-800 ${a.border} rounded-xl p-2 pr-2 transition-all ${a.ring} focus-within:ring-2`}>
+      <DragHandle accent={accent}/>
       <div className={`shrink-0 w-1 h-8 rounded-full ${a.dot} opacity-50 group-hover:opacity-100 transition`}/>
       <input
         value={value}
@@ -76,12 +224,6 @@ const ItemCard: React.FC<{
         className="flex-1 min-w-0 bg-transparent text-white text-sm px-1 py-1.5 focus:outline-none placeholder:text-gray-600"
       />
       {extra}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button type="button" disabled={index === 0} onClick={onMoveUp}
-          className="p-1 text-gray-600 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rounded" title="Move up"><ChevronUp size={12}/></button>
-        <button type="button" disabled={index === total - 1} onClick={onMoveDown}
-          className="p-1 text-gray-600 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rounded" title="Move down"><ChevronDown size={12}/></button>
-      </div>
       <button type="button" onClick={onDelete}
         className="p-2 text-gray-600 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition opacity-0 group-hover:opacity-100" title="Delete"><Trash2 size={13}/></button>
     </div>
@@ -389,17 +531,14 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
           addLabel="Add a meat"
           items={meats}
           onAdd={() => { setMeats([...meats, { name: '', surcharge: false }]); markDirty(); }}
+          onReorder={(from, to) => moveItem(meats, setMeats, from, to)}
           renderItem={(m, i) => (
             <ItemCard
               accent="red"
               value={m.name}
               placeholder="e.g. Sliced Brisket"
               onChange={v => { setMeats(meats.map((x, xi) => xi === i ? { ...x, name: v } : x)); markDirty(); }}
-              onMoveUp={() => moveItem(meats, setMeats, i, i - 1)}
-              onMoveDown={() => moveItem(meats, setMeats, i, i + 1)}
               onDelete={() => { setMeats(meats.filter((_, xi) => xi !== i)); markDirty(); }}
-              index={i}
-              total={meats.length}
               extra={
                 <button type="button" onClick={() => { setMeats(meats.map((x, xi) => xi === i ? { ...x, surcharge: !x.surcharge } : x)); markDirty(); }}
                   title="Toggle +$4/pp surcharge"
@@ -420,17 +559,14 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
           addLabel="Add a side"
           items={sides}
           onAdd={() => { setSides([...sides, '']); markDirty(); }}
+          onReorder={(from, to) => moveItem(sides, setSides, from, to)}
           renderItem={(s, i) => (
             <ItemCard
               accent="green"
               value={s}
               placeholder="e.g. Potato Bake"
               onChange={v => { setSides(sides.map((x, xi) => xi === i ? v : x)); markDirty(); }}
-              onMoveUp={() => moveItem(sides, setSides, i, i - 1)}
-              onMoveDown={() => moveItem(sides, setSides, i, i + 1)}
               onDelete={() => { setSides(sides.filter((_, xi) => xi !== i)); markDirty(); }}
-              index={i}
-              total={sides.length}
             />
           )}
         />
@@ -445,19 +581,15 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
         addLabel="Add a bullet"
         items={bullets}
         onAdd={() => { setBullets([...bullets, '']); markDirty(); }}
+        onReorder={(from, to) => moveItem(bullets, setBullets, from, to)}
         renderItem={(b, i) => (
-          <div className="group relative flex items-start gap-3 bg-gray-900/70 border border-gray-800 hover:border-bbq-gold/50 rounded-xl p-3 transition-all">
+          <div className="group relative flex items-start gap-2 bg-gray-900/70 border border-gray-800 hover:border-bbq-gold/50 rounded-xl p-3 transition-all">
+            <DragHandle accent="gold"/>
             <div className="shrink-0 w-8 h-8 rounded-lg bg-bbq-gold/10 border border-bbq-gold/30 flex items-center justify-center text-bbq-gold font-bold text-sm">{i + 1}</div>
             <textarea value={b} onChange={e => { setBullets(bullets.map((x, xi) => xi === i ? e.target.value : x)); markDirty(); }}
               placeholder="Describe one part of how you set up / serve..."
               rows={2}
               className="flex-1 bg-transparent text-white text-sm p-1.5 focus:outline-none focus:bg-gray-950 rounded resize-none"/>
-            <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button type="button" disabled={i === 0} onClick={() => moveItem(bullets, setBullets, i, i - 1)}
-                className="p-1 text-gray-500 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rounded"><ChevronUp size={12}/></button>
-              <button type="button" disabled={i === bullets.length - 1} onClick={() => moveItem(bullets, setBullets, i, i + 1)}
-                className="p-1 text-gray-500 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rounded"><ChevronDown size={12}/></button>
-            </div>
             <button type="button" onClick={() => { setBullets(bullets.filter((_, xi) => xi !== i)); markDirty(); }}
               className="p-2 text-gray-600 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition opacity-0 group-hover:opacity-100"><Trash2 size={14}/></button>
           </div>
@@ -507,9 +639,15 @@ const CocktailTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
     if (success) toast('Cocktail tiers saved!'); else toast('Failed to save.', 'error');
   };
 
+  const [isGenImg, setIsGenImg] = useState(false);
+
   const handleSaveTier = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!edit.name || edit.price == null) return;
+    let image = edit.image;
+    if (image && image.startsWith('data:image')) {
+      try { image = await compressImage(image); } catch (err) { console.error(err); }
+    }
     const tier: CocktailTier = {
       id: edit.id || `cocktail_${Date.now()}`,
       name: edit.name!,
@@ -520,6 +658,7 @@ const CocktailTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
       hot: edit.hot || 0,
       substantial: edit.substantial || 0,
       duration: edit.duration || '',
+      image,
     };
     const next = edit.id ? tiers.map(t => t.id === edit.id ? tier : t) : [...tiers, tier];
     await saveAll(next);
@@ -579,6 +718,22 @@ const CocktailTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
               <input value={edit.duration || ''} onChange={e => setEdit({ ...edit, duration: e.target.value })}
                 className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white"/></div>
           </div>
+          <ImageField
+            label="Tier Image"
+            value={edit.image}
+            onChange={(v) => setEdit({ ...edit, image: v })}
+            isGenerating={isGenImg}
+            onGenerate={async () => {
+              if (!edit.name) { toast('Enter a tier name first.', 'warning'); return; }
+              setIsGenImg(true);
+              const img = await generateMarketingImage(`${edit.name} cocktail canape spread. ${edit.description || ''}. Elegant, cocktail party, professional food photography.`);
+              if (img) {
+                const compressed = await compressImage(img);
+                setEdit(prev => ({ ...prev, image: compressed }));
+              }
+              setIsGenImg(false);
+            }}
+          />
           <div className="flex justify-end gap-2 pt-4 border-t border-gray-800">
             <button type="button" onClick={() => { setIsEditing(false); setEdit({}); }} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
             <button type="submit" className="px-4 py-2 bg-bbq-red text-white rounded font-bold flex items-center gap-2"><Save size={16}/> Save Tier</button>
@@ -595,7 +750,12 @@ const CocktailTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
 
       <div className="space-y-3">
         {tiers.map(t => (
-          <div key={t.id} className="bg-gray-900 border border-gray-700 rounded-lg p-4 flex items-center gap-4 flex-wrap">
+          <div key={t.id} className="bg-gray-900 border border-gray-700 rounded-lg p-3 flex items-center gap-4 flex-wrap">
+            <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-800 bg-gray-950 shrink-0">
+              {t.image
+                ? <img src={t.image} className="w-full h-full object-cover" alt={t.name}/>
+                : <div className="w-full h-full flex items-center justify-center text-gray-700"><Coffee size={20}/></div>}
+            </div>
             <div className="flex-1 min-w-[200px]">
               <div className="flex items-baseline gap-2 flex-wrap">
                 <h5 className="font-bold text-white">{t.name}</h5>
@@ -636,9 +796,15 @@ const FunctionTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
     if (success) toast('Function tiers saved!'); else toast('Failed to save.', 'error');
   };
 
+  const [isGenImg, setIsGenImg] = useState(false);
+
   const handleSaveTier = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!edit.name || edit.price == null) return;
+    let image = edit.image;
+    if (image && image.startsWith('data:image')) {
+      try { image = await compressImage(image); } catch (err) { console.error(err); }
+    }
     const tier: FunctionTier = {
       id: edit.id || `function_${Date.now()}`,
       name: edit.name!,
@@ -646,6 +812,7 @@ const FunctionTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
       price: edit.price!,
       courses: edit.courses || '',
       servingStyle: edit.servingStyle || '',
+      image,
     };
     const next = edit.id ? tiers.map(t => t.id === edit.id ? tier : t) : [...tiers, tier];
     await saveAll(next);
@@ -686,6 +853,22 @@ const FunctionTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
               <input placeholder="e.g. Alternate drop, Plated, Buffet" value={edit.servingStyle || ''} onChange={e => setEdit({ ...edit, servingStyle: e.target.value })}
                 className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white"/></div>
           </div>
+          <ImageField
+            label="Tier Image"
+            value={edit.image}
+            onChange={(v) => setEdit({ ...edit, image: v })}
+            isGenerating={isGenImg}
+            onGenerate={async () => {
+              if (!edit.name) { toast('Enter a tier name first.', 'warning'); return; }
+              setIsGenImg(true);
+              const img = await generateMarketingImage(`${edit.name} plated function menu. ${edit.description || ''}. Elegant formal dining, alternate drop, professional food photography.`);
+              if (img) {
+                const compressed = await compressImage(img);
+                setEdit(prev => ({ ...prev, image: compressed }));
+              }
+              setIsGenImg(false);
+            }}
+          />
           <div className="flex justify-end gap-2 pt-4 border-t border-gray-800">
             <button type="button" onClick={() => { setIsEditing(false); setEdit({}); }} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
             <button type="submit" className="px-4 py-2 bg-bbq-red text-white rounded font-bold flex items-center gap-2"><Save size={16}/> Save Tier</button>
@@ -702,7 +885,12 @@ const FunctionTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
 
       <div className="space-y-3">
         {tiers.map(t => (
-          <div key={t.id} className="bg-gray-900 border border-gray-700 rounded-lg p-4 flex items-center gap-4 flex-wrap">
+          <div key={t.id} className="bg-gray-900 border border-gray-700 rounded-lg p-3 flex items-center gap-4 flex-wrap">
+            <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-800 bg-gray-950 shrink-0">
+              {t.image
+                ? <img src={t.image} className="w-full h-full object-cover" alt={t.name}/>
+                : <div className="w-full h-full flex items-center justify-center text-gray-700"><UtensilsCrossed size={20}/></div>}
+            </div>
             <div className="flex-1 min-w-[200px]">
               <div className="flex items-baseline gap-2 flex-wrap">
                 <h5 className="font-bold text-white">{t.name}</h5>

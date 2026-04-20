@@ -74,6 +74,7 @@ export interface CocktailTier {
   hot: number;         // Of which hot
   substantial: number; // Of which substantial (main-like)
   duration: string;    // e.g. "30–60 min"
+  image?: string;      // URL or base64 — shown on the storefront cocktail card
 }
 
 export interface FunctionTier {
@@ -83,6 +84,7 @@ export interface FunctionTier {
   price: number;       // Per person
   courses?: string;    // e.g. "2 courses"
   servingStyle?: string; // e.g. "Alternate drop"
+  image?: string;      // URL or base64 — shown on the storefront function card
 }
 
 export interface CalendarEvent {
