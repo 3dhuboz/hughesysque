@@ -151,6 +151,53 @@ const DragHandle: React.FC<{ accent: Accent }> = ({ accent }) => {
   );
 };
 
+/* Shared premium header card used by every admin catering sub-tab. Gives each
+   tab a consistent feel — gradient charcoal panel, themed icon chip, soft halo
+   blurs behind it, title + description, count badge, and optional action. */
+const SectionHeader: React.FC<{
+  Icon: any;
+  gradientFrom: 'bbq-red' | 'bbq-gold' | 'purple' | 'amber';
+  title: string;
+  description: string;
+  count?: number;
+  countLabel?: string;
+  action?: React.ReactNode;
+}> = ({ Icon, gradientFrom, title, description, count, countLabel, action }) => {
+  const palette: Record<string, { chipBg: string; halo1: string; halo2: string; dot: string; text: string }> = {
+    'bbq-red':  { chipBg: 'from-bbq-red to-red-900',          halo1: 'bg-bbq-red/20',    halo2: 'bg-bbq-gold/15',  dot: 'bg-bbq-red',    text: 'text-bbq-red' },
+    'bbq-gold': { chipBg: 'from-bbq-gold to-yellow-700',      halo1: 'bg-bbq-gold/20',   halo2: 'bg-bbq-red/15',   dot: 'bg-bbq-gold',   text: 'text-bbq-gold' },
+    'purple':   { chipBg: 'from-purple-500 to-purple-900',    halo1: 'bg-purple-500/20', halo2: 'bg-pink-500/15',  dot: 'bg-purple-400', text: 'text-purple-300' },
+    'amber':    { chipBg: 'from-amber-500 to-amber-900',      halo1: 'bg-amber-500/20',  halo2: 'bg-bbq-gold/15',  dot: 'bg-amber-400',  text: 'text-amber-300' },
+  };
+  const p = palette[gradientFrom];
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-black border border-gray-800 p-6 md:p-7">
+      <div aria-hidden className={`absolute -top-10 -right-10 w-48 h-48 ${p.halo1} rounded-full blur-3xl pointer-events-none`}/>
+      <div aria-hidden className={`absolute -bottom-10 -left-10 w-48 h-48 ${p.halo2} rounded-full blur-3xl pointer-events-none`}/>
+      <div className="relative flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-start gap-4">
+          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.chipBg} flex items-center justify-center shadow-lg shrink-0`}>
+            <Icon size={22} className="text-white"/>
+          </div>
+          <div>
+            <h4 className="text-xl font-display font-bold text-white">{title}</h4>
+            <p className="text-sm text-gray-400 mt-0.5 max-w-xl">{description}</p>
+            {typeof count === 'number' && (
+              <div className="mt-3 text-[11px] font-bold">
+                <span className={`flex items-center gap-1.5 ${p.text}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${p.dot}`}/>
+                  {count} {countLabel || 'item'}{count === 1 ? '' : 's'}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+        {action && <div>{action}</div>}
+      </div>
+    </div>
+  );
+};
+
 /* Upload / paste URL / AI-generate image field used by Cocktail + Function tier editors. */
 const ImageField: React.FC<{
   label: string;
@@ -332,16 +379,21 @@ const PackagesEditor: React.FC<{ settings: any; updateSettings: any; toast: any 
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h4 className="text-lg font-bold text-white">Feasting Packages</h4>
-          <p className="text-xs text-gray-500">Per-head packages shown under the 'Feasting Table' section on the storefront.</p>
-        </div>
-        <button onClick={() => { setIsEditing(true); setEditPkg({ minPax: 10, meatLimit: 2, sideLimit: 2 }); }}
-          className="bg-bbq-red px-4 py-2 rounded text-sm font-bold flex items-center gap-2 hover:bg-red-700 text-white">
-          <Plus size={16}/> Add Package
-        </button>
-      </div>
+      <SectionHeader
+        Icon={PackageIcon}
+        gradientFrom="bbq-gold"
+        title="Feasting Packages"
+        description="Per-head packages shown under the 'Feasting Table' section on the storefront catering page."
+        count={packages.length}
+        countLabel={`package${packages.length === 1 ? '' : 's'}`}
+        action={
+          <button onClick={() => { setIsEditing(true); setEditPkg({ minPax: 10, meatLimit: 2, sideLimit: 2 }); }}
+            className="group relative px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 overflow-hidden bg-gradient-to-r from-bbq-red via-red-600 to-orange-500 text-white hover:shadow-[0_0_24px_rgba(239,68,68,0.5)] hover:scale-[1.02] transition-all">
+            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"/>
+            <span className="relative flex items-center gap-2"><Plus size={16}/> Add Package</span>
+          </button>
+        }
+      />
 
       {isEditing && (
         <form onSubmit={handleSave} className="bg-gray-900 p-6 rounded-lg border border-gray-700 space-y-4">
@@ -677,19 +729,26 @@ const CocktailTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center flex-wrap gap-2">
-        <div>
-          <h4 className="text-lg font-bold text-white">Cocktail Menu Tiers</h4>
-          <p className="text-xs text-gray-500">Per-person cocktail tiers shown under the 'Cocktail Menu' tab on the storefront.</p>
-        </div>
-        <div className="flex gap-2">
-          {tiers.length === 0 && (
-            <button onClick={seedDefaults} className="bg-gray-700 px-3 py-2 rounded text-xs font-bold flex items-center gap-2 hover:bg-gray-600 text-white"><Wand2 size={14}/> Populate Defaults</button>
-          )}
-          <button onClick={() => { setIsEditing(true); setEdit({ pieces: 5, cold: 2, hot: 3, substantial: 0 }); }}
-            className="bg-bbq-red px-4 py-2 rounded text-sm font-bold flex items-center gap-2 hover:bg-red-700 text-white"><Plus size={16}/> Add Tier</button>
-        </div>
-      </div>
+      <SectionHeader
+        Icon={Coffee}
+        gradientFrom="purple"
+        title="Cocktail Menu Tiers"
+        description="Per-person cocktail tiers shown under the 'Cocktail Menu' tab on the storefront. Set pieces, cold/hot/substantial counts, and a tier image."
+        count={tiers.length}
+        countLabel={`tier${tiers.length === 1 ? '' : 's'}`}
+        action={
+          <div className="flex gap-2">
+            {tiers.length === 0 && (
+              <button onClick={seedDefaults} className="px-3 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-xs font-bold flex items-center gap-2 text-white transition"><Wand2 size={14}/> Populate Defaults</button>
+            )}
+            <button onClick={() => { setIsEditing(true); setEdit({ pieces: 5, cold: 2, hot: 3, substantial: 0 }); }}
+              className="group relative px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 overflow-hidden bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white hover:shadow-[0_0_24px_rgba(168,85,247,0.5)] hover:scale-[1.02] transition-all">
+              <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"/>
+              <span className="relative flex items-center gap-2 text-sm"><Plus size={16}/> Add Tier</span>
+            </button>
+          </div>
+        }
+      />
 
       {isEditing && (
         <form onSubmit={handleSaveTier} className="bg-gray-900 p-6 rounded-lg border border-gray-700 space-y-4">

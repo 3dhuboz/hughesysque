@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, Flame, ChefHat, Utensils, MapPin, Calendar, Star, Truck, Bot, MessageSquare, Ticket, Gift, Eye, Radio, Send, MessageCircle, Share2 } from 'lucide-react';
 import { useClientConfig } from '../context/AppContext';
 import { useStorefront } from '../context/AppContext';
@@ -49,6 +49,7 @@ const fallbackImages = [
 const StorefrontHome = () => {
   const { brandName, brandTagline } = useClientConfig();
   const { settings, calendarEvents } = useStorefront();
+  const navigate = useNavigate();
   useScrollReveal();
 
   const [liveStatus, setLiveStatus] = useState(null);
@@ -533,9 +534,12 @@ const StorefrontHome = () => {
                 Ask Macca about temps, wood pairings, resting times, or how to rescue that dry brisket.
               </p>
               <div className="pt-2">
-                <a href="/contact" className="inline-flex items-center gap-2 bg-white text-black font-bold uppercase tracking-widest text-xs px-6 py-3 rounded-full hover:bg-bbq-gold transition-all">
+                <button
+                  type="button"
+                  onClick={() => navigate('/pitmaster-ai')}
+                  className="inline-flex items-center gap-2 bg-white text-black font-bold uppercase tracking-widest text-xs px-6 py-3 rounded-full hover:bg-bbq-gold transition-all">
                   <MessageSquare size={16} /> Ask a Question
-                </a>
+                </button>
               </div>
             </div>
             <div className="flex-1 bg-white/[0.02] border-l border-white/5 p-8 flex flex-col justify-center relative overflow-hidden">
