@@ -64,6 +64,27 @@ export interface CateringPackage {
   image: string;
 }
 
+export interface CocktailTier {
+  id: string;
+  name: string;        // e.g. "The Teaser"
+  description: string;
+  price: number;       // Per person
+  pieces: number;      // Total pieces per head
+  cold: number;        // Of which cold
+  hot: number;         // Of which hot
+  substantial: number; // Of which substantial (main-like)
+  duration: string;    // e.g. "30–60 min"
+}
+
+export interface FunctionTier {
+  id: string;
+  name: string;
+  description: string;
+  price: number;       // Per person
+  courses?: string;    // e.g. "2 courses"
+  servingStyle?: string; // e.g. "Alternate drop"
+}
+
 export interface CalendarEvent {
   id: string;
   date: string; 
@@ -236,11 +257,18 @@ export interface AppSettings {
   openrouterApiKey?: string;
   rewards: RewardsConfig;
   cateringPackages?: CateringPackage[];
+  // Self Service tab (Build Your Self Service Order): lists drive the per-kg / per-tray pickers.
+  // Leave empty to use the Hughesey Que defaults baked into StorefrontCatering.js.
+  // Append " *" to a meat name to flag it as a surcharge item (e.g. "Pork Belly *").
+  cateringSelfServiceMeats?: string[];
+  cateringSelfServiceSides?: string[];
+  // Feasting Table "How We Set Up" info block on the storefront catering page.
+  feastingTableInfo?: { bullets: string[] };
   // Cocktail + Function menu tiers (storefront /catering page sub-tabs).
-  // Cocktail tiers currently fall back to hard-coded defaults in StorefrontCatering.js
-  // when settings.cocktailMenuTiers is empty; function tiers show "coming soon" when empty.
-  cocktailMenuTiers?: CateringPackage[];
-  functionMenuTiers?: CateringPackage[];
+  // Cocktail tiers fall back to hard-coded defaults when empty; function tiers show
+  // a "coming soon" empty state until admin adds at least one tier.
+  cocktailMenuTiers?: CocktailTier[];
+  functionMenuTiers?: FunctionTier[];
   // Email Settings
   emailSettings?: {
     enabled: boolean;

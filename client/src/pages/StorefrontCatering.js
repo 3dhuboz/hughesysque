@@ -164,6 +164,17 @@ const StorefrontCatering = () => {
   const navigate = useNavigate();
 
   const CATERING_PACKAGES = settings.cateringPackages?.length > 0 ? settings.cateringPackages : DEFAULT_PACKAGES;
+  // Admin-configurable lists; fall back to the hard-coded Hughesey Que defaults at the top of this file.
+  const SS_MEATS = settings.cateringSelfServiceMeats?.length > 0 ? settings.cateringSelfServiceMeats : CATERING_MEATS;
+  const SS_SIDES = settings.cateringSelfServiceSides?.length > 0 ? settings.cateringSelfServiceSides : CATERING_SIDES;
+  const FEASTING_BULLETS = settings.feastingTableInfo?.bullets?.length > 0 ? settings.feastingTableInfo.bullets : [
+    'We set your event up as a shared feasting table so guests can dig in and help themselves.',
+    'Meats are presented in heated bain-maries, sides in serving bowls alongside.',
+    'We arrive ~12 hours before service to begin cooking. Full set up, top-ups, and pack-down included.',
+    'Plates, cutlery, napkins, sliced bread or tortillas all provided.',
+  ];
+  const COCKTAIL_TIERS = settings.cocktailMenuTiers?.length > 0 ? settings.cocktailMenuTiers : COCKTAIL_PACKAGES;
+  const FUNCTION_TIERS = settings.functionMenuTiers?.length > 0 ? settings.functionMenuTiers : [];
 
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState('');
@@ -194,8 +205,7 @@ const StorefrontCatering = () => {
   const selfServeCount = Object.values(selfServiceCart.meats).reduce((a,b) => a+b, 0)
                       + Object.values(selfServiceCart.sides).reduce((a,b) => a+b, 0);
 
-  const FUNCTION_PACKAGES = settings.functionMenuTiers?.length > 0 ? settings.functionMenuTiers : [];
-  const ALL_PACKAGES = [...CATERING_PACKAGES, ...COCKTAIL_PACKAGES, ...FUNCTION_PACKAGES];
+  const ALL_PACKAGES = [...CATERING_PACKAGES, ...COCKTAIL_TIERS, ...FUNCTION_TIERS];
   const activePackage = ALL_PACKAGES.find(p => p.id === selectedPackageId);
 
   const meatsMenu = menu.filter(m => ['Bulk Meats', 'Meats', 'Trays', 'Burgers', 'Family Packs', 'Platters'].includes(m.category));
@@ -573,7 +583,7 @@ const StorefrontCatering = () => {
                   </p>
                 </div>
                 <div className="space-y-4">
-                  {COCKTAIL_PACKAGES.map(pkg => (
+                  {COCKTAIL_TIERS.map(pkg => (
                     <div key={pkg.id} className="bg-bbq-charcoal rounded-2xl border border-gray-800 hover:border-purple-700/60 transition p-6 flex flex-col md:flex-row md:items-center gap-6">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 flex-wrap mb-1">
@@ -612,7 +622,7 @@ const StorefrontCatering = () => {
                     Plated and alternate-drop options for weddings, awards nights, and formal functions.
                   </p>
                 </div>
-                {FUNCTION_PACKAGES.length === 0 ? (
+                {FUNCTION_TIERS.length === 0 ? (
                   <div className="text-center py-16 border-2 border-dashed border-gray-800 rounded-2xl text-gray-500">
                     <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-40"/>
                     <p className="font-bold text-gray-400">Function Menu coming soon</p>
@@ -620,7 +630,7 @@ const StorefrontCatering = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {FUNCTION_PACKAGES.map(pkg => (
+                    {FUNCTION_TIERS.map(pkg => (
                       <div key={pkg.id} className="bg-bbq-charcoal rounded-2xl border border-gray-800 hover:border-bbq-gold/60 transition p-6 flex flex-col md:flex-row md:items-center gap-6">
                         <div className="flex-1">
                           <h3 className="text-xl font-display font-bold text-white mb-1">{pkg.name}</h3>
@@ -655,7 +665,7 @@ const StorefrontCatering = () => {
                   <div className="mb-8">
                     <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-bbq-red mb-3">Meats (per kg)</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {CATERING_MEATS.map(name => {
+                      {SS_MEATS.map(name => {
                         const qty = selfServiceCart.meats[name] || 0;
                         const surcharge = /\*/.test(name);
                         const clean = name.replace(/\s*\*\s*$/, '');
@@ -681,7 +691,7 @@ const StorefrontCatering = () => {
                   <div className="mb-6">
                     <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-green-400 mb-3">Sides (per tray)</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {CATERING_SIDES.map(name => {
+                      {SS_SIDES.map(name => {
                         const qty = selfServiceCart.sides[name] || 0;
                         return (
                           <div key={name} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg border transition ${qty > 0 ? 'bg-green-900/15 border-green-700/50' : 'bg-gray-900/70 border-gray-800'}`}>
@@ -730,12 +740,7 @@ const StorefrontCatering = () => {
                   <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 mb-8">
                     <h4 className="font-bold text-white mb-4">How We Set Up <span className="text-gray-500 font-normal">(Banquet Style)</span></h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                      {[
-                        'We set your event up as a shared feasting table so guests can dig in and help themselves.',
-                        'Meats are presented in heated bain-maries, sides in serving bowls alongside.',
-                        'We arrive ~12 hours before service to begin cooking. Full set up, top-ups, and pack-down included.',
-                        'Plates, cutlery, napkins, sliced bread or tortillas all provided.',
-                      ].map(line => (
+                      {FEASTING_BULLETS.map(line => (
                         <div key={line} className="flex items-start gap-2 text-gray-300 leading-relaxed">
                           <CheckCircle size={14} className="text-bbq-gold mt-1 shrink-0"/>
                           <span>{line}</span>
@@ -859,7 +864,7 @@ const StorefrontCatering = () => {
                       </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {CATERING_MEATS.map(name => {
+                      {SS_MEATS.map(name => {
                         const selectedCount = pkgSelections.meats.filter(x => x === name).length;
                         const full = pkgSelections.meats.length >= activePackage.meatLimit;
                         return (
@@ -893,7 +898,7 @@ const StorefrontCatering = () => {
                       </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {CATERING_SIDES.map(name => {
+                      {SS_SIDES.map(name => {
                         const selectedCount = pkgSelections.sides.filter(x => x === name).length;
                         const full = pkgSelections.sides.length >= activePackage.sideLimit;
                         return (
