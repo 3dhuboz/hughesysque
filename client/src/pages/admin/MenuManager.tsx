@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { parseLocalDate } from '../../utils/dateUtils';
 import { useToast } from '../../components/Toast';
-import { Plus, Edit2, Calendar, Wand2, Loader2, Image as ImageIcon, Trash2, Package, CheckSquare, Square, ChevronDown, ChevronUp, HelpCircle, ChefHat, Info } from 'lucide-react';
+import { Plus, Edit2, Calendar, Wand2, Loader2, Image as ImageIcon, Trash2, Package, CheckSquare, Square, ChevronDown, ChevronUp, HelpCircle, ChefHat, Info, RefreshCw } from 'lucide-react';
 import { MenuItem, PackGroup } from '../../types';
 import { generateMarketingImage } from '../../services/gemini';
 import { PLACEHOLDER_IMG } from '../../constants';
@@ -34,6 +34,52 @@ const compressImage = (base64Str: string, maxWidth = 800, quality = 0.6) => {
             resolve(base64Str);
         };
     });
+};
+
+/** Syncs the Hughesys menu to Square's Catalog so every item lives in both
+ *  places. One-way push; Hughesys remains source of truth for name/price. */
+const SquareCatalogSyncButton: React.FC = () => {
+  const { settings } = useApp();
+  const { toast } = useToast();
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const squareConfigured = !!(settings?.squareAccessToken && settings?.squareLocationId);
+  if (!squareConfigured) return null;
+
+  const lastSync = settings?.squareCatalogLastSync
+    ? new Date(settings.squareCatalogLastSync).toLocaleString('en-AU', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : null;
+
+  const run = async () => {
+    setIsSyncing(true);
+    try {
+      const token = localStorage.getItem('hq_admin_token');
+      const res = await fetch('/api/v1/payment/square-sync-catalog', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Sync failed');
+      toast(`Synced ${data.upserted} item${data.upserted === 1 ? '' : 's'} to Square (${data.environment}).`);
+    } catch (err: any) {
+      toast(err.message || 'Sync failed', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  return (
+    <button onClick={run} disabled={isSyncing}
+      className="bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-2 rounded text-sm font-bold flex items-center gap-2 disabled:opacity-50 text-white transition"
+      title={lastSync ? `Last sync: ${lastSync}` : 'Push current menu to your Square catalog'}>
+      {isSyncing ? <Loader2 size={14} className="animate-spin"/> : <RefreshCw size={14}/>}
+      Sync to Square
+      {lastSync && <span className="text-[10px] text-gray-500 font-normal">· {lastSync}</span>}
+    </button>
+  );
 };
 
 const MenuManager: React.FC = () => {
@@ -252,14 +298,17 @@ const MenuManager: React.FC = () => {
           )}
       </div>
 
-      <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+      <div className="flex justify-between items-center border-b border-gray-700 pb-2 flex-wrap gap-2">
         <h3 className="text-xl font-bold">Menu Items</h3>
-        <button 
-          onClick={() => { setIsEditing(true); setEditItem({ availabilityType: 'everyday', isPack: false, packGroups: [] }); }}
-          className="bg-bbq-red px-4 py-2 rounded text-sm font-bold flex items-center gap-2 hover:bg-red-700"
-        >
-          <Plus size={16} /> Add Item
-        </button>
+        <div className="flex gap-2">
+          <SquareCatalogSyncButton />
+          <button
+            onClick={() => { setIsEditing(true); setEditItem({ availabilityType: 'everyday', isPack: false, packGroups: [] }); }}
+            className="bg-bbq-red px-4 py-2 rounded text-sm font-bold flex items-center gap-2 hover:bg-red-700"
+          >
+            <Plus size={16} /> Add Item
+          </button>
+        </div>
       </div>
 
       {isEditing && (
