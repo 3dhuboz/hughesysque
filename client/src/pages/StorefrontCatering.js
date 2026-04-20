@@ -371,8 +371,11 @@ const StorefrontCatering = () => {
 
         {/* STEP 1: LOGISTICS */}
         {step === 1 && (
-          <div className="max-w-3xl mx-auto bg-bbq-charcoal p-8 rounded-2xl border border-gray-800 shadow-xl">
-            <h2 className="text-2xl font-bold mb-6 text-white text-center">Event Logistics</h2>
+          <div className="max-w-3xl mx-auto relative">
+            {/* Outer diffuse glow */}
+            <div aria-hidden className="absolute -inset-6 rounded-[2rem] bg-gradient-to-br from-bbq-red/20 via-bbq-gold/10 to-orange-500/15 blur-3xl opacity-60 pointer-events-none"/>
+            <div className="relative bg-gradient-to-b from-gray-900 to-bbq-charcoal p-6 md:p-10 rounded-2xl border border-gray-800 shadow-[0_20px_80px_-20px_rgba(0,0,0,0.8)]">
+            <h2 className="text-2xl md:text-3xl font-display font-bold mb-8 text-white text-center tracking-wide">Event Logistics</h2>
 
             {/* Row 1 — the three inline inputs */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -419,19 +422,19 @@ const StorefrontCatering = () => {
                       const active = fulfillment === val;
                       return (
                         <button key={val} type="button" onClick={() => setFulfillment(val)}
-                          className={`relative p-3 rounded-xl border text-center transition-all duration-200 overflow-hidden group
+                          className={`relative p-5 min-h-[170px] rounded-xl border text-center transition-all duration-200 overflow-hidden group
                             ${active
-                              ? `bg-gradient-to-br from-gray-900 to-black border-transparent ring-2 ${ring} ${glow}`
-                              : 'bg-gray-900/60 border-gray-800 hover:border-gray-600 hover:bg-gray-900'}`}>
-                          <div className="flex flex-col items-center gap-1.5">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 ${active ? iconBg : 'bg-gray-800'}`}>
-                              <Icon size={18} className={active ? iconColor : 'text-gray-400'} />
+                              ? `bg-gradient-to-br from-gray-900 via-gray-950 to-black border-transparent ring-2 ${ring} ${glow}`
+                              : 'bg-gradient-to-br from-gray-900/80 to-gray-950/80 border-gray-800 hover:border-gray-600 hover:from-gray-900 hover:to-gray-900'}`}>
+                          <div className="flex flex-col items-center justify-center gap-2 h-full">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 group-hover:scale-110 ${active ? `${iconBg} shadow-lg` : 'bg-gray-800/80 border border-gray-700'}`}>
+                              <Icon size={22} className={active ? iconColor : 'text-gray-400'} />
                             </div>
-                            <div className={`font-bold text-sm leading-tight ${active ? 'text-white' : 'text-gray-200'}`}>{label}</div>
-                            <div className={`text-[10px] uppercase tracking-wider font-bold ${active ? accent : 'text-gray-500'}`}>{sub}</div>
-                            <p className={`text-[10px] leading-snug ${active ? 'text-gray-300' : 'text-gray-500'}`}>{desc}</p>
+                            <div className={`font-display font-bold text-base leading-tight mt-1 ${active ? 'text-white' : 'text-gray-200'}`}>{label}</div>
+                            <div className={`text-[11px] uppercase tracking-[0.15em] font-bold ${active ? accent : 'text-gray-500'}`}>{sub}</div>
+                            <p className={`text-xs leading-snug max-w-[180px] ${active ? 'text-gray-300' : 'text-gray-500'}`}>{desc}</p>
                           </div>
-                          {active && <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${iconBg}`}/>}
+                          {active && <div className={`absolute top-3 right-3 w-2 h-2 rounded-full ${iconBg} animate-pulse`}/>}
                         </button>
                       );
                     })}
@@ -449,18 +452,18 @@ const StorefrontCatering = () => {
                       const active = temperature === val;
                       return (
                         <button key={val} type="button" onClick={() => setTemperature(val)}
-                          className={`relative p-3 rounded-xl border text-center transition-all duration-200 overflow-hidden group
+                          className={`relative p-5 min-h-[140px] rounded-xl border text-center transition-all duration-200 overflow-hidden group
                             ${active
-                              ? `bg-gradient-to-br from-gray-900 to-black border-transparent ring-2 ${ring} ${glow}`
-                              : 'bg-gray-900/60 border-gray-800 hover:border-gray-600 hover:bg-gray-900'}`}>
-                          <div className="flex flex-col items-center gap-1.5">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 ${active ? iconBg : 'bg-gray-800'}`}>
-                              <Icon size={18} className={active ? 'text-white' : 'text-gray-400'} />
+                              ? `bg-gradient-to-br from-gray-900 via-gray-950 to-black border-transparent ring-2 ${ring} ${glow}`
+                              : 'bg-gradient-to-br from-gray-900/80 to-gray-950/80 border-gray-800 hover:border-gray-600 hover:from-gray-900 hover:to-gray-900'}`}>
+                          <div className="flex flex-col items-center justify-center gap-2 h-full">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 group-hover:scale-110 ${active ? `${iconBg} shadow-lg` : 'bg-gray-800/80 border border-gray-700'}`}>
+                              <Icon size={22} className={active ? 'text-white' : 'text-gray-400'} />
                             </div>
-                            <div className={`font-bold text-sm leading-tight ${active ? 'text-white' : 'text-gray-200'}`}>{label}</div>
-                            <p className={`text-[10px] leading-snug ${active ? accent : 'text-gray-500'}`}>{desc}</p>
+                            <div className={`font-display font-bold text-base leading-tight mt-1 ${active ? 'text-white' : 'text-gray-200'}`}>{label}</div>
+                            <p className={`text-xs leading-snug ${active ? accent : 'text-gray-500'}`}>{desc}</p>
                           </div>
-                          {active && <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${iconBg}`}/>}
+                          {active && <div className={`absolute top-3 right-3 w-2 h-2 rounded-full ${iconBg} animate-pulse`}/>}
                         </button>
                       );
                     })}
@@ -497,6 +500,7 @@ const StorefrontCatering = () => {
                 <AlertCircle size={18} /> Sorry, this date is unavailable. We require at least 7 days notice and may be fully booked. Please choose another date.
               </div>
             )}
+            </div>
           </div>
         )}
 
