@@ -14,15 +14,45 @@ class ErrorBoundary extends React.Component {
     this.setState({ errorInfo });
     console.error('[ErrorBoundary]', error, errorInfo);
 
-    // Auto-reload once for stale chunk errors (happens after deploys)
+    // Auto-recover from stale-chunk errors that happen after deploys.
+    // Root cause: a previously-cached index.html references chunk hashes
+    // that no longer exist on the server. Fix: nuke every cache we control
+    // (service worker, Cache API, HTTP cache via reload) and reload fresh.
     const isChunkError = error?.message?.includes('Failed to fetch dynamically imported module') ||
                          error?.message?.includes('Loading chunk') ||
-                         error?.message?.includes('Loading CSS chunk');
-    const reloadKey = 'hq_chunk_reload';
-    if (isChunkError && !sessionStorage.getItem(reloadKey)) {
-      sessionStorage.setItem(reloadKey, '1');
-      window.location.reload();
-    }
+                         error?.message?.includes('Loading CSS chunk') ||
+                         error?.message?.includes('Importing a module script failed');
+    if (!isChunkError) return;
+
+    const reloadKey = 'hq_chunk_reload_count';
+    const count = parseInt(sessionStorage.getItem(reloadKey) || '0', 10);
+    if (count >= 2) return; // Give up after 2 tries so we don't loop forever
+    sessionStorage.setItem(reloadKey, String(count + 1));
+
+    const cleanup = async () => {
+      try {
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.unregister()));
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+      } catch (e) {
+        console.warn('[ErrorBoundary] cleanup failed', e);
+      } finally {
+        // Hard reload — bypass HTTP cache so we fetch a fresh index.html
+        window.location.reload();
+      }
+    };
+    cleanup();
+  }
+
+  componentDidMount() {
+    // Successful mount — clear the reload counter so a future genuine error
+    // isn't suppressed because we happened to hit 2 reloads earlier.
+    sessionStorage.removeItem('hq_chunk_reload_count');
   }
 
   render() {
