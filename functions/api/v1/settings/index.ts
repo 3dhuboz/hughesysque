@@ -21,6 +21,8 @@ export const onRequest = async (context: any) => {
           'geminiApiKey', 'openrouterApiKey', 'facebookAppId',
           'facebookPageAccessToken', 'facebookPageId',
           'instagramBusinessAccountId', 'adminPassword', 'adminUsername',
+          'adminPasswordRecord', 'adminResetCode', 'adminResetExpiresAt',
+          'adminResetIssuedAt', 'adminResetAttempts',
           'squareAccessToken', 'squareApplicationId', 'squareLocationId',
           'smartPayPublicKey', 'smartPaySecretKey', 'smsSettings', 'emailSettings',
         ];
