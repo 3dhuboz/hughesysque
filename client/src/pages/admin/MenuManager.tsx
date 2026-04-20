@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { parseLocalDate } from '../../utils/dateUtils';
 import { useToast } from '../../components/Toast';
-import { Plus, Edit2, Calendar, Wand2, Loader2, Image as ImageIcon, Trash2, Package, CheckSquare, Square, ChevronDown, ChevronUp, HelpCircle, ChefHat } from 'lucide-react';
+import { Plus, Edit2, Calendar, Wand2, Loader2, Image as ImageIcon, Trash2, Package, CheckSquare, Square, ChevronDown, ChevronUp, HelpCircle, ChefHat, Info } from 'lucide-react';
 import { MenuItem, PackGroup } from '../../types';
 import { generateMarketingImage } from '../../services/gemini';
 import { PLACEHOLDER_IMG } from '../../constants';
@@ -597,8 +597,20 @@ const MenuManager: React.FC = () => {
         </form>
       )}
 
+      <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg p-3 flex items-start gap-2 text-xs text-blue-200/80">
+        <Info size={14} className="text-blue-400 shrink-0 mt-0.5"/>
+        <span>
+          Catering items (meats, sides, desserts flagged for catering) aren't shown here — manage those from the <strong>Catering</strong> tab.
+        </span>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {menu.map(item => (
+        {menu.filter(m =>
+          !m.isCatering &&
+          m.category !== 'Catering' &&
+          m.category !== 'Catering Packs' &&
+          !(m.availableForCatering && m.cateringCategory)
+        ).map(item => (
           <div key={item.id} className={`flex justify-between items-center p-4 rounded-lg border ${item.available === false ? 'bg-red-950/20 border-red-800/40 opacity-70' : 'bg-gray-800/50 border-gray-700'}`}>
             <div className="flex items-center gap-4">
               <div className="relative">
