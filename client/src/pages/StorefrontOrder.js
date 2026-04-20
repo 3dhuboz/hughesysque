@@ -179,6 +179,9 @@ const StorefrontOrder = () => {
   const finalTotal = fulfillment === 'DELIVERY' && isShippableOnly ? totalBeforeShipping + SHIPPING_COST : totalBeforeShipping;
 
   const availableItems = menu.filter(item => {
+    // Catering-only items belong on the catering page, not pre-order pickup
+    if (item.isCatering) return false;
+    if (item.category === 'Catering Packs') return false;
     if (item.availabilityType === 'everyday' || !item.availabilityType) return true;
     if (item.availabilityType === 'specific_date' && selectedEvent && item.specificDate === selectedEvent.date) return true;
     return false;

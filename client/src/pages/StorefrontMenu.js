@@ -156,6 +156,9 @@ const StorefrontMenu = () => {
   const [recentlyAdded, setRecentlyAdded] = useState(null);
 
   const availableMenu = menu.filter(m => {
+    // Catering-only items (and the Catering Packs category) belong on the catering page, not the normal menu
+    if (m.isCatering) return false;
+    if (m.category === 'Catering Packs') return false;
     if (['Rubs & Sauces', 'Merch'].includes(m.category)) return true;
     if (!selectedOrderDate) return true;
     if (m.availabilityType === 'everyday' || !m.availabilityType) return true;
