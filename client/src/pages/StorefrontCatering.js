@@ -180,6 +180,19 @@ const StorefrontCatering = () => {
   const [customCart, setCustomCart] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cateringView, setCateringView] = useState('self-service'); // 'self-service' | 'cocktail' | 'function'
+  // { meats: { 'Sliced Brisket': 3, ... }, sides: { 'Potato Bake': 2, ... } } — quantity in kg / trays
+  const [selfServiceCart, setSelfServiceCart] = useState({ meats: {}, sides: {} });
+  const adjustSelfServe = (section, name, delta) => {
+    setSelfServiceCart(prev => {
+      const current = prev[section][name] || 0;
+      const next = Math.max(0, current + delta);
+      const updatedSection = { ...prev[section] };
+      if (next === 0) delete updatedSection[name]; else updatedSection[name] = next;
+      return { ...prev, [section]: updatedSection };
+    });
+  };
+  const selfServeCount = Object.values(selfServiceCart.meats).reduce((a,b) => a+b, 0)
+                      + Object.values(selfServiceCart.sides).reduce((a,b) => a+b, 0);
 
   const FUNCTION_PACKAGES = settings.functionMenuTiers?.length > 0 ? settings.functionMenuTiers : [];
   const ALL_PACKAGES = [...CATERING_PACKAGES, ...COCKTAIL_PACKAGES, ...FUNCTION_PACKAGES];
@@ -245,9 +258,10 @@ const StorefrontCatering = () => {
     }, 0);
 
   const calculateTotal = () => {
-    let subtotal = selectedPackageId === 'pkg_custom'
-      ? calculateCustomTotal()
-      : (activePackage ? activePackage.price * guestCount : 0);
+    let subtotal = 0;
+    if (selectedPackageId === 'pkg_custom') subtotal = calculateCustomTotal();
+    else if (selectedPackageId === 'pkg_self_service_quote') subtotal = 0; // Quote on request
+    else if (activePackage) subtotal = activePackage.price * guestCount;
     if (fulfillment === 'DELIVERY') subtotal += DELIVERY_FEE;
     return subtotal;
   };
@@ -260,7 +274,21 @@ const StorefrontCatering = () => {
       const deposit = total * 0.5;
       const orderItems = [];
 
-      if (selectedPackageId === 'pkg_custom') {
+      if (selectedPackageId === 'pkg_self_service_quote') {
+        // Self service quote request — push each selected meat (kg) + side (tray) as a no-price line
+        Object.entries(selfServiceCart.meats).forEach(([name, qty]) => {
+          orderItems.push({
+            item: { id: `ss_meat_${name}`, name: `${name.replace(/\s*\*\s*$/, '')} (kg)`, price: 0, category: 'Catering Packs' },
+            quantity: qty,
+          });
+        });
+        Object.entries(selfServiceCart.sides).forEach(([name, qty]) => {
+          orderItems.push({
+            item: { id: `ss_side_${name}`, name: `${name} (tray)`, price: 0, category: 'Catering Packs' },
+            quantity: qty,
+          });
+        });
+      } else if (selectedPackageId === 'pkg_custom') {
         Object.entries(customCart).forEach(([id, qty]) => {
           const item = menu.find(m => (m._id || m.id) === id);
           if (item) orderItems.push({ item, quantity: qty });
@@ -615,59 +643,143 @@ const StorefrontCatering = () => {
 
             {/* === SELF SERVICE & FEASTING TABLE VIEW === */}
             {cateringView === 'self-service' && selectionMode === 'CHOICE' && (
-              <div className="max-w-5xl mx-auto">
-                <h2 className="text-3xl font-display font-bold text-white uppercase tracking-wider text-center mb-10">How Do You Want To Order?</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {[
-                    {
-                      onClick: () => setSelectionMode('PACKAGES'),
-                      img: settings.diyCardPackageImage || 'https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80',
-                      accentClass: 'group-hover:border-bbq-gold',
-                      iconBg: 'bg-bbq-gold',
-                      Icon: Package,
-                      iconColor: 'text-black',
-                      title: 'Curated Packages',
-                      titleHover: 'group-hover:text-bbq-gold',
-                      desc: 'Per-head pricing with optimal meat & side combinations. Easiest for groups.',
-                      btnColor: 'text-bbq-gold',
-                      btnLabel: 'View Packages',
-                    },
-                    {
-                      onClick: () => selectPackage('pkg_custom'),
-                      img: settings.diyCardCustomImage || 'https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80',
-                      accentClass: 'group-hover:border-bbq-red',
-                      iconBg: 'bg-bbq-red',
-                      Icon: ChefHat,
-                      iconColor: 'text-white',
-                      title: 'Build Your Own',
-                      titleHover: 'group-hover:text-bbq-red',
-                      desc: 'Total control. Order bulk meats by KG and sides by the tray.',
-                      btnColor: 'text-bbq-red',
-                      btnLabel: 'Start Building',
-                    }
-                  ].map(({ onClick, img, accentClass, iconBg, Icon, iconColor, title, titleHover, desc, btnColor, btnLabel }) => (
-                    <div key={title} onClick={onClick}
-                      className={`bg-bbq-charcoal rounded-2xl border border-gray-800 overflow-hidden flex flex-col group ${accentClass} transition shadow-xl relative h-[380px] cursor-pointer`}>
-                      <img src={img} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={title} />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
-                      <div className="relative z-10 flex-1 p-8 flex flex-col justify-end h-full">
-                        <div className={`w-12 h-12 ${iconBg} rounded-full flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
-                          <Icon size={22} className={iconColor} />
-                        </div>
-                        <h3 className={`text-3xl font-display font-bold text-white mb-2 uppercase tracking-wide ${titleHover} transition-colors`}>{title}</h3>
-                        <p className="text-gray-300 text-sm mb-6">{desc}</p>
-                        <span className={`${btnColor} font-bold flex items-center gap-2 uppercase tracking-wide text-sm group-hover:translate-x-2 transition-transform duration-300`}>
-                          {btnLabel} <ArrowRight size={14} />
-                        </span>
-                      </div>
+              <div className="max-w-5xl mx-auto space-y-12">
+
+                {/* Build Your Self Service Order */}
+                <div className="bg-bbq-charcoal border border-gray-800 rounded-2xl p-6 md:p-8 shadow-xl">
+                  <div className="text-center mb-8">
+                    <h2 className="text-2xl md:text-3xl font-display font-bold text-white uppercase tracking-wider">Build Your Self Service Order</h2>
+                    <p className="text-gray-400 text-sm mt-2">Select items and quantities — we'll quote based on your selections</p>
+                  </div>
+
+                  <div className="mb-8">
+                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-bbq-red mb-3">Meats (per kg)</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {CATERING_MEATS.map(name => {
+                        const qty = selfServiceCart.meats[name] || 0;
+                        const surcharge = /\*/.test(name);
+                        const clean = name.replace(/\s*\*\s*$/, '');
+                        return (
+                          <div key={name} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg border transition ${qty > 0 ? 'bg-bbq-red/10 border-bbq-red/50' : 'bg-gray-900/70 border-gray-800'}`}>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-white font-bold text-sm">{clean} <span className="text-gray-500 font-normal text-xs">(kg)</span></div>
+                              {surcharge && <div className="text-[10px] text-bbq-gold font-bold">+$4/pp surcharge</div>}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button type="button" disabled={qty === 0} onClick={() => adjustSelfServe('meats', name, -1)}
+                                className="w-8 h-8 rounded-full bg-gray-800 text-gray-300 disabled:opacity-30 hover:bg-gray-700 flex items-center justify-center"><Minus size={14}/></button>
+                              <span className="w-7 text-center text-white font-bold">{qty}</span>
+                              <button type="button" onClick={() => adjustSelfServe('meats', name, 1)}
+                                className="w-8 h-8 rounded-full bg-bbq-red text-white hover:bg-red-600 flex items-center justify-center"><Plus size={14}/></button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="mb-6">
+                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-green-400 mb-3">Sides (per tray)</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {CATERING_SIDES.map(name => {
+                        const qty = selfServiceCart.sides[name] || 0;
+                        return (
+                          <div key={name} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg border transition ${qty > 0 ? 'bg-green-900/15 border-green-700/50' : 'bg-gray-900/70 border-gray-800'}`}>
+                            <div className="text-white font-bold text-sm">{name} <span className="text-gray-500 font-normal text-xs">(tray)</span></div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button type="button" disabled={qty === 0} onClick={() => adjustSelfServe('sides', name, -1)}
+                                className="w-8 h-8 rounded-full bg-gray-800 text-gray-300 disabled:opacity-30 hover:bg-gray-700 flex items-center justify-center"><Minus size={14}/></button>
+                              <span className="w-7 text-center text-white font-bold">{qty}</span>
+                              <button type="button" onClick={() => adjustSelfServe('sides', name, 1)}
+                                className="w-8 h-8 rounded-full bg-green-700 text-white hover:bg-green-600 flex items-center justify-center"><Plus size={14}/></button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {selfServeCount > 0 && (
+                    <button
+                      onClick={() => { setSelectedPackageId('pkg_self_service_quote'); setStep(3); }}
+                      className="group relative w-full font-bold py-4 rounded-xl transition-all duration-200 shadow-lg text-base md:text-lg flex items-center justify-center gap-2 overflow-hidden uppercase tracking-wider
+                        bg-gradient-to-r from-bbq-red via-red-600 to-orange-500 text-white
+                        hover:shadow-[0_0_32px_rgba(239,68,68,0.55)] hover:scale-[1.01] active:scale-100">
+                      <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out"/>
+                      <span className="relative flex items-center gap-2">Request Quote ({selfServeCount} items) <ArrowRight size={18}/></span>
+                    </button>
+                  )}
                 </div>
-                <div className="max-w-4xl mx-auto mt-6 space-y-2">
-                  <p className="text-xs text-gray-500 text-center">* Ribs and Pork Belly attract a $4/pp surcharge. All prices exclude GST.</p>
-                  <p className="text-xs text-gray-500 text-center">Price includes full set up, sliced bread or tortillas, disposable cutlery, plates and napkins. 50% deposit required to secure booking.</p>
+
+                {/* OR CHOOSE A FEASTING PACKAGE divider */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-700 to-gray-700"/>
+                  <span className="text-xs font-bold uppercase tracking-[0.3em] text-gray-500 whitespace-nowrap">Or Choose A Feasting Package</span>
+                  <div className="flex-1 h-px bg-gradient-to-l from-transparent via-gray-700 to-gray-700"/>
                 </div>
-                <div className="text-center mt-4">
+
+                {/* FEASTING TABLE section */}
+                <div>
+                  <div className="text-center mb-6">
+                    <h2 className="text-3xl md:text-4xl font-display font-bold text-white uppercase tracking-wider">Feasting Table</h2>
+                    <p className="text-gray-400 text-sm mt-2 max-w-2xl mx-auto">
+                      Banquet-style shared feasting table. We set up, serve, top up, and pack down. Includes bread, cutlery, plates and napkins.
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 mb-8">
+                    <h4 className="font-bold text-white mb-4">How We Set Up <span className="text-gray-500 font-normal">(Banquet Style)</span></h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                      {[
+                        'We set your event up as a shared feasting table so guests can dig in and help themselves.',
+                        'Meats are presented in heated bain-maries, sides in serving bowls alongside.',
+                        'We arrive ~12 hours before service to begin cooking. Full set up, top-ups, and pack-down included.',
+                        'Plates, cutlery, napkins, sliced bread or tortillas all provided.',
+                      ].map(line => (
+                        <div key={line} className="flex items-start gap-2 text-gray-300 leading-relaxed">
+                          <CheckCircle size={14} className="text-bbq-gold mt-1 shrink-0"/>
+                          <span>{line}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-5">
+                    {CATERING_PACKAGES.map((pkg, idx) => (
+                      <div key={pkg.id} className="bg-bbq-charcoal rounded-2xl border border-gray-800 overflow-hidden flex flex-col md:flex-row group hover:border-bbq-gold/60 transition shadow-xl">
+                        <div className="w-full md:w-64 h-48 md:h-auto relative shrink-0">
+                          <img src={pkg.image || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length]} onError={e => { e.target.src = FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length]; }} className="w-full h-full object-cover" alt={pkg.name}/>
+                        </div>
+                        <div className="flex-1 p-6 flex flex-col justify-center">
+                          <div className="flex justify-between items-start gap-3 mb-2 flex-wrap">
+                            <h3 className="text-2xl font-display font-bold text-white">{pkg.name}</h3>
+                            <div className="text-right">
+                              <div className="text-3xl font-bold text-bbq-gold">${pkg.price}</div>
+                              <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Per Head</div>
+                            </div>
+                          </div>
+                          <p className="text-gray-400 text-sm mb-4">{pkg.description}</p>
+                          <div className="flex flex-wrap gap-2 mb-5 text-[11px] font-bold">
+                            <span className="flex items-center gap-1.5 bg-black/40 text-gray-300 border border-gray-700 px-2.5 py-1 rounded-full"><CheckCircle size={11} className="text-green-400"/> Min {pkg.minPax} pax</span>
+                            <span className="flex items-center gap-1.5 bg-black/40 text-gray-300 border border-gray-700 px-2.5 py-1 rounded-full"><CheckCircle size={11} className="text-green-400"/> {pkg.meatLimit} Meat choices</span>
+                            <span className="flex items-center gap-1.5 bg-black/40 text-gray-300 border border-gray-700 px-2.5 py-1 rounded-full"><CheckCircle size={11} className="text-green-400"/> {pkg.sideLimit} Side choices</span>
+                          </div>
+                          <button onClick={() => selectPackage(pkg.id)}
+                            className="group/btn w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-bbq-gold transition flex justify-center items-center gap-2 uppercase tracking-wider text-sm">
+                            Select Package <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform"/>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 space-y-1">
+                    <p className="text-xs text-gray-500 text-center">* Ribs and Pork Belly attract a $4/pp surcharge. All prices exclude GST.</p>
+                    <p className="text-xs text-gray-500 text-center">Price includes full set up, sliced bread or tortillas, disposable cutlery, plates and napkins. 50% deposit required to secure booking.</p>
+                  </div>
+                </div>
+
+                <div className="text-center">
                   <button onClick={() => setStep(1)} className="text-gray-500 hover:text-white underline text-sm transition">Back to Logistics</button>
                 </div>
               </div>
@@ -889,7 +1001,9 @@ const StorefrontCatering = () => {
                     fulfillment === 'DELIVERY' ? `Delivery to ${deliveryAddress}` :
                                                  `On-Site Set Up at ${deliveryAddress} (fee quoted separately)`],
                   ['Temperature', temperature === 'HOT' ? 'Ready to Eat (Hot)' : 'Cold (Reheat at home)'],
-                  ['Package', activePackage ? `${activePackage.name} @ $${activePackage.price}/head` : 'Custom Build'],
+                  ['Package',
+                    selectedPackageId === 'pkg_self_service_quote' ? 'Self Service (Quote Request)' :
+                    activePackage ? `${activePackage.name} @ $${activePackage.price}/head` : 'Custom Build'],
                 ].map(([key, val]) => (
                   <div key={key} className="flex justify-between text-sm">
                     <span className="text-gray-500">{key}</span>
