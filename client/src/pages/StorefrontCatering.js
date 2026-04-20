@@ -408,32 +408,65 @@ const StorefrontCatering = () => {
 
               <div className="space-y-5">
                 <div>
-                  <label className="block text-gray-400 mb-2 text-sm font-bold">Service Type</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <label className="block text-gray-400 mb-2 text-sm font-bold uppercase tracking-wider">Service Type</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
-                      ['PICKUP',   ChefHat, 'Pickup',              'Free'],
-                      ['DELIVERY', Truck,   'Delivery',            `+$${DELIVERY_FEE}`],
-                      ['SETUP',    Users,   'On-Site Set Up',      'Quoted'],
-                    ].map(([val, Icon, label, sub]) => (
-                      <button key={val} onClick={() => setFulfillment(val)}
-                        className={`p-3 rounded-lg border text-sm font-bold flex flex-col items-center gap-1 transition ${fulfillment === val ? 'bg-bbq-red text-white border-red-500' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                        <Icon size={18} /> {label}
-                        <span className={`text-[10px] font-normal ${fulfillment === val ? 'text-red-100' : 'text-gray-500'}`}>{sub}</span>
-                      </button>
-                    ))}
+                      { val: 'PICKUP',   Icon: ChefHat, label: 'Pickup',         sub: 'Free',   desc: 'Grab it from our HQ',          ring: 'ring-bbq-gold',   glow: 'shadow-[0_0_24px_rgba(251,191,36,0.35)]', iconBg: 'bg-bbq-gold',  iconColor: 'text-black', accent: 'text-bbq-gold' },
+                      { val: 'DELIVERY', Icon: Truck,   label: 'Delivery',       sub: `+$${DELIVERY_FEE}`, desc: 'We drop it at your door',      ring: 'ring-blue-500',   glow: 'shadow-[0_0_24px_rgba(59,130,246,0.35)]', iconBg: 'bg-blue-600',  iconColor: 'text-white', accent: 'text-blue-300' },
+                      { val: 'SETUP',    Icon: Users,   label: 'On-Site Set Up', sub: 'Quoted', desc: 'We cook & serve at your venue', ring: 'ring-bbq-red',    glow: 'shadow-[0_0_24px_rgba(239,68,68,0.35)]',  iconBg: 'bg-bbq-red',   iconColor: 'text-white', accent: 'text-red-300' },
+                    ].map(({ val, Icon, label, sub, desc, ring, glow, iconBg, iconColor, accent }) => {
+                      const active = fulfillment === val;
+                      return (
+                        <button key={val} type="button" onClick={() => setFulfillment(val)}
+                          className={`relative p-4 rounded-xl border text-left transition-all duration-200 overflow-hidden group
+                            ${active
+                              ? `bg-gradient-to-br from-gray-900 to-black border-transparent ring-2 ${ring} ${glow}`
+                              : 'bg-gray-900/60 border-gray-800 hover:border-gray-600 hover:bg-gray-900'}`}>
+                          <div className="flex items-start gap-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${active ? iconBg : 'bg-gray-800'}`}>
+                              <Icon size={18} className={active ? iconColor : 'text-gray-400'} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline justify-between gap-2">
+                                <span className={`font-bold text-sm ${active ? 'text-white' : 'text-gray-200'}`}>{label}</span>
+                                <span className={`text-[11px] font-bold uppercase tracking-wider ${active ? accent : 'text-gray-500'}`}>{sub}</span>
+                              </div>
+                              <p className={`text-[11px] mt-0.5 leading-tight ${active ? 'text-gray-300' : 'text-gray-500'}`}>{desc}</p>
+                            </div>
+                          </div>
+                          {active && <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${iconBg}`}/>}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-gray-400 mb-2 text-sm font-bold">Temperature</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => setTemperature('HOT')}
-                      className={`p-3 rounded-lg border text-sm font-bold flex flex-col items-center gap-1 transition ${temperature === 'HOT' ? 'bg-orange-900/50 text-orange-200 border-orange-500' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                      <Flame size={18} /> Ready to Eat
-                    </button>
-                    <button onClick={() => setTemperature('COLD')}
-                      className={`p-3 rounded-lg border text-sm font-bold flex flex-col items-center gap-1 transition ${temperature === 'COLD' ? 'bg-blue-900/50 text-blue-200 border-blue-500' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                      <Snowflake size={18} /> Cold (Reheat)
-                    </button>
+                  <label className="block text-gray-400 mb-2 text-sm font-bold uppercase tracking-wider">Temperature</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { val: 'HOT',  Icon: Flame,     label: 'Ready to Eat', desc: 'Hot & ready to serve',   ring: 'ring-orange-500', glow: 'shadow-[0_0_24px_rgba(249,115,22,0.35)]', iconBg: 'bg-orange-600', accent: 'text-orange-300' },
+                      { val: 'COLD', Icon: Snowflake, label: 'Cold',         desc: 'Reheat at home',          ring: 'ring-blue-500',   glow: 'shadow-[0_0_24px_rgba(59,130,246,0.35)]', iconBg: 'bg-blue-600',   accent: 'text-blue-300' },
+                    ].map(({ val, Icon, label, desc, ring, glow, iconBg, accent }) => {
+                      const active = temperature === val;
+                      return (
+                        <button key={val} type="button" onClick={() => setTemperature(val)}
+                          className={`relative p-4 rounded-xl border text-left transition-all duration-200 overflow-hidden group
+                            ${active
+                              ? `bg-gradient-to-br from-gray-900 to-black border-transparent ring-2 ${ring} ${glow}`
+                              : 'bg-gray-900/60 border-gray-800 hover:border-gray-600 hover:bg-gray-900'}`}>
+                          <div className="flex items-start gap-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${active ? iconBg : 'bg-gray-800'}`}>
+                              <Icon size={18} className={active ? 'text-white' : 'text-gray-400'} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className={`font-bold text-sm ${active ? 'text-white' : 'text-gray-200'}`}>{label}</div>
+                              <p className={`text-[11px] mt-0.5 leading-tight ${active ? accent : 'text-gray-500'}`}>{desc}</p>
+                            </div>
+                          </div>
+                          {active && <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${iconBg}`}/>}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
