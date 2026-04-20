@@ -373,43 +373,44 @@ const StorefrontCatering = () => {
         {step === 1 && (
           <div className="max-w-3xl mx-auto bg-bbq-charcoal p-8 rounded-2xl border border-gray-800 shadow-xl">
             <h2 className="text-2xl font-bold mb-6 text-white text-center">Event Logistics</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-gray-400 mb-2 text-sm font-bold">Event Date</label>
-                  <CalendarPicker
-                    value={selectedDate}
-                    onChange={(val) => { setSelectedDate(val); setIsAvailable(null); }}
-                    minDate={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return d; })()}
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-400 mb-2 text-sm font-bold">Eat Time</label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-3.5 text-bbq-red" size={18} />
-                    <select value={pickupTime} onChange={e => setPickupTime(e.target.value)}
-                      className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none appearance-none">
-                      {['11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM'].map(t => (
-                        <option key={t}>{t}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-gray-400 mb-2 text-sm font-bold">Number of Guests</label>
-                  <div className="relative">
-                    <Users className="absolute left-3 top-3.5 text-bbq-red" size={18} />
-                    <input type="number" min="40" value={guestCount} onChange={e => setGuestCount(parseInt(e.target.value) || 40)}
-                      className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none" />
-                    <span className="absolute right-4 top-3.5 text-xs text-gray-500">Min 40 pax</span>
-                  </div>
+
+            {/* Row 1 — the three inline inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div>
+                <label className="block text-gray-400 mb-2 text-sm font-bold">Event Date</label>
+                <CalendarPicker
+                  value={selectedDate}
+                  onChange={(val) => { setSelectedDate(val); setIsAvailable(null); }}
+                  minDate={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return d; })()}
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 mb-2 text-sm font-bold">Eat Time</label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-3.5 text-bbq-red" size={18} />
+                  <select value={pickupTime} onChange={e => setPickupTime(e.target.value)}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none appearance-none">
+                    {['11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM'].map(t => (
+                      <option key={t}>{t}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
+              <div>
+                <label className="block text-gray-400 mb-2 text-sm font-bold">Number of Guests</label>
+                <div className="relative">
+                  <Users className="absolute left-3 top-3.5 text-bbq-red" size={18} />
+                  <input type="number" min="40" value={guestCount} onChange={e => setGuestCount(parseInt(e.target.value) || 40)}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none" />
+                  <span className="absolute right-4 top-3.5 text-[10px] text-gray-500">Min 40</span>
+                </div>
+              </div>
+            </div>
 
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-gray-400 mb-2 text-sm font-bold uppercase tracking-wider">Service Type</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Row 2 — Service Type, full width */}
+            <div className="mb-6">
+              <label className="block text-gray-400 mb-2 text-sm font-bold uppercase tracking-wider">Service Type</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
                       { val: 'PICKUP',   Icon: ChefHat, label: 'Pickup',         sub: 'Free',   desc: 'Grab it from our HQ',          ring: 'ring-bbq-gold',   glow: 'shadow-[0_0_24px_rgba(251,191,36,0.35)]', iconBg: 'bg-bbq-gold',  iconColor: 'text-black', accent: 'text-bbq-gold' },
                       { val: 'DELIVERY', Icon: Truck,   label: 'Delivery',       sub: `+$${DELIVERY_FEE}`, desc: 'We drop it at your door',      ring: 'ring-blue-500',   glow: 'shadow-[0_0_24px_rgba(59,130,246,0.35)]', iconBg: 'bg-blue-600',  iconColor: 'text-white', accent: 'text-blue-300' },
@@ -434,11 +435,13 @@ const StorefrontCatering = () => {
                         </button>
                       );
                     })}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-gray-400 mb-2 text-sm font-bold uppercase tracking-wider">Temperature</label>
-                  <div className="grid grid-cols-2 gap-3">
+              </div>
+            </div>
+
+            {/* Row 3 — Temperature, full width */}
+            <div>
+              <label className="block text-gray-400 mb-2 text-sm font-bold uppercase tracking-wider">Temperature</label>
+              <div className="grid grid-cols-2 gap-3">
                     {[
                       { val: 'HOT',  Icon: Flame,     label: 'Ready to Eat', desc: 'Hot & ready to serve',   ring: 'ring-orange-500', glow: 'shadow-[0_0_24px_rgba(249,115,22,0.35)]', iconBg: 'bg-orange-600', accent: 'text-orange-300' },
                       { val: 'COLD', Icon: Snowflake, label: 'Cold',         desc: 'Reheat at home',          ring: 'ring-blue-500',   glow: 'shadow-[0_0_24px_rgba(59,130,246,0.35)]', iconBg: 'bg-blue-600',   accent: 'text-blue-300' },
@@ -461,8 +464,6 @@ const StorefrontCatering = () => {
                         </button>
                       );
                     })}
-                  </div>
-                </div>
               </div>
             </div>
 
