@@ -21,6 +21,89 @@ interface LogEntry {
     fix?: string;
 }
 
+/** In-admin change-password form. Calls the dedicated endpoint so we never
+ *  round-trip the plaintext through the general settings PUT (which would
+ *  merge it into the settings blob). */
+const AdminChangePasswordForm: React.FC = () => {
+  const { toast } = useToast();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const meetsRules = newPassword.length >= 8;
+  const matches = newPassword === confirmPassword && newPassword.length > 0;
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!meetsRules) { toast('New password must be at least 8 characters.', 'error'); return; }
+    if (!matches) { toast('New password and confirmation do not match.', 'error'); return; }
+    if (!currentPassword) { toast('Enter your current password.', 'error'); return; }
+
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/v1/auth/admin-change-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Password change failed');
+      toast('Admin password updated.');
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
+    } catch (err: any) {
+      toast(err.message || 'Password change failed', 'error');
+    } finally { setIsSaving(false); }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3 max-w-md">
+      <div>
+        <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Current password</label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-3 text-gray-500" size={14}/>
+          <input type={showPasswords ? 'text' : 'password'} autoComplete="current-password"
+            value={currentPassword} onChange={e => setCurrentPassword(e.target.value)}
+            className="w-full bg-black/40 border border-gray-700 focus:border-bbq-gold rounded p-2 pl-9 text-white transition"/>
+        </div>
+      </div>
+      <div>
+        <label className="text-xs font-bold text-gray-500 uppercase block mb-1">New password</label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-3 text-bbq-gold" size={14}/>
+          <input type={showPasswords ? 'text' : 'password'} autoComplete="new-password" minLength={8}
+            value={newPassword} onChange={e => setNewPassword(e.target.value)}
+            className="w-full bg-black/40 border border-gray-700 focus:border-bbq-gold rounded p-2 pl-9 text-white transition"/>
+        </div>
+        <p className={`text-[11px] mt-1 ${meetsRules ? 'text-green-400' : 'text-gray-500'}`}>
+          {meetsRules ? '✓ Meets the 8-character minimum' : '• At least 8 characters'}
+        </p>
+      </div>
+      <div>
+        <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Confirm new password</label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-3 text-bbq-red" size={14}/>
+          <input type={showPasswords ? 'text' : 'password'} autoComplete="new-password"
+            value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+            className={`w-full bg-black/40 border rounded p-2 pl-9 text-white transition ${confirmPassword.length === 0 ? 'border-gray-700 focus:border-bbq-red' : matches ? 'border-green-700' : 'border-red-700'}`}/>
+        </div>
+        {confirmPassword.length > 0 && !matches && <p className="text-[11px] mt-1 text-red-400">Passwords don't match</p>}
+      </div>
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+          <input type="checkbox" checked={showPasswords} onChange={e => setShowPasswords(e.target.checked)}/>
+          Show passwords
+        </label>
+        <button type="submit" disabled={isSaving || !meetsRules || !matches || !currentPassword}
+          className="ml-auto px-4 py-2 bg-gradient-to-r from-bbq-red via-red-600 to-orange-500 text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_0_18px_rgba(239,68,68,0.45)] transition-all text-sm">
+          {isSaving ? <Loader2 size={14} className="animate-spin"/> : <Save size={14}/>}
+          Change password
+        </button>
+      </div>
+    </form>
+  );
+};
+
 // Helper to compress base64 images to avoid large payloads
 // Updated: Supports custom max width for variable target sizes (prizes vs hero images)
 const compressImage = (base64Str: string, maxWidth = 500, quality = 0.4) => {
@@ -1375,30 +1458,24 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
       </section>
       </>)}
 
-      {isDev && (<>
-      {/* --- ADMIN CREDENTIALS --- */}
+      {isAdmin && (<>
+      {/* --- ADMIN ACCESS --- */}
       <section className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
-          <h4 className="text-xl font-bold mb-4 flex items-center gap-2"><Shield size={20}/> Admin Access</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase">Admin Username</label>
-                  <input 
-                      value={formData.adminUsername || ''}
-                      onChange={e => setFormData({ ...formData, adminUsername: e.target.value })}
-                      className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
-                  />
-              </div>
-              <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase">Admin Password</label>
-                  <input 
-                      type="password"
-                      autoComplete="off"
-                      value={formData.adminPassword || ''}
-                      onChange={e => setFormData({ ...formData, adminPassword: e.target.value })}
-                      className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white"
-                  />
-              </div>
-          </div>
+          <h4 className="text-xl font-bold mb-1 flex items-center gap-2"><Shield size={20}/> Admin Access</h4>
+          <p className="text-xs text-gray-500 mb-4">Password is stored hashed — we can't show it here. To rotate it, enter your current password and a new one below. Make it 8+ characters, mix of letters and numbers.</p>
+
+          {isDev && (
+            <div className="mb-4">
+              <label className="text-xs font-bold text-gray-500 uppercase">Admin Username <span className="text-gray-600 font-normal normal-case">(dev only)</span></label>
+              <input
+                value={formData.adminUsername || ''}
+                onChange={e => setFormData({ ...formData, adminUsername: e.target.value })}
+                className="w-full bg-black/40 border border-gray-700 rounded p-2 text-white max-w-sm"
+              />
+            </div>
+          )}
+
+          <AdminChangePasswordForm />
       </section>
       </>)}
 
