@@ -14,9 +14,32 @@ export const onRequest = async (context: any) => {
 
     if (!settings || !settings.enabled) return json({ error: 'Email settings not configured or disabled' }, 400);
 
-    const itemsList = order.items.map((item: any) =>
-      `<li>${item.quantity}x ${item.name} - $${(item.price * item.quantity).toFixed(2)}</li>`
-    ).join('');
+    // Each line is { item: {name, price}, quantity, packSelections? }
+    // packSelections is the meat/side picks a customer made on a catering
+    // package. The kitchen needs to see them, so we render each group
+    // (Meats / Sides / etc) with counts so '2x Brisket' shows as '2× Brisket'.
+    const renderPackSelections = (packSelections: any) => {
+      if (!packSelections || typeof packSelections !== 'object') return '';
+      const entries = Object.entries(packSelections)
+        .map(([group, picks]: [string, any]) => {
+          if (!Array.isArray(picks) || picks.length === 0) return '';
+          const counts: Record<string, number> = {};
+          picks.forEach((p: string) => { counts[p] = (counts[p] || 0) + 1; });
+          const summary = Object.entries(counts).map(([n, c]) => c > 1 ? `${c}× ${n}` : n).join(', ');
+          return `<div style="margin-top:4px;font-size:13px;"><strong style="color:#eab308;">${group}:</strong> <span style="color:#ddd;">${summary}</span></div>`;
+        })
+        .filter(Boolean)
+        .join('');
+      return entries ? `<div style="background:#0a0a0a;border:1px solid #333;border-radius:6px;padding:8px 12px;margin:6px 0 8px;">${entries}</div>` : '';
+    };
+
+    const itemsList = order.items.map((line: any) => {
+      const it = line.item || line;
+      const name = it.name || 'Item';
+      const price = typeof it.price === 'number' ? it.price : 0;
+      const qty = line.quantity || 1;
+      return `<li style="margin-bottom:10px;">${qty}x ${name} - $${(price * qty).toFixed(2)}${renderPackSelections(line.packSelections)}</li>`;
+    }).join('');
 
     const cookDate = new Date(order.cookDay).toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 

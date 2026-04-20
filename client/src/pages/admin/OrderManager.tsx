@@ -1063,6 +1063,24 @@ const normalizePhone = (raw: string): string => {
                                     <div className="text-xs text-gray-500">${line.item.price.toFixed(2)} ea</div>
                                     {line.item.description && <div className="text-xs text-gray-400 italic">{line.item.description}</div>}
                                     {line.selectedOption && <div className="text-xs text-bbq-red">{line.selectedOption}</div>}
+                                    {line.packSelections && Object.keys(line.packSelections).length > 0 && (
+                                      <div className="mt-2 space-y-1 bg-gray-950/50 border border-gray-800 rounded p-2">
+                                        {Object.entries(line.packSelections).map(([group, picks]) => {
+                                          const arr = Array.isArray(picks) ? picks : [];
+                                          // Count duplicates for clearer kitchen output ("2× Brisket" instead of "Brisket, Brisket")
+                                          const counts: Record<string, number> = {};
+                                          arr.forEach((p: string) => { counts[p] = (counts[p] || 0) + 1; });
+                                          return (
+                                            <div key={group} className="text-[11px]">
+                                              <span className="text-bbq-gold font-bold uppercase tracking-wider">{group}:</span>{' '}
+                                              <span className="text-gray-300">
+                                                {Object.entries(counts).map(([n, c]) => c > 1 ? `${c}× ${n}` : n).join(', ')}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
                                 </td>
                                 <td className="p-3">
                                     <div className="flex items-center justify-center gap-2">
