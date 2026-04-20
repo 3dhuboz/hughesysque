@@ -156,9 +156,15 @@ const StorefrontMenu = () => {
   const [recentlyAdded, setRecentlyAdded] = useState(null);
 
   const availableMenu = menu.filter(m => {
-    // Catering-only items (and the Catering Packs category) belong on the catering page, not the normal menu
+    // Catering-only items belong on the /catering page, not the normal menu.
+    // These items are flagged one of three ways historically — so catch them all:
+    //   1. isCatering: true  (new type flag)
+    //   2. category === 'Catering' | 'Catering Packs'  (actual live-DB categories)
+    //   3. availableForCatering + a cateringCategory (Meat/Side/Extra/Drink/Dessert)
+    //      — these are catering-only line items sold per kg / per tray
     if (m.isCatering) return false;
-    if (m.category === 'Catering Packs') return false;
+    if (m.category === 'Catering' || m.category === 'Catering Packs') return false;
+    if (m.availableForCatering && m.cateringCategory) return false;
     if (['Rubs & Sauces', 'Merch'].includes(m.category)) return true;
     if (!selectedOrderDate) return true;
     if (m.availabilityType === 'everyday' || !m.availabilityType) return true;

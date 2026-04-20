@@ -185,7 +185,7 @@ const MenuManager: React.FC = () => {
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {menu.filter(m => !m.isCatering).map(item => (
+              {menu.filter(m => !m.isCatering && m.category !== 'Catering' && m.category !== 'Catering Packs' && !(m.availableForCatering && m.cateringCategory)).map(item => (
                 <div key={item.id} className={`flex items-center gap-3 p-3 rounded-lg border ${item.available === false || (item.stock != null && item.stock <= 0) ? 'bg-red-950/20 border-red-800/30' : 'bg-gray-900/50 border-gray-700'}`}>
                   <img src={item.image || PLACEHOLDER_IMG} alt="" className="w-8 h-8 rounded object-cover shrink-0" onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
                   <div className="flex-1 min-w-0">

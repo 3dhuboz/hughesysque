@@ -179,9 +179,13 @@ const StorefrontOrder = () => {
   const finalTotal = fulfillment === 'DELIVERY' && isShippableOnly ? totalBeforeShipping + SHIPPING_COST : totalBeforeShipping;
 
   const availableItems = menu.filter(item => {
-    // Catering-only items belong on the catering page, not pre-order pickup
+    // Catering-only items belong on the /catering page, not pre-order pickup.
+    // Mirrors the filter in StorefrontMenu.js — catch isCatering flag, the
+    // 'Catering' / 'Catering Packs' categories, and anything flagged for
+    // catering with a cateringCategory (Meat/Side/Extra/Drink/Dessert).
     if (item.isCatering) return false;
-    if (item.category === 'Catering Packs') return false;
+    if (item.category === 'Catering' || item.category === 'Catering Packs') return false;
+    if (item.availableForCatering && item.cateringCategory) return false;
     if (item.availabilityType === 'everyday' || !item.availabilityType) return true;
     if (item.availabilityType === 'specific_date' && selectedEvent && item.specificDate === selectedEvent.date) return true;
     return false;
