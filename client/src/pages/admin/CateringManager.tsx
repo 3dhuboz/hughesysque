@@ -210,73 +210,156 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
     'Plates, cutlery, napkins, sliced bread or tortillas all provided.',
   ];
 
-  const [meats, setMeats] = useState<string>(((settings.cateringSelfServiceMeats?.length ? settings.cateringSelfServiceMeats : defaultMeats) || []).join('\n'));
-  const [sides, setSides] = useState<string>(((settings.cateringSelfServiceSides?.length ? settings.cateringSelfServiceSides : defaultSides) || []).join('\n'));
-  const [bullets, setBullets] = useState<string>(((settings.feastingTableInfo?.bullets?.length ? settings.feastingTableInfo.bullets : defaultBullets) || []).join('\n'));
+  // Split name + surcharge flag on load so we can present a checkbox instead of forcing Macca to type ' *'
+  const parseMeat = (s: string) => ({ name: s.replace(/\s*\*\s*$/, '').trim(), surcharge: /\*\s*$/.test(s) });
+  const toMeatString = (m: { name: string; surcharge: boolean }) => m.surcharge ? `${m.name} *` : m.name;
+
+  const [meats, setMeats] = useState<Array<{ name: string; surcharge: boolean }>>(
+    (settings.cateringSelfServiceMeats?.length ? settings.cateringSelfServiceMeats : defaultMeats).map(parseMeat)
+  );
+  const [sides, setSides] = useState<string[]>(
+    settings.cateringSelfServiceSides?.length ? settings.cateringSelfServiceSides : defaultSides
+  );
+  const [bullets, setBullets] = useState<string[]>(
+    settings.feastingTableInfo?.bullets?.length ? settings.feastingTableInfo.bullets : defaultBullets
+  );
   const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const markDirty = () => setIsDirty(true);
 
   const handleSave = async () => {
     setIsSaving(true);
-    const meatsList = meats.split('\n').map(s => s.trim()).filter(Boolean);
-    const sidesList = sides.split('\n').map(s => s.trim()).filter(Boolean);
-    const bulletsList = bullets.split('\n').map(s => s.trim()).filter(Boolean);
     const success = await updateSettings({
-      cateringSelfServiceMeats: meatsList,
-      cateringSelfServiceSides: sidesList,
-      feastingTableInfo: { bullets: bulletsList },
+      cateringSelfServiceMeats: meats.filter(m => m.name.trim()).map(toMeatString),
+      cateringSelfServiceSides: sides.filter(s => s.trim()),
+      feastingTableInfo: { bullets: bullets.filter(b => b.trim()) },
     });
     setIsSaving(false);
-    if (success) toast('Self service lists saved!'); else toast('Failed to save.', 'error');
+    if (success) { toast('Self service lists saved!'); setIsDirty(false); } else toast('Failed to save.', 'error');
   };
 
   const resetToDefaults = () => {
     if (!window.confirm('Reset all Self Service lists to the Hughesey Que defaults?')) return;
-    setMeats(defaultMeats.join('\n'));
-    setSides(defaultSides.join('\n'));
-    setBullets(defaultBullets.join('\n'));
+    setMeats(defaultMeats.map(parseMeat));
+    setSides([...defaultSides]);
+    setBullets([...defaultBullets]);
+    markDirty();
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h4 className="text-lg font-bold text-white">Self Service & Feasting Table</h4>
-        <p className="text-xs text-gray-500">Drives the 'Build Your Self Service Order' counters and the 'How We Set Up' bullets on the storefront.</p>
-      </div>
-
-      <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg p-4 flex items-start gap-3 text-sm">
-        <Info size={18} className="text-blue-400 shrink-0 mt-0.5"/>
-        <div className="text-blue-200/90">
-          <p className="font-bold mb-1">One item per line.</p>
-          <p className="text-blue-200/70 text-xs">Append <code className="bg-black/30 px-1 rounded">{' *'}</code> to a meat name to flag it as having a <strong>+$4/pp surcharge</strong> (e.g. <code className="bg-black/30 px-1 rounded">Pork Belly *</code>).</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <label className="block text-sm font-bold text-bbq-red uppercase tracking-wider mb-2">Meats (per kg)</label>
-          <textarea value={meats} onChange={e => setMeats(e.target.value)} rows={14}
-            className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white text-sm font-mono" placeholder="One meat per line..."/>
+          <h4 className="text-lg font-bold text-white">Self Service & Feasting Table</h4>
+          <p className="text-xs text-gray-500">Drives the 'Build Your Self Service Order' counters and the 'How We Set Up' bullets on the storefront.</p>
         </div>
-        <div>
-          <label className="block text-sm font-bold text-green-400 uppercase tracking-wider mb-2">Sides (per tray)</label>
-          <textarea value={sides} onChange={e => setSides(e.target.value)} rows={14}
-            className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white text-sm font-mono" placeholder="One side per line..."/>
+        <div className="flex items-center gap-2">
+          {isDirty && <span className="text-[11px] text-yellow-400 font-bold uppercase tracking-wider">● Unsaved changes</span>}
+          <button onClick={resetToDefaults} className="px-3 py-2 text-gray-400 hover:text-white text-xs">Reset to defaults</button>
+          <button onClick={handleSave} disabled={isSaving || !isDirty}
+            className="px-5 py-2 bg-bbq-red text-white rounded font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-600 transition">
+            {isSaving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} Save Changes
+          </button>
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-bold text-bbq-gold uppercase tracking-wider mb-2">Feasting Table — "How We Set Up" bullets</label>
-        <textarea value={bullets} onChange={e => setBullets(e.target.value)} rows={6}
-          className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white text-sm" placeholder="One bullet per line..."/>
-      </div>
-
-      <div className="flex justify-end gap-2 pt-2 border-t border-gray-800">
-        <button onClick={resetToDefaults} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Reset to defaults</button>
-        <button onClick={handleSave} disabled={isSaving}
-          className="px-4 py-2 bg-bbq-red text-white rounded font-bold flex items-center gap-2 disabled:opacity-50">
-          {isSaving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} Save Self Service
+      {/* MEATS — row list with inline name edit + surcharge checkbox + delete */}
+      <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
+        <div className="flex items-baseline justify-between mb-3">
+          <label className="text-sm font-bold text-bbq-red uppercase tracking-[0.2em]">Meats (per kg)</label>
+          <span className="text-xs text-gray-500">{meats.length} item{meats.length === 1 ? '' : 's'}</span>
+        </div>
+        <div className="space-y-2">
+          {meats.map((m, i) => (
+            <div key={i} className="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg p-2 hover:border-gray-600 transition">
+              <input
+                value={m.name}
+                onChange={e => { setMeats(meats.map((x, xi) => xi === i ? { ...x, name: e.target.value } : x)); markDirty(); }}
+                placeholder="Meat name (e.g. Sliced Brisket)"
+                className="flex-1 bg-transparent text-white text-sm p-2 focus:outline-none focus:bg-gray-800 rounded"
+              />
+              <label className="flex items-center gap-2 text-xs text-gray-400 whitespace-nowrap cursor-pointer hover:text-white transition px-2">
+                <input type="checkbox" checked={m.surcharge}
+                  onChange={e => { setMeats(meats.map((x, xi) => xi === i ? { ...x, surcharge: e.target.checked } : x)); markDirty(); }}
+                  className="w-4 h-4 rounded accent-bbq-gold"/>
+                <span className={m.surcharge ? 'text-bbq-gold font-bold' : ''}>+$4/pp</span>
+              </label>
+              <button type="button" onClick={() => { setMeats(meats.filter((_, xi) => xi !== i)); markDirty(); }}
+                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/30 rounded transition"><Trash2 size={14}/></button>
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={() => { setMeats([...meats, { name: '', surcharge: false }]); markDirty(); }}
+          className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-700 hover:border-bbq-red hover:text-bbq-red text-gray-400 rounded-lg text-sm font-bold transition">
+          <Plus size={14}/> Add Meat
         </button>
       </div>
+
+      {/* SIDES */}
+      <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
+        <div className="flex items-baseline justify-between mb-3">
+          <label className="text-sm font-bold text-green-400 uppercase tracking-[0.2em]">Sides (per tray)</label>
+          <span className="text-xs text-gray-500">{sides.length} item{sides.length === 1 ? '' : 's'}</span>
+        </div>
+        <div className="space-y-2">
+          {sides.map((s, i) => (
+            <div key={i} className="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg p-2 hover:border-gray-600 transition">
+              <input
+                value={s}
+                onChange={e => { setSides(sides.map((x, xi) => xi === i ? e.target.value : x)); markDirty(); }}
+                placeholder="Side name (e.g. Potato Bake)"
+                className="flex-1 bg-transparent text-white text-sm p-2 focus:outline-none focus:bg-gray-800 rounded"
+              />
+              <button type="button" onClick={() => { setSides(sides.filter((_, xi) => xi !== i)); markDirty(); }}
+                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/30 rounded transition"><Trash2 size={14}/></button>
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={() => { setSides([...sides, '']); markDirty(); }}
+          className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-700 hover:border-green-500 hover:text-green-400 text-gray-400 rounded-lg text-sm font-bold transition">
+          <Plus size={14}/> Add Side
+        </button>
+      </div>
+
+      {/* BULLETS */}
+      <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
+        <div className="flex items-baseline justify-between mb-3">
+          <label className="text-sm font-bold text-bbq-gold uppercase tracking-[0.2em]">Feasting Table — "How We Set Up" bullets</label>
+          <span className="text-xs text-gray-500">{bullets.length} bullet{bullets.length === 1 ? '' : 's'}</span>
+        </div>
+        <div className="space-y-2">
+          {bullets.map((b, i) => (
+            <div key={i} className="flex items-start gap-2 bg-gray-900 border border-gray-800 rounded-lg p-2 hover:border-gray-600 transition">
+              <span className="pt-2 pl-1 text-bbq-gold shrink-0">•</span>
+              <textarea
+                value={b}
+                onChange={e => { setBullets(bullets.map((x, xi) => xi === i ? e.target.value : x)); markDirty(); }}
+                placeholder="Describe one part of how you set up / serve..."
+                rows={2}
+                className="flex-1 bg-transparent text-white text-sm p-2 focus:outline-none focus:bg-gray-800 rounded resize-none"
+              />
+              <button type="button" onClick={() => { setBullets(bullets.filter((_, xi) => xi !== i)); markDirty(); }}
+                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/30 rounded transition"><Trash2 size={14}/></button>
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={() => { setBullets([...bullets, '']); markDirty(); }}
+          className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-700 hover:border-bbq-gold hover:text-bbq-gold text-gray-400 rounded-lg text-sm font-bold transition">
+          <Plus size={14}/> Add Bullet
+        </button>
+      </div>
+
+      {isDirty && (
+        <div className="sticky bottom-4 z-10">
+          <div className="bg-yellow-900/30 border border-yellow-700 rounded-xl p-3 flex items-center justify-between gap-3 shadow-lg backdrop-blur">
+            <span className="text-sm text-yellow-200 font-bold">You have unsaved changes.</span>
+            <button onClick={handleSave} disabled={isSaving}
+              className="px-4 py-2 bg-bbq-red text-white rounded font-bold flex items-center gap-2 disabled:opacity-50 hover:bg-red-600 transition">
+              {isSaving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} Save Now
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
