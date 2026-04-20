@@ -418,21 +418,17 @@ const StorefrontCatering = () => {
                       const active = fulfillment === val;
                       return (
                         <button key={val} type="button" onClick={() => setFulfillment(val)}
-                          className={`relative p-4 rounded-xl border text-left transition-all duration-200 overflow-hidden group
+                          className={`relative p-3 rounded-xl border text-center transition-all duration-200 overflow-hidden group
                             ${active
                               ? `bg-gradient-to-br from-gray-900 to-black border-transparent ring-2 ${ring} ${glow}`
                               : 'bg-gray-900/60 border-gray-800 hover:border-gray-600 hover:bg-gray-900'}`}>
-                          <div className="flex items-start gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${active ? iconBg : 'bg-gray-800'}`}>
+                          <div className="flex flex-col items-center gap-1.5">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 ${active ? iconBg : 'bg-gray-800'}`}>
                               <Icon size={18} className={active ? iconColor : 'text-gray-400'} />
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-baseline justify-between gap-2">
-                                <span className={`font-bold text-sm ${active ? 'text-white' : 'text-gray-200'}`}>{label}</span>
-                                <span className={`text-[11px] font-bold uppercase tracking-wider ${active ? accent : 'text-gray-500'}`}>{sub}</span>
-                              </div>
-                              <p className={`text-[11px] mt-0.5 leading-tight ${active ? 'text-gray-300' : 'text-gray-500'}`}>{desc}</p>
-                            </div>
+                            <div className={`font-bold text-sm leading-tight ${active ? 'text-white' : 'text-gray-200'}`}>{label}</div>
+                            <div className={`text-[10px] uppercase tracking-wider font-bold ${active ? accent : 'text-gray-500'}`}>{sub}</div>
+                            <p className={`text-[10px] leading-snug ${active ? 'text-gray-300' : 'text-gray-500'}`}>{desc}</p>
                           </div>
                           {active && <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${iconBg}`}/>}
                         </button>
@@ -450,18 +446,16 @@ const StorefrontCatering = () => {
                       const active = temperature === val;
                       return (
                         <button key={val} type="button" onClick={() => setTemperature(val)}
-                          className={`relative p-4 rounded-xl border text-left transition-all duration-200 overflow-hidden group
+                          className={`relative p-3 rounded-xl border text-center transition-all duration-200 overflow-hidden group
                             ${active
                               ? `bg-gradient-to-br from-gray-900 to-black border-transparent ring-2 ${ring} ${glow}`
                               : 'bg-gray-900/60 border-gray-800 hover:border-gray-600 hover:bg-gray-900'}`}>
-                          <div className="flex items-start gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${active ? iconBg : 'bg-gray-800'}`}>
+                          <div className="flex flex-col items-center gap-1.5">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 ${active ? iconBg : 'bg-gray-800'}`}>
                               <Icon size={18} className={active ? 'text-white' : 'text-gray-400'} />
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className={`font-bold text-sm ${active ? 'text-white' : 'text-gray-200'}`}>{label}</div>
-                              <p className={`text-[11px] mt-0.5 leading-tight ${active ? accent : 'text-gray-500'}`}>{desc}</p>
-                            </div>
+                            <div className={`font-bold text-sm leading-tight ${active ? 'text-white' : 'text-gray-200'}`}>{label}</div>
+                            <p className={`text-[10px] leading-snug ${active ? accent : 'text-gray-500'}`}>{desc}</p>
                           </div>
                           {active && <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${iconBg}`}/>}
                         </button>
