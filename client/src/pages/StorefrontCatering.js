@@ -11,22 +11,34 @@ import {
 
 const DELIVERY_FEE = 25.00;
 
+// Curated list of Unsplash photo IDs we've verified alive (HTTP 200).
+// Keep this list tight — any dead URL causes an empty image panel,
+// which collapses a card's height and looks broken.
 const FALLBACK_IMAGES = [
-  'https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1544025162-d76690b67f11?auto=format&fit=crop&w=800&q=80',
   'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
   'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80',
 ];
 
-// Per-id fallback images for the default cocktail tiers, so a tier saved
-// without an image still renders with something relevant rather than an
-// empty dark panel. Macca's image upload in admin always wins over these.
+// Per-id fallback images for the default cocktail tiers, matched to the
+// vibe of each — charcuterie for Teaser, modern canapes for Starter,
+// etc. Macca's admin upload always wins; this is just for when the field
+// is empty.
 const COCKTAIL_IMAGE_DEFAULTS = {
   'cocktail_teaser':  'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=800&q=80',
-  'cocktail_starter': 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=800&q=80',
-  'cocktail_classic': 'https://images.unsplash.com/photo-1565895405227-31cffbe0cf86?auto=format&fit=crop&w=800&q=80',
-  'cocktail_crowd':   'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=800&q=80',
-  'cocktail_feed':    'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=800&q=80',
+  'cocktail_starter': 'https://images.unsplash.com/photo-1625938144755-652e08e359b7?auto=format&fit=crop&w=800&q=80',
+  'cocktail_classic': 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=800&q=80',
+  'cocktail_crowd':   'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=800&q=80',
+  'cocktail_feed':    'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=800&q=80',
+};
+
+// Same deal for function tiers.
+const FUNCTION_IMAGE_DEFAULTS = {
+  'function_banquet_4m3s': 'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80',
+  'function_banquet_5m4s': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
+  'function_grazing':      'https://images.unsplash.com/photo-1540304453527-62f979142a17?auto=format&fit=crop&w=800&q=80',
+  'function_childrens':    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80',
 };
 
 /* ── Catering Menu Data (from Hughesey Que Catering Package 2025/26 PDF) ── */
@@ -612,8 +624,8 @@ const StorefrontCatering = () => {
                     const fallbackImg = COCKTAIL_IMAGE_DEFAULTS[pkg.id] || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
                     return (
                       <div key={pkg.id} className="group bg-bbq-charcoal rounded-2xl border border-gray-800 hover:border-purple-600/70 transition overflow-hidden flex flex-col md:flex-row shadow-xl">
-                        <div className="w-full md:w-64 h-48 md:h-auto relative shrink-0 overflow-hidden">
-                          <img src={pkg.image || fallbackImg} onError={e => { e.target.src = fallbackImg; }}
+                        <div className="w-full md:w-64 h-48 md:h-auto md:min-h-[220px] relative shrink-0 overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950">
+                          <img src={pkg.image || fallbackImg} onError={e => { if (e.target.src !== fallbackImg) e.target.src = fallbackImg; }}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={pkg.name}/>
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/60 md:to-transparent"/>
                           <div className="absolute top-3 left-3 md:top-auto md:bottom-3 bg-purple-600/90 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full backdrop-blur">{pkg.pieces} Pieces</div>
@@ -664,11 +676,11 @@ const StorefrontCatering = () => {
                 ) : (
                   <div className="space-y-4">
                     {FUNCTION_TIERS.map((pkg, idx) => {
-                      const fallbackImg = FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
+                      const fallbackImg = FUNCTION_IMAGE_DEFAULTS[pkg.id] || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
                       return (
                         <div key={pkg.id} className="group bg-bbq-charcoal rounded-2xl border border-gray-800 hover:border-bbq-gold/60 transition overflow-hidden flex flex-col md:flex-row shadow-xl">
-                          <div className="w-full md:w-64 h-48 md:h-auto relative shrink-0 overflow-hidden">
-                            <img src={pkg.image || fallbackImg} onError={e => { e.target.src = fallbackImg; }}
+                          <div className="w-full md:w-64 h-48 md:h-auto md:min-h-[220px] relative shrink-0 overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950">
+                            <img src={pkg.image || fallbackImg} onError={e => { if (e.target.src !== fallbackImg) e.target.src = fallbackImg; }}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={pkg.name}/>
                             {pkg.servingStyle && <div className="absolute top-3 left-3 bg-bbq-gold/90 text-black text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full backdrop-blur">{pkg.servingStyle}</div>}
                           </div>
@@ -849,10 +861,12 @@ const StorefrontCatering = () => {
                   </div>
 
                   <div className="space-y-5">
-                    {CATERING_PACKAGES.map((pkg, idx) => (
+                    {CATERING_PACKAGES.map((pkg, idx) => {
+                      const fb = FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
+                      return (
                       <div key={pkg.id} className="bg-bbq-charcoal rounded-2xl border border-gray-800 overflow-hidden flex flex-col md:flex-row group hover:border-bbq-gold/60 transition shadow-xl">
-                        <div className="w-full md:w-64 h-48 md:h-auto relative shrink-0">
-                          <img src={pkg.image || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length]} onError={e => { e.target.src = FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length]; }} className="w-full h-full object-cover" alt={pkg.name}/>
+                        <div className="w-full md:w-64 h-48 md:h-auto md:min-h-[220px] relative shrink-0 bg-gradient-to-br from-gray-900 to-gray-950">
+                          <img src={pkg.image || fb} onError={e => { if (e.target.src !== fb) e.target.src = fb; }} className="w-full h-full object-cover" alt={pkg.name}/>
                         </div>
                         <div className="flex-1 p-6 flex flex-col justify-center">
                           <div className="flex justify-between items-start gap-3 mb-2 flex-wrap">
@@ -874,7 +888,8 @@ const StorefrontCatering = () => {
                           </button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <div className="mt-6 space-y-1">
