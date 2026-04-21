@@ -18,6 +18,17 @@ const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80',
 ];
 
+// Per-id fallback images for the default cocktail tiers, so a tier saved
+// without an image still renders with something relevant rather than an
+// empty dark panel. Macca's image upload in admin always wins over these.
+const COCKTAIL_IMAGE_DEFAULTS = {
+  'cocktail_teaser':  'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=800&q=80',
+  'cocktail_starter': 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=800&q=80',
+  'cocktail_classic': 'https://images.unsplash.com/photo-1565895405227-31cffbe0cf86?auto=format&fit=crop&w=800&q=80',
+  'cocktail_crowd':   'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=800&q=80',
+  'cocktail_feed':    'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=800&q=80',
+};
+
 /* ── Catering Menu Data (from Hughesey Que Catering Package 2025/26 PDF) ── */
 
 const CATERING_MEATS = [
@@ -584,7 +595,7 @@ const StorefrontCatering = () => {
                 </div>
                 <div className="space-y-4">
                   {COCKTAIL_TIERS.map((pkg, idx) => {
-                    const fallbackImg = FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
+                    const fallbackImg = COCKTAIL_IMAGE_DEFAULTS[pkg.id] || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
                     return (
                       <div key={pkg.id} className="group bg-bbq-charcoal rounded-2xl border border-gray-800 hover:border-purple-600/70 transition overflow-hidden flex flex-col md:flex-row shadow-xl">
                         <div className="w-full md:w-64 h-48 md:h-auto relative shrink-0 overflow-hidden">

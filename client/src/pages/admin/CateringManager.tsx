@@ -675,11 +675,11 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
 
 const CocktailTiersEditor: React.FC<{ settings: any; updateSettings: any; toast: any }> = ({ settings, updateSettings, toast }) => {
   const defaultTiers: CocktailTier[] = [
-    { id: 'cocktail_teaser',  name: 'The Teaser',         description: 'Perfect for 30–60 minute functions, pre-dinner nibbles.', price: 40, pieces: 4, cold: 2, hot: 2, substantial: 0, duration: '30–60 min' },
-    { id: 'cocktail_starter', name: 'The Starter',        description: 'Perfect for 60–90 minutes of light cocktail grazing.',    price: 49, pieces: 5, cold: 2, hot: 3, substantial: 0, duration: '60–90 min' },
-    { id: 'cocktail_classic', name: 'The Classic',        description: 'Perfect for 1.5–2 hour cocktail events.',                 price: 59, pieces: 6, cold: 3, hot: 3, substantial: 0, duration: '1.5–2 hr' },
-    { id: 'cocktail_crowd',   name: 'The Crowd Pleaser',  description: 'When you want it to feel like enough food.',              price: 69, pieces: 7, cold: 3, hot: 4, substantial: 0, duration: '2–2.5 hr' },
-    { id: 'cocktail_feed',    name: 'The Proper Feed',    description: 'When canapes are the main meal.',                         price: 79, pieces: 8, cold: 3, hot: 4, substantial: 1, duration: '2.5–3 hr' },
+    { id: 'cocktail_teaser',  name: 'The Teaser',         description: 'Perfect for 30–60 minute functions, pre-dinner nibbles.', price: 40, pieces: 4, cold: 2, hot: 2, substantial: 0, duration: '30–60 min', image: 'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=800&q=80' },
+    { id: 'cocktail_starter', name: 'The Starter',        description: 'Perfect for 60–90 minutes of light cocktail grazing.',    price: 49, pieces: 5, cold: 2, hot: 3, substantial: 0, duration: '60–90 min', image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=800&q=80' },
+    { id: 'cocktail_classic', name: 'The Classic',        description: 'Perfect for 1.5–2 hour cocktail events.',                 price: 59, pieces: 6, cold: 3, hot: 3, substantial: 0, duration: '1.5–2 hr',  image: 'https://images.unsplash.com/photo-1565895405227-31cffbe0cf86?auto=format&fit=crop&w=800&q=80' },
+    { id: 'cocktail_crowd',   name: 'The Crowd Pleaser',  description: 'When you want it to feel like enough food.',              price: 69, pieces: 7, cold: 3, hot: 4, substantial: 0, duration: '2–2.5 hr',  image: 'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=800&q=80' },
+    { id: 'cocktail_feed',    name: 'The Proper Feed',    description: 'When canapes are the main meal.',                         price: 79, pieces: 8, cold: 3, hot: 4, substantial: 1, duration: '2.5–3 hr',  image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=800&q=80' },
   ];
 
   const tiers: CocktailTier[] = settings.cocktailMenuTiers?.length ? settings.cocktailMenuTiers : [];
