@@ -498,6 +498,9 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
   const [sides, setSides] = useState<string[]>(
     settings.cateringSelfServiceSides?.length ? settings.cateringSelfServiceSides : defaultSides
   );
+  const [desserts, setDesserts] = useState<string[]>(
+    settings.cateringSelfServiceDesserts || []
+  );
   const [bullets, setBullets] = useState<string[]>(
     settings.feastingTableInfo?.bullets?.length ? settings.feastingTableInfo.bullets : defaultBullets
   );
@@ -510,6 +513,7 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
     const success = await updateSettings({
       cateringSelfServiceMeats: meats.filter(m => m.name.trim()).map(toMeatString),
       cateringSelfServiceSides: sides.filter(s => s.trim()),
+      cateringSelfServiceDesserts: desserts.filter(d => d.trim()),
       feastingTableInfo: { bullets: bullets.filter(b => b.trim()) },
     });
     setIsSaving(false);
@@ -547,10 +551,13 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
             <div>
               <h4 className="text-xl font-display font-bold text-white">Self Service & Feasting Table</h4>
               <p className="text-sm text-gray-400 mt-0.5 max-w-xl">Drives the 'Build Your Self Service Order' counters and the 'How We Set Up' bullets on the public catering page.</p>
-              <div className="flex gap-4 mt-3 text-[11px] font-bold">
+              <div className="flex gap-4 mt-3 text-[11px] font-bold flex-wrap">
                 <span className="flex items-center gap-1.5 text-bbq-red"><span className="w-1.5 h-1.5 rounded-full bg-bbq-red"/> {meats.length} meat{meats.length === 1 ? '' : 's'}</span>
                 <span className="flex items-center gap-1.5 text-green-400"><span className="w-1.5 h-1.5 rounded-full bg-green-400"/> {sides.length} side{sides.length === 1 ? '' : 's'}</span>
-                <span className="flex items-center gap-1.5 text-bbq-gold"><span className="w-1.5 h-1.5 rounded-full bg-bbq-gold"/> {bullets.length} bullet{bullets.length === 1 ? '' : 's'}</span>
+                {desserts.length > 0 && (
+                  <span className="flex items-center gap-1.5 text-bbq-gold"><span className="w-1.5 h-1.5 rounded-full bg-bbq-gold"/> {desserts.length} dessert{desserts.length === 1 ? '' : 's'}</span>
+                )}
+                <span className="flex items-center gap-1.5 text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-400"/> {bullets.length} bullet{bullets.length === 1 ? '' : 's'}</span>
               </div>
             </div>
           </div>
@@ -623,6 +630,27 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
           )}
         />
       </div>
+
+      {/* ── DESSERTS (optional — only shows on the storefront when populated) ── */}
+      <ListEditor
+        accent="gold"
+        title="Desserts"
+        unit={desserts.length === 0 ? 'optional · leave empty to hide the Desserts section' : 'shown on the Self Service storefront builder'}
+        count={desserts.length}
+        addLabel="Add a dessert"
+        items={desserts}
+        onAdd={() => { setDesserts([...desserts, '']); markDirty(); }}
+        onReorder={(from, to) => moveItem(desserts, setDesserts, from, to)}
+        renderItem={(d, i) => (
+          <ItemCard
+            accent="gold"
+            value={d}
+            placeholder="e.g. Smoked Apple Crumble"
+            onChange={v => { setDesserts(desserts.map((x, xi) => xi === i ? v : x)); markDirty(); }}
+            onDelete={() => { setDesserts(desserts.filter((_, xi) => xi !== i)); markDirty(); }}
+          />
+        )}
+      />
 
       {/* ── BULLETS ── */}
       <ListEditor

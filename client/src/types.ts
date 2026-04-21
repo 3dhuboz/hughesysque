@@ -264,6 +264,9 @@ export interface AppSettings {
   // Append " *" to a meat name to flag it as a surcharge item (e.g. "Pork Belly *").
   cateringSelfServiceMeats?: string[];
   cateringSelfServiceSides?: string[];
+  // Optional desserts list for the Self Service builder. Empty array or
+  // undefined hides the Desserts section entirely on the storefront.
+  cateringSelfServiceDesserts?: string[];
   // Feasting Table "How We Set Up" info block on the storefront catering page.
   feastingTableInfo?: { bullets: string[] };
   // Cocktail + Function menu tiers (storefront /catering page sub-tabs).

@@ -178,6 +178,7 @@ const StorefrontCatering = () => {
   // Admin-configurable lists; fall back to the hard-coded Hughesey Que defaults at the top of this file.
   const SS_MEATS = settings.cateringSelfServiceMeats?.length > 0 ? settings.cateringSelfServiceMeats : CATERING_MEATS;
   const SS_SIDES = settings.cateringSelfServiceSides?.length > 0 ? settings.cateringSelfServiceSides : CATERING_SIDES;
+  const SS_DESSERTS = settings.cateringSelfServiceDesserts?.length > 0 ? settings.cateringSelfServiceDesserts : [];
   const FEASTING_BULLETS = settings.feastingTableInfo?.bullets?.length > 0 ? settings.feastingTableInfo.bullets : [
     'We set your event up as a shared feasting table so guests can dig in and help themselves.',
     'Meats are presented in heated bain-maries, sides in serving bowls alongside.',
@@ -203,18 +204,20 @@ const StorefrontCatering = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cateringView, setCateringView] = useState('self-service'); // 'self-service' | 'cocktail' | 'function'
   // { meats: { 'Sliced Brisket': 3, ... }, sides: { 'Potato Bake': 2, ... } } — quantity in kg / trays
-  const [selfServiceCart, setSelfServiceCart] = useState({ meats: {}, sides: {} });
+  const [selfServiceCart, setSelfServiceCart] = useState({ meats: {}, sides: {}, desserts: {} });
   const adjustSelfServe = (section, name, delta) => {
     setSelfServiceCart(prev => {
-      const current = prev[section][name] || 0;
+      const bucket = prev[section] || {};
+      const current = bucket[name] || 0;
       const next = Math.max(0, current + delta);
-      const updatedSection = { ...prev[section] };
+      const updatedSection = { ...bucket };
       if (next === 0) delete updatedSection[name]; else updatedSection[name] = next;
       return { ...prev, [section]: updatedSection };
     });
   };
   const selfServeCount = Object.values(selfServiceCart.meats).reduce((a,b) => a+b, 0)
-                      + Object.values(selfServiceCart.sides).reduce((a,b) => a+b, 0);
+                      + Object.values(selfServiceCart.sides).reduce((a,b) => a+b, 0)
+                      + Object.values(selfServiceCart.desserts || {}).reduce((a,b) => a+b, 0);
 
   const ALL_PACKAGES = [...CATERING_PACKAGES, ...COCKTAIL_TIERS, ...FUNCTION_TIERS];
   const activePackage = ALL_PACKAGES.find(p => p.id === selectedPackageId);
@@ -306,6 +309,12 @@ const StorefrontCatering = () => {
         Object.entries(selfServiceCart.sides).forEach(([name, qty]) => {
           orderItems.push({
             item: { id: `ss_side_${name}`, name: `${name} (tray)`, price: 0, category: 'Catering Packs' },
+            quantity: qty,
+          });
+        });
+        Object.entries(selfServiceCart.desserts || {}).forEach(([name, qty]) => {
+          orderItems.push({
+            item: { id: `ss_dessert_${name}`, name: `${name} (dessert)`, price: 0, category: 'Catering Packs' },
             quantity: qty,
           });
         });
@@ -738,6 +747,29 @@ const StorefrontCatering = () => {
                       })}
                     </div>
                   </div>
+
+                  {SS_DESSERTS.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-bbq-gold mb-3">Desserts</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {SS_DESSERTS.map(name => {
+                          const qty = (selfServiceCart.desserts || {})[name] || 0;
+                          return (
+                            <div key={name} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg border transition ${qty > 0 ? 'bg-amber-900/15 border-bbq-gold/50' : 'bg-gray-900/70 border-gray-800'}`}>
+                              <div className="text-white font-bold text-sm">{name}</div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <button type="button" disabled={qty === 0} onClick={() => adjustSelfServe('desserts', name, -1)}
+                                  className="w-8 h-8 rounded-full bg-gray-800 text-gray-300 disabled:opacity-30 hover:bg-gray-700 flex items-center justify-center"><Minus size={14}/></button>
+                                <span className="w-7 text-center text-white font-bold">{qty}</span>
+                                <button type="button" onClick={() => adjustSelfServe('desserts', name, 1)}
+                                  className="w-8 h-8 rounded-full bg-bbq-gold text-black hover:bg-yellow-400 flex items-center justify-center"><Plus size={14}/></button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {selfServeCount > 0 && (
                     <button
