@@ -6,7 +6,7 @@ import { toLocalDateStr, parseLocalDate } from '../utils/dateUtils';
 import {
   ChefHat, Users, Clock, ArrowRight, ArrowLeft, Calendar, CheckCircle,
   AlertCircle, Truck, MapPin, Flame, Snowflake, Package, Plus, Minus,
-  Ticket, Check, X, ChevronLeft, ChevronRight, Coffee, UtensilsCrossed
+  Ticket, Check, X, ChevronLeft, ChevronRight, Coffee, UtensilsCrossed, Cake
 } from 'lucide-react';
 
 const DELIVERY_FEE = 25.00;
@@ -39,6 +39,21 @@ const FUNCTION_IMAGE_DEFAULTS = {
   'function_banquet_5m4s': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
   'function_grazing':      'https://images.unsplash.com/photo-1540304453527-62f979142a17?auto=format&fit=crop&w=800&q=80',
   'function_childrens':    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80',
+};
+
+// Default dessert photos — keyed by keyword match against the dessert
+// name (case-insensitive contains). First match wins. Macca can override
+// via settings.cateringSelfServiceDessertImages (keyed by exact name).
+const DESSERT_IMAGE_DEFAULTS_FALLBACK = 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80';
+const DESSERT_IMAGE_DEFAULTS_BY_KEYWORD = [
+  { match: /brownie|chocolate/i, url: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80' },
+  { match: /crumble|apple|pie/i, url: 'https://images.unsplash.com/photo-1530541930197-ff16ac917b0e?auto=format&fit=crop&w=800&q=80' },
+  { match: /panna\s*cotta|pudding|custard/i, url: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80' },
+];
+const dessertImageFor = (name, overrides) => {
+  if (overrides && overrides[name]) return overrides[name];
+  const hit = DESSERT_IMAGE_DEFAULTS_BY_KEYWORD.find(r => r.match.test(name));
+  return hit ? hit.url : DESSERT_IMAGE_DEFAULTS_FALLBACK;
 };
 
 /* ── Catering Menu Data (from Hughesey Que Catering Package 2025/26 PDF) ── */
@@ -592,9 +607,10 @@ const StorefrontCatering = () => {
               <div className="max-w-3xl mx-auto mb-10">
                 <div className="flex flex-col sm:flex-row items-stretch gap-2 bg-black/40 border border-gray-800 rounded-xl p-1.5">
                   {[
-                    { id: 'self-service', label: 'Self Service & Feasting Table', Icon: ChefHat },
-                    { id: 'cocktail',     label: 'Cocktail Menu',                 Icon: Coffee },
-                    { id: 'function',     label: 'Function Menu',                 Icon: UtensilsCrossed },
+                    { id: 'self-service', label: 'Self Service & Feasting', Icon: ChefHat },
+                    { id: 'cocktail',     label: 'Cocktail Menu',           Icon: Coffee },
+                    { id: 'function',     label: 'Function Menu',           Icon: UtensilsCrossed },
+                    { id: 'desserts',     label: 'Desserts',                Icon: Cake },
                   ].map(({ id, label, Icon }) => {
                     const active = cateringView === id;
                     return (
@@ -657,6 +673,93 @@ const StorefrontCatering = () => {
                 <p className="text-xs text-gray-500 text-center mt-6">Cocktail pricing is per person. 50% deposit required to secure booking.</p>
               </div>
             )}
+
+            {/* === DESSERTS VIEW === */}
+            {cateringView === 'desserts' && !isPackageConfigOpen && (() => {
+              const dessertOverrides = settings.cateringSelfServiceDessertImages || {};
+              const dessertPrices = SS_PRICES.desserts || {};
+              const dessertsSubtotal = Object.entries(selfServiceCart.desserts || {}).reduce((sum, [n, q]) => {
+                const p = dessertPrices[cleanName(n)];
+                return sum + (p ? p.price * q : 0);
+              }, 0);
+              return (
+                <div className="max-w-4xl mx-auto">
+                  <div className="text-center mb-10">
+                    <h2 className="text-3xl md:text-4xl font-display font-bold text-white uppercase tracking-wider">Desserts</h2>
+                    <p className="text-gray-400 text-sm mt-2 max-w-2xl mx-auto">
+                      Smoked, slow, and sweet — our desserts built for catering. Add them to any Self Service or package quote.
+                    </p>
+                  </div>
+
+                  {SS_DESSERTS.length === 0 ? (
+                    <div className="text-center py-16 border-2 border-dashed border-gray-800 rounded-2xl text-gray-500">
+                      <Cake size={40} className="mx-auto mb-3 opacity-40"/>
+                      <p className="font-bold text-gray-400">Desserts coming soon</p>
+                      <p className="text-xs mt-1">Give us a call if you'd like a dessert option on your catering quote.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {SS_DESSERTS.map(name => {
+                          const qty = (selfServiceCart.desserts || {})[name] || 0;
+                          const img = dessertImageFor(name, dessertOverrides);
+                          const price = dessertPrices[cleanName(name)];
+                          // Split combo names like "Smoked Apple Crumble with Smoked Caramel..."
+                          // into a headline + subtitle so cards stay tidy.
+                          const [headline, ...rest] = name.split(/\s+with\s+/i);
+                          const subline = rest.length ? 'with ' + rest.join(' with ') : '';
+                          return (
+                            <div key={name} className={`group bg-bbq-charcoal rounded-2xl border overflow-hidden flex flex-col shadow-xl transition ${qty > 0 ? 'border-bbq-gold/60 shadow-[0_0_24px_rgba(251,191,36,0.15)]' : 'border-gray-800 hover:border-bbq-gold/40'}`}>
+                              <div className="relative h-44 bg-gradient-to-br from-gray-900 to-gray-950 overflow-hidden">
+                                <img src={img} onError={e => { if (e.target.src !== DESSERT_IMAGE_DEFAULTS_FALLBACK) e.target.src = DESSERT_IMAGE_DEFAULTS_FALLBACK; }}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={headline}/>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"/>
+                                {qty > 0 && (
+                                  <div className="absolute top-3 right-3 bg-bbq-gold text-black w-8 h-8 rounded-full font-bold flex items-center justify-center text-sm shadow-lg">{qty}</div>
+                                )}
+                              </div>
+                              <div className="p-5 flex-1 flex flex-col">
+                                <div className="flex items-start justify-between gap-3 mb-1">
+                                  <h3 className="font-display font-bold text-white text-lg leading-tight">{headline}</h3>
+                                  {price
+                                    ? <div className="text-right shrink-0"><div className="text-xl font-bold text-bbq-gold">${price.price}</div><div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">/{price.unit || 'serve'}</div></div>
+                                    : <div className="text-right shrink-0"><div className="text-xs text-gray-600 italic">POA</div></div>}
+                                </div>
+                                {subline && <p className="text-xs text-gray-400 italic mb-4 flex-1">{subline}</p>}
+                                <div className="flex items-center gap-2 mt-auto">
+                                  <button type="button" disabled={qty === 0} onClick={() => adjustSelfServe('desserts', name, -1)}
+                                    className="w-9 h-9 rounded-full bg-gray-800 text-gray-300 disabled:opacity-30 hover:bg-gray-700 flex items-center justify-center"><Minus size={14}/></button>
+                                  <span className="flex-1 text-center text-white font-bold tabular-nums">{qty} {qty === 1 ? 'serve' : 'serves'}</span>
+                                  <button type="button" onClick={() => adjustSelfServe('desserts', name, 1)}
+                                    className="w-9 h-9 rounded-full bg-bbq-gold text-black hover:bg-yellow-400 flex items-center justify-center"><Plus size={14}/></button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {dessertsSubtotal > 0 && (
+                        <div className="mt-6 bg-gray-950/60 border border-bbq-gold/40 rounded-xl px-6 py-4 flex items-center justify-between">
+                          <div>
+                            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Desserts Subtotal</div>
+                            <div className="text-2xl font-bold text-bbq-gold tabular-nums">${dessertsSubtotal.toFixed(2)}</div>
+                          </div>
+                          <button onClick={() => { setSelectedPackageId('pkg_self_service_quote'); setStep(3); }}
+                            className="bg-gradient-to-r from-bbq-gold to-yellow-500 text-black font-bold px-5 py-2.5 rounded-xl hover:shadow-[0_0_20px_rgba(251,191,36,0.5)] transition-all flex items-center gap-2 uppercase tracking-wider text-sm">
+                            Add to Quote <ArrowRight size={16}/>
+                          </button>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-gray-500 text-center mt-6">
+                        Desserts are priced per serve. Add them to any Self Service, Feasting Table or Function quote — we'll bundle them into the final invoice.
+                      </p>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* === FUNCTION MENU VIEW === */}
             {cateringView === 'function' && !isPackageConfigOpen && (
