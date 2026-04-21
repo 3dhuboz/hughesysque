@@ -1,14 +1,11 @@
 
 import React, { Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ClerkProvider } from '@clerk/react';
 import { AppProvider, useApp } from './context/AppContext';
 import { ToastProvider } from './components/Toast';
 import Layout from './components/Layout';
 import ScrollToTop from './components/ScrollToTop';
 import ErrorBoundary from './components/ErrorBoundary';
-
-const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 
 // Storefront pages
 const StorefrontHome = React.lazy(() => import('./pages/StorefrontHome'));
@@ -20,9 +17,7 @@ const StorefrontContact = React.lazy(() => import('./pages/StorefrontContact'));
 const StorefrontEvents = React.lazy(() => import('./pages/StorefrontEvents'));
 const StorefrontGallery = React.lazy(() => import('./pages/StorefrontGallery'));
 const StorefrontLive = React.lazy(() => import('./pages/StorefrontLive'));
-const StorefrontRewards = React.lazy(() => import('./pages/StorefrontRewards'));
 const StorefrontTracking = React.lazy(() => import('./pages/StorefrontTracking'));
-const StorefrontProfile = React.lazy(() => import('./pages/StorefrontProfile'));
 
 // New pages matching SM feature set
 const PitmasterAI = React.lazy(() => import('./pages/PitmasterAI'));
@@ -41,12 +36,6 @@ const PageLoader = () => (
 const ProtectedAdminRoute: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
   const { user } = useApp();
   if (!user || (user.role !== 'ADMIN' && user.role !== 'DEV')) return <Navigate to="/login" replace />;
-  return <>{children}</>;
-};
-
-const ProtectedCustomerRoute: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
-  const { user } = useApp();
-  if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
 
@@ -98,31 +87,12 @@ const AppRoutes = () => {
                 <Route path="/events" element={<StorefrontEvents />} />
                 <Route path="/live" element={<StorefrontLive />} />
                 <Route path="/gallery" element={<StorefrontGallery />} />
-                <Route path="/rewards" element={<StorefrontRewards />} />
                 <Route path="/tracking" element={<StorefrontTracking />} />
                 <Route path="/contact" element={<StorefrontContact />} />
                 <Route path="/login" element={<StorefrontLogin />} />
                 <Route path="/promoters" element={<Promoters />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
-
-                <Route path="/pitmaster-ai" element={
-                  <ProtectedCustomerRoute>
-                    <PitmasterAI />
-                  </ProtectedCustomerRoute>
-                } />
-
-                <Route path="/profile" element={
-                  <ProtectedCustomerRoute>
-                    <StorefrontProfile />
-                  </ProtectedCustomerRoute>
-                } />
-
-                {/* Legacy profile route */}
-                <Route path="/storefront-profile" element={
-                  <ProtectedCustomerRoute>
-                    <StorefrontProfile />
-                  </ProtectedCustomerRoute>
-                } />
+                <Route path="/pitmaster-ai" element={<PitmasterAI />} />
 
                 <Route path="/admin" element={
                   <ProtectedAdminRoute>
@@ -140,29 +110,17 @@ const AppRoutes = () => {
   );
 };
 
-const AppCore: React.FC = () => (
-  <ToastProvider>
-    <AppProvider>
-      <HashRouter>
-        <ScrollToTop />
-        <AppRoutes />
-      </HashRouter>
-    </AppProvider>
-  </ToastProvider>
+const App: React.FC = () => (
+  <ErrorBoundary>
+    <ToastProvider>
+      <AppProvider>
+        <HashRouter>
+          <ScrollToTop />
+          <AppRoutes />
+        </HashRouter>
+      </AppProvider>
+    </ToastProvider>
+  </ErrorBoundary>
 );
-
-const App: React.FC = () => {
-  return (
-    <ErrorBoundary>
-      {CLERK_KEY ? (
-        <ClerkProvider publishableKey={CLERK_KEY}>
-          <AppCore />
-        </ClerkProvider>
-      ) : (
-        <AppCore />
-      )}
-    </ErrorBoundary>
-  );
-};
 
 export default App;

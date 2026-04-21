@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Link, useLocation } from 'react-router-dom';
-import { Flame, UtensilsCrossed, CalendarDays, User as UserIcon, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, Gift, AlertTriangle, Radio, Music2 } from 'lucide-react';
+import { Flame, UtensilsCrossed, CalendarDays, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, AlertTriangle, Radio, Music2 } from 'lucide-react';
 import InstallPwa from './InstallPwa';
 
 interface LayoutProps {
@@ -81,9 +81,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Link to="/live" className={`font-bold text-sm tracking-widest uppercase transition flex items-center gap-1 ${isActive('/live')}`}>
             <Radio size={14} className={location.pathname === '/live' ? 'text-bbq-ember' : 'text-red-500'} /> Live
           </Link>
-          <Link to="/rewards" className={`font-bold text-sm tracking-widest uppercase transition flex items-center gap-1 ${isActive('/rewards')}`}>
-             <Gift size={14} className={location.pathname === '/rewards' ? 'text-bbq-ember' : 'text-bbq-gold'} /> Rewards
-          </Link>
           <Link to="/contact" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/contact')}`}>Contact</Link>
           {(user?.role === 'ADMIN' || user?.role === 'DEV') ? (
              <Link to="/admin" className={`font-bold text-sm tracking-widest uppercase transition ${isActive('/admin')}`}>Dashboard</Link>
@@ -94,23 +91,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         <div className="flex items-center gap-4">
           <InstallPwa />
-          {user ? (
-            <div className="flex items-center gap-4">
-              <Link to="/profile" className="flex items-center gap-2 hover:bg-white/5 p-2 rounded-lg transition">
-                  <div className="text-right hidden lg:block">
-                      <p className="text-xs text-gray-400">Welcome,</p>
-                      <p className="text-sm font-bold text-bbq-gold leading-none">{user.name.split(' ')[0]}</p>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700">
-                      <UserIcon size={16} />
-                  </div>
-              </Link>
+          {user && (
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden lg:block">
+                <p className="text-xs text-gray-400">Signed in as</p>
+                <p className="text-sm font-bold text-bbq-gold leading-none">{user.name.split(' ')[0]}</p>
+              </div>
               <button onClick={logout} className="p-2 hover:text-red-500 transition" title="Logout"><LogOut size={20}/></button>
             </div>
-          ) : (
-            <Link to="/login" className="px-6 py-2 bg-gradient-to-r from-red-700 to-bbq-red text-white text-sm font-bold uppercase tracking-wider rounded-full hover:shadow-lg hover:shadow-red-900/40 transition-all duration-300 transform hover:-translate-y-0.5">
-                Login
-            </Link>
           )}
         </div>
       </header>
@@ -215,7 +203,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <ul className="space-y-3 text-gray-400 text-sm font-medium">
                 <li><Link to="/" className="hover:text-white hover:translate-x-1 transition-all inline-block">Home</Link></li>
                 <li><Link to="/menu" className="hover:text-white hover:translate-x-1 transition-all inline-block">Full Menu</Link></li>
-                <li><Link to="/rewards" className="hover:text-white hover:translate-x-1 transition-all inline-block">Rewards Club</Link></li>
+                <li><Link to="/catering" className="hover:text-white hover:translate-x-1 transition-all inline-block">Catering</Link></li>
                 <li><Link to="/gallery" className="hover:text-white hover:translate-x-1 transition-all inline-block">Gallery</Link></li>
                 <li><Link to="/live" className="hover:text-white hover:translate-x-1 transition-all inline-block">Live Stream</Link></li>
                 <li><Link to="/contact" className="hover:text-white hover:translate-x-1 transition-all inline-block">Contact</Link></li>
@@ -272,15 +260,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <NavItem to="/" icon={Flame} label="Home" />
         <NavItem to="/menu" icon={UtensilsCrossed} label="Menu" />
         <NavItem to="/gallery" icon={ImageIcon} label="Pics" />
-        {(user?.role === 'ADMIN' || user?.role === 'DEV') ? (
+        <NavItem to="/order" icon={CalendarDays} label="Order" />
+        {(user?.role === 'ADMIN' || user?.role === 'DEV') && (
           <NavItem to="/admin" icon={LayoutDashboard} label="Admin" />
-        ) : (
-          <NavItem to="/order" icon={CalendarDays} label="Order" />
-        )}
-        {user ? (
-             <NavItem to="/profile" icon={UserIcon} label="Profile" />
-        ) : (
-             <NavItem to="/login" icon={UserIcon} label="Login" />
         )}
       </nav>
     </div>

@@ -1,20 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useStorefront } from '../context/AppContext';
 import { useClientConfig } from '../context/AppContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Mail, User, Lock, Shield, ArrowLeft, Loader2, Flame, KeyRound, CheckCircle2 } from 'lucide-react';
 
+// Public storefront has no customer accounts — this page is staff/admin only.
+// Modes: ADMIN (login) | ADMIN_RESET_REQUEST | ADMIN_RESET_CONFIRM
 const StorefrontLogin = () => {
   const { login } = useStorefront();
   const { brandName } = useClientConfig();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [mode, setMode] = useState('LOGIN'); // LOGIN | SIGNUP | ADMIN | ADMIN_RESET_REQUEST | ADMIN_RESET_CONFIRM
+  const [mode, setMode] = useState('ADMIN');
   const [resetEmail, setResetEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [resetNewPass, setResetNewPass] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [resetComplete, setResetComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [adminUser, setAdminUser] = useState('');
+  const [adminPass, setAdminPass] = useState('');
+  const [error, setError] = useState('');
 
   const requestReset = async (e) => {
     e.preventDefault();
@@ -53,34 +58,13 @@ const StorefrontLogin = () => {
     } finally { setIsLoading(false); }
   };
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('mode') === 'admin') setMode('ADMIN');
-  }, [location.search]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
-  const [adminUser, setAdminUser] = useState('');
-  const [adminPass, setAdminPass] = useState('');
-  const [error, setError] = useState('');
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
     try {
-      if (mode === 'ADMIN') {
-        await login('admin', adminUser, adminPass);
-        navigate('/admin');
-      } else if (mode === 'LOGIN') {
-        await login('customer', email, password);
-        navigate('/');
-      } else {
-        await login('signup', email, password, name);
-        navigate('/profile');
-      }
+      await login('admin', adminUser, adminPass);
+      navigate('/admin');
     } catch (err) {
       setError(err.message || 'Invalid credentials. Please try again.');
     } finally {
@@ -101,21 +85,17 @@ const StorefrontLogin = () => {
 
         <div className="bg-bbq-charcoal rounded-2xl shadow-2xl border border-gray-800 p-8 space-y-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
-            {mode === 'ADMIN' ? <Shield size={100} /> : <User size={100} />}
+            <Shield size={100} />
           </div>
 
           <div className="text-center space-y-1 relative z-10">
             <h2 className="text-3xl font-display font-bold text-white">
-              {mode === 'LOGIN' ? 'WELCOME BACK'
-                : mode === 'SIGNUP' ? 'JOIN THE FAMILY'
-                : mode === 'ADMIN_RESET_REQUEST' ? 'RESET PASSWORD'
+              {mode === 'ADMIN_RESET_REQUEST' ? 'RESET PASSWORD'
                 : mode === 'ADMIN_RESET_CONFIRM' ? 'ENTER CODE'
                 : 'STAFF ACCESS'}
             </h2>
             <p className="text-gray-400 text-sm">
-              {mode === 'LOGIN' ? 'Login to view your orders and rewards.'
-                : mode === 'SIGNUP' ? 'Create an account to order and earn stamps.'
-                : mode === 'ADMIN_RESET_REQUEST' ? "We'll email a 6-digit code to the admin email on file."
+              {mode === 'ADMIN_RESET_REQUEST' ? "We'll email a 6-digit code to the admin email on file."
                 : mode === 'ADMIN_RESET_CONFIRM' ? 'Check the admin email inbox — enter the code and set a new password.'
                 : 'Secure area for authorised personnel only.'}
             </p>
@@ -143,11 +123,7 @@ const StorefrontLogin = () => {
                 className="w-full bg-bbq-red text-white py-3 rounded-lg font-bold hover:bg-red-700 transition shadow-lg flex justify-center items-center gap-2">
                 {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Access Dashboard'}
               </button>
-              <div className="flex items-center justify-between text-xs">
-                <button type="button" onClick={() => setMode('LOGIN')}
-                  className="text-gray-400 hover:text-white flex items-center gap-1.5 transition">
-                  <ArrowLeft size={12} /> Back to Customer Login
-                </button>
+              <div className="flex items-center justify-end text-xs">
                 <button type="button" onClick={() => { setMode('ADMIN_RESET_REQUEST'); setError(''); }}
                   className="text-bbq-gold hover:text-white flex items-center gap-1.5 transition font-bold">
                   <KeyRound size={12}/> Forgot password?
@@ -171,7 +147,8 @@ const StorefrontLogin = () => {
               </button>
               <p className="text-[11px] text-gray-500 text-center">If the email matches the one on file, you'll get a 6-digit code within a minute. The response doesn't confirm whether the email matched — that's a security feature.</p>
             </form>
-          ) : mode === 'ADMIN_RESET_CONFIRM' ? (
+          ) : (
+            // ADMIN_RESET_CONFIRM
             resetComplete ? (
               <div className="relative z-10 text-center py-6 space-y-3">
                 <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500 flex items-center justify-center mx-auto">
@@ -212,59 +189,6 @@ const StorefrontLogin = () => {
                 </button>
               </form>
             )
-          ) : (
-            <>
-              <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
-                {mode === 'SIGNUP' && (
-                  <div className="relative">
-                    <User className="absolute left-3 top-3.5 text-gray-500" size={18} />
-                    <input type="text" placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} required
-                      className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none transition" />
-                  </div>
-                )}
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3.5 text-gray-500" size={18} />
-                  <input type="email" placeholder="Email Address" value={email} onChange={e => setEmail(e.target.value)} required
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none transition" />
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3.5 text-gray-500" size={18} />
-                  <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none transition" />
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <label className="flex items-center gap-2 cursor-pointer text-gray-400">
-                    <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)}
-                      className="rounded bg-gray-800 border-gray-700" />
-                    Remember me
-                  </label>
-                  {mode === 'LOGIN' && (
-                    <button type="button" onClick={() => { setMode('ADMIN_RESET_REQUEST'); setError(''); }}
-                      className="text-bbq-gold hover:text-white text-xs font-bold transition flex items-center gap-1">
-                      <KeyRound size={12}/> Forgot password?
-                    </button>
-                  )}
-                </div>
-                <button type="submit" disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-bbq-red to-red-800 text-white py-4 rounded-lg font-bold hover:shadow-[0_0_20px_rgba(217,56,30,0.4)] transition-all shadow-xl flex justify-center items-center gap-2">
-                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : (mode === 'LOGIN' ? 'Login' : 'Create Account')}
-                </button>
-              </form>
-
-              <div className="text-center text-sm text-gray-400 relative z-10">
-                {mode === 'LOGIN' ? (
-                  <>Don't have an account? <button onClick={() => { setMode('SIGNUP'); setError(''); }} className="text-white font-bold hover:underline">Sign up</button></>
-                ) : (
-                  <>Already have an account? <button onClick={() => { setMode('LOGIN'); setError(''); }} className="text-white font-bold hover:underline">Log in</button></>
-                )}
-              </div>
-
-              <div className="pt-4 border-t border-gray-800 text-center relative z-10">
-                <button onClick={() => { setMode('ADMIN'); setError(''); }} className="text-xs text-gray-600 hover:text-gray-400 font-mono transition">
-                  [Staff / Admin Access]
-                </button>
-              </div>
-            </>
           )}
         </div>
       </div>

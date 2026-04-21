@@ -1242,7 +1242,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
               <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 relative overflow-hidden group">
                   <div className="flex justify-between items-start mb-2"><span className="text-xs font-bold text-gray-500 uppercase">Auth Service</span><Shield size={16} className="text-gray-400"/></div>
                   <div className="flex items-end gap-2"><div className={`w-3 h-3 rounded-full ${healthStatus.auth === 'online' ? 'bg-green-500' : healthStatus.auth === 'local' ? 'bg-blue-500' : 'bg-yellow-500'}`}></div><span className="text-2xl font-bold text-white leading-none">{healthStatus.auth === 'online' ? 'Online' : healthStatus.auth === 'local' ? 'Local Admin' : 'Signed Out'}</span></div>
-                  <p className="text-[10px] text-gray-400 mt-2 font-mono">{healthStatus.auth === 'local' ? 'Credential: App Settings' : 'Provider: Clerk'}</p>
+                  <p className="text-[10px] text-gray-400 mt-2 font-mono">{healthStatus.auth === 'local' ? 'Credential: App Settings' : 'Provider: HMAC session'}</p>
               </div>
               {/* Connection Status */}
               <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 relative overflow-hidden group">
@@ -1262,7 +1262,7 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
               <div className="flex justify-between items-center mb-4"><h5 className="text-xs font-bold text-gray-500 uppercase">Database Configuration</h5><div className="flex gap-4"><button onClick={runDeepDiagnostics} className="text-xs flex items-center gap-1 font-bold text-bbq-gold hover:text-white transition"><Terminal size={14}/> Run Deep Diagnostics</button></div></div>
               <div className="bg-gray-800/50 p-4 rounded-lg mb-4">
                   <p className="text-sm text-gray-300">Backend: <span className="text-green-400 font-bold">Cloudflare Pages + D1</span></p>
-                  <p className="text-sm text-gray-300 mt-1">Auth: <span className="text-green-400 font-bold">Clerk</span></p>
+                  <p className="text-sm text-gray-300 mt-1">Auth: <span className="text-green-400 font-bold">HMAC admin session</span></p>
                   <p className="text-xs text-gray-500 mt-2">Configuration is managed via environment variables in the Cloudflare Pages dashboard.</p>
               </div>
 

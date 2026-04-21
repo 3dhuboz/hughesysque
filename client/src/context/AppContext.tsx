@@ -3,7 +3,6 @@ import { User, MenuItem, Order, CookDay, UserRole, CartItem, SocialPost, AppSett
 import { parseLocalDate, isEventPastCutoff, toLocalDateStr } from '../utils/dateUtils';
 import { INITIAL_MENU, INITIAL_COOK_DAYS, INITIAL_ADMIN_USER, INITIAL_DEV_USER, INITIAL_SETTINGS, INITIAL_EVENTS } from '../constants';
 import { setGeminiApiKey } from '../services/gemini';
-import { useAuth as useClerkAuth, useUser } from '@clerk/react';
 import {
   initApi,
   fetchMenu,
@@ -16,7 +15,6 @@ import {
   upsertEvent,
   deleteEvent,
   fetchUsers,
-  fetchCurrentUser,
   updateUser as apiUpdateUser,
   deleteUser as apiDeleteUser,
   fetchSocialPosts,
@@ -81,8 +79,6 @@ interface AppContextType {
   reminders: string[];
   toggleReminder: (eventId: string) => void;
 
-  verifyStaffPin: (pin: string, action: 'ADD' | 'REDEEM') => boolean;
-
   selectedOrderDate: string | null;
   setSelectedOrderDate: (date: string | null) => void;
 
@@ -92,58 +88,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const hasClerk = !!CLERK_KEY;
-
-// Inner component used only when Clerk IS configured — hooks always called inside ClerkProvider
-const AppProviderWithClerk: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const clerkAuth = useClerkAuth();
-  const clerkUserHook = useUser();
-  return (
-    <AppProviderCore
-      authLoaded={clerkAuth.isLoaded}
-      userLoaded={clerkUserHook.isLoaded}
-      userId={clerkAuth.userId ?? null}
-      clerkUser={clerkUserHook.user ?? null}
-      getToken={clerkAuth.getToken}
-      clerkSignOut={clerkAuth.signOut}
-    >
-      {children}
-    </AppProviderCore>
-  );
-};
-
-// Wrapper: chooses Clerk or no-Clerk path — avoids unconditional hook calls
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  if (hasClerk) {
-    return <AppProviderWithClerk>{children}</AppProviderWithClerk>;
-  }
-  return (
-    <AppProviderCore
-      authLoaded={true}
-      userLoaded={true}
-      userId={null}
-      clerkUser={null}
-      getToken={async () => null}
-      clerkSignOut={async () => {}}
-    >
-      {children}
-    </AppProviderCore>
-  );
-};
-
-interface ClerkProps {
-  authLoaded: boolean;
-  userLoaded: boolean;
-  userId: string | null;
-  clerkUser: any;
-  getToken: (opts?: any) => Promise<string | null>;
-  clerkSignOut: (opts?: any) => Promise<void>;
-}
-
-const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
-  authLoaded, userLoaded, userId, clerkUser, getToken, clerkSignOut, children
-}) => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -185,11 +130,10 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
   }, [selectedOrderDate]);
 
   useEffect(() => {
-    // Token resolver priority: admin session first (privileged actions),
-    // then Clerk (customer accounts). Most of this app runs unauthenticated
-    // or as admin, so admin first is the common-case win.
-    initApi(async () => adminToken || await getToken() || null);
-  }, [getToken, adminToken]);
+    // Admin HMAC session token is the only auth path; public pages call the
+    // API unauthenticated and the server applies the public-routes allowlist.
+    initApi(async () => adminToken || null);
+  }, [adminToken]);
 
   // Restore admin user state from a persisted session token on mount so
   // a refresh doesn't log Macca out. Token signature + expiry are verified
@@ -215,8 +159,6 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
   }, []);
 
   useEffect(() => {
-    if (!authLoaded) return;
-
     const loadData = async () => {
       const loaded = new Set<string>();
       const REQUIRED = ['Menu', 'Orders', 'Settings'];
@@ -277,35 +219,14 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
     };
 
     loadData();
-  }, [authLoaded]);
+  }, []);
 
+  // When admin logs in, prefetch the user list for CustomerManager.
   useEffect(() => {
-    if (!authLoaded || !userLoaded) return;
-
-    if (userId && clerkUser) {
-      fetchCurrentUser().then(profile => {
-        setUser(profile);
-      }).catch(() => {
-        setUser({
-          id: userId,
-          name: clerkUser.fullName || clerkUser.firstName || 'User',
-          email: clerkUser.primaryEmailAddress?.emailAddress || '',
-          role: (clerkUser.publicMetadata?.role as UserRole) || UserRole.CUSTOMER,
-          isVerified: clerkUser.primaryEmailAddress?.verification?.status === 'verified',
-          stamps: 0,
-        });
-      });
-
-      if (clerkUser.publicMetadata?.role === 'ADMIN' || clerkUser.publicMetadata?.role === 'DEV') {
-        fetchUsers().then(data => setUsers(data)).catch(() => {});
-      }
-    } else if (!userId) {
-      setUser(prev => {
-        if (prev && (prev.id === 'admin1' || prev.id === 'dev1')) return prev;
-        return null;
-      });
+    if (user?.role === 'ADMIN' || user?.role === 'DEV') {
+      fetchUsers().then(data => setUsers(data)).catch(() => {});
     }
-  }, [userId, clerkUser, authLoaded, userLoaded]);
+  }, [user?.role]);
 
   const login = async (role: UserRole | string, email?: string, password?: string) => {
     const normalizedRole = (role as string).toUpperCase();
@@ -341,16 +262,11 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
   const logout = async () => {
     // Admin logout — clear the session token so no further privileged API
     // calls can be made from this browser.
-    if (user?.id === 'admin1' || user?.id === 'dev1') {
-      try {
-        localStorage.removeItem('hq_admin_token');
-        localStorage.removeItem('hq_must_change_password');
-      } catch {}
-      setAdminToken(null);
-      setUser(null);
-      return;
-    }
-    await clerkSignOut();
+    try {
+      localStorage.removeItem('hq_admin_token');
+      localStorage.removeItem('hq_must_change_password');
+    } catch {}
+    setAdminToken(null);
     setUser(null);
   };
 
@@ -549,18 +465,6 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
     );
   };
 
-  const verifyStaffPin = (pin: string, action: 'ADD' | 'REDEEM'): boolean => {
-    if (pin !== settings.rewards.staffPin) return false;
-    if (user) {
-      const stamps = user.stamps || 0;
-      const newStamps = action === 'ADD' ? stamps + 1 : Math.max(0, stamps - settings.rewards.maxStamps);
-      const updated = { ...user, stamps: newStamps };
-      setUser(updated);
-      updateUserProfile(updated);
-    }
-    return true;
-  };
-
   return (
     <AppContext.Provider value={{
       user, users, login, logout, addUser, updateUserProfile, adminUpdateUser, deleteUser,
@@ -573,7 +477,6 @@ const AppProviderCore: React.FC<ClerkProps & { children: ReactNode }> = ({
       galleryPosts, addGalleryPost, toggleGalleryLike,
       settings, updateSettings,
       reminders, toggleReminder,
-      verifyStaffPin,
       selectedOrderDate, setSelectedOrderDate,
       isLoading, connectionError,
     }}>
