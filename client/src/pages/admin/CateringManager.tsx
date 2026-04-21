@@ -531,7 +531,7 @@ const PackagesEditor: React.FC<{ settings: any; updateSettings: any; toast: any 
         title="Feasting Packages"
         description="Per-head packages shown under the 'Feasting Table' section on the storefront catering page."
         count={packages.length}
-        countLabel={`package${packages.length === 1 ? '' : 's'}`}
+        countLabel="package"
         action={
           <button onClick={() => { setIsEditing(true); setEditPkg({ minPax: 10, meatLimit: 2, sideLimit: 2 }); }}
             className="group relative px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 overflow-hidden bg-gradient-to-r from-bbq-red via-red-600 to-orange-500 text-white hover:shadow-[0_0_24px_rgba(239,68,68,0.5)] hover:scale-[1.02] transition-all">
@@ -909,7 +909,7 @@ const CocktailTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
         title="Cocktail Menu Tiers"
         description="Per-person cocktail tiers shown under the 'Cocktail Menu' tab on the storefront. Set pieces, cold/hot/substantial counts, and a tier image."
         count={tiers.length}
-        countLabel={`tier${tiers.length === 1 ? '' : 's'}`}
+        countLabel="tier"
         action={
           <div className="flex gap-2">
             {tiers.length === 0 && (
@@ -1070,7 +1070,7 @@ const FunctionTiersEditor: React.FC<{ settings: any; updateSettings: any; toast:
         title="Function Menu Tiers"
         description="Plated / alternate-drop / buffet options for weddings, awards nights, and formal functions. The Function Menu tab on the storefront stays in a 'coming soon' state until you add at least one tier here."
         count={tiers.length}
-        countLabel={`tier${tiers.length === 1 ? '' : 's'}`}
+        countLabel="tier"
         action={
           <div className="flex gap-2">
             {tiers.length === 0 && (
