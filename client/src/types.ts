@@ -278,6 +278,13 @@ export interface AppSettings {
   };
   // Feasting Table "How We Set Up" info block on the storefront catering page.
   feastingTableInfo?: { bullets: string[] };
+  // Host Rewards banner shown above the tab bar on the storefront catering page.
+  // body supports **bold** markdown (rendered as <strong>). Set enabled=false to hide.
+  hostRewards?: {
+    enabled?: boolean;
+    title?: string;
+    body?: string;
+  };
   // Cocktail + Function menu tiers (storefront /catering page sub-tabs).
   // Cocktail tiers fall back to hard-coded defaults when empty; function tiers show
   // a "coming soon" empty state until admin adds at least one tier.

@@ -421,17 +421,31 @@ const StorefrontCatering = () => {
         </div>
       </div>
 
-      {/* Host Rewards Banner */}
-      <div className="max-w-5xl mx-auto mb-8">
-        <div className="bg-gradient-to-r from-yellow-900/40 via-bbq-charcoal to-yellow-900/40 border border-bbq-gold/30 p-4 rounded-xl flex items-center justify-center gap-4 text-center">
-          <Ticket className="text-bbq-gold shrink-0" size={22} />
-          <div>
-            <h4 className="text-white font-bold uppercase tracking-wider text-sm">Host Rewards Program</h4>
-            <p className="text-gray-400 text-xs">Spend over <strong>$1,000</strong> on catering and receive a <strong>10% Discount</strong> on your next order!</p>
+      {/* Host Rewards Banner — admin-editable via settings.hostRewards */}
+      {(() => {
+        const hr = settings.hostRewards || {};
+        if (hr.enabled === false) return null;
+        const title = (hr.title || '').trim() || 'Host Rewards Program';
+        const body  = (hr.body  || '').trim() || 'Spend over **$1,000** on catering and receive a **10% Discount** on your next order!';
+        // Render **bold** segments as <strong>; everything else as plain text.
+        const parts = body.split(/(\*\*[^*]+\*\*)/g).filter(Boolean).map((seg, i) =>
+          /^\*\*[^*]+\*\*$/.test(seg)
+            ? <strong key={i}>{seg.slice(2, -2)}</strong>
+            : <span key={i}>{seg}</span>
+        );
+        return (
+          <div className="max-w-5xl mx-auto mb-8">
+            <div className="bg-gradient-to-r from-yellow-900/40 via-bbq-charcoal to-yellow-900/40 border border-bbq-gold/30 p-4 rounded-xl flex items-center justify-center gap-4 text-center">
+              <Ticket className="text-bbq-gold shrink-0" size={22} />
+              <div>
+                <h4 className="text-white font-bold uppercase tracking-wider text-sm">{title}</h4>
+                <p className="text-gray-400 text-xs">{parts}</p>
+              </div>
+              <Ticket className="text-bbq-gold shrink-0" size={22} />
+            </div>
           </div>
-          <Ticket className="text-bbq-gold shrink-0" size={22} />
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Progress Bar */}
       <div className="flex justify-center mb-10">

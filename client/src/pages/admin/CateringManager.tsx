@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
 import { CateringPackage, CocktailTier, FunctionTier } from '../../types';
-import { Plus, Trash2, Edit2, Save, X, Wand2, Loader2, Coffee, UtensilsCrossed, ChefHat, Package as PackageIcon, Info, Sparkles, ChevronUp, ChevronDown, Drumstick, Salad, Zap, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Wand2, Loader2, Coffee, UtensilsCrossed, ChefHat, Package as PackageIcon, Info, Sparkles, ChevronUp, ChevronDown, Drumstick, Salad, Zap, GripVertical, Ticket } from 'lucide-react';
 import {
   DndContext,
   PointerSensor,
@@ -297,7 +297,7 @@ const compressImage = (base64Str: string, maxWidth = 800, quality = 0.6) => {
   });
 };
 
-type AdminTab = 'packages' | 'self-service' | 'cocktail' | 'function';
+type AdminTab = 'packages' | 'self-service' | 'cocktail' | 'function' | 'rewards';
 
 const CateringManager: React.FC = () => {
   const { settings, updateSettings } = useApp();
@@ -309,6 +309,7 @@ const CateringManager: React.FC = () => {
     { id: 'self-service', label: 'Self Service',      Icon: ChefHat },
     { id: 'cocktail',     label: 'Cocktail Menu',     Icon: Coffee },
     { id: 'function',     label: 'Function Menu',     Icon: UtensilsCrossed },
+    { id: 'rewards',      label: 'Rewards Banner',    Icon: Ticket },
   ];
 
   return (
@@ -329,6 +330,151 @@ const CateringManager: React.FC = () => {
       {activeTab === 'self-service' && <SelfServiceEditor settings={settings} updateSettings={updateSettings} toast={toast}/>}
       {activeTab === 'cocktail'     && <CocktailTiersEditor settings={settings} updateSettings={updateSettings} toast={toast}/>}
       {activeTab === 'function'     && <FunctionTiersEditor settings={settings} updateSettings={updateSettings} toast={toast}/>}
+      {activeTab === 'rewards'      && <RewardsEditor settings={settings} updateSettings={updateSettings} toast={toast}/>}
+    </div>
+  );
+};
+
+/* ─────────────────────────── HOST REWARDS BANNER ─────────────────────────── */
+
+const REWARDS_DEFAULTS = {
+  title: 'Host Rewards Program',
+  body:  'Spend over **$1,000** on catering and receive a **10% Discount** on your next order!',
+};
+
+const RewardsEditor: React.FC<{ settings: any; updateSettings: any; toast: any }> = ({ settings, updateSettings, toast }) => {
+  const initial = settings.hostRewards || {};
+  const [enabled, setEnabled] = useState<boolean>(initial.enabled !== false);
+  const [title, setTitle]     = useState<string>(initial.title ?? '');
+  const [body, setBody]       = useState<string>(initial.body ?? '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty]   = useState(false);
+  const markDirty = () => setIsDirty(true);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const success = await updateSettings({
+      hostRewards: {
+        enabled,
+        title: title.trim(),
+        body:  body.trim(),
+      },
+    });
+    setIsSaving(false);
+    if (success) { toast('Host Rewards banner saved!'); setIsDirty(false); } else toast('Failed to save.', 'error');
+  };
+
+  const resetToDefaults = () => {
+    if (!window.confirm('Reset banner text to defaults?')) return;
+    setTitle(REWARDS_DEFAULTS.title);
+    setBody(REWARDS_DEFAULTS.body);
+    setEnabled(true);
+    markDirty();
+  };
+
+  // Live preview — mirrors StorefrontCatering banner rendering, including **bold** segments.
+  const previewTitle = (title || '').trim() || REWARDS_DEFAULTS.title;
+  const previewBody  = (body  || '').trim() || REWARDS_DEFAULTS.body;
+  const previewParts = previewBody.split(/(\*\*[^*]+\*\*)/g).filter(Boolean).map((seg, i) =>
+    /^\*\*[^*]+\*\*$/.test(seg)
+      ? <strong key={i}>{seg.slice(2, -2)}</strong>
+      : <span key={i}>{seg}</span>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* ── HEADER CARD ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-black border border-gray-800 p-6 md:p-7">
+        <div aria-hidden className="absolute -top-10 -right-10 w-48 h-48 bg-bbq-gold/15 rounded-full blur-3xl pointer-events-none"/>
+        <div aria-hidden className="absolute -bottom-10 -left-10 w-48 h-48 bg-yellow-700/15 rounded-full blur-3xl pointer-events-none"/>
+        <div className="relative flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-bbq-gold to-yellow-700 flex items-center justify-center shadow-lg shrink-0">
+              <Ticket size={22} className="text-black"/>
+            </div>
+            <div>
+              <h4 className="text-xl font-display font-bold text-white">Host Rewards Banner</h4>
+              <p className="text-sm text-gray-400 mt-0.5 max-w-xl">Top of the public catering page. Wrap text in <code className="px-1 rounded bg-gray-800 text-bbq-gold">**double asterisks**</code> to make it <strong>bold</strong>.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={resetToDefaults} className="px-3 py-2 text-gray-400 hover:text-white text-xs hover:bg-white/5 rounded-lg transition">Reset to defaults</button>
+            <button onClick={handleSave} disabled={isSaving || !isDirty}
+              className={`group relative px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all overflow-hidden ${
+                !isDirty ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-bbq-gold via-yellow-500 to-orange-500 text-black hover:shadow-[0_0_24px_rgba(251,191,36,0.5)] hover:scale-[1.02]'
+              }`}>
+              {isDirty && <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"/>}
+              <span className="relative flex items-center gap-2">
+                {isSaving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>}
+                {isDirty ? 'Save Changes' : 'Saved'}
+                {isDirty && <span className="w-2 h-2 rounded-full bg-black animate-pulse"/>}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── EDITOR ── */}
+      <div className="rounded-2xl bg-gray-900/60 border border-gray-800 p-5 space-y-5">
+        {/* Enable toggle */}
+        <label className="flex items-center justify-between gap-4 p-4 rounded-xl bg-gray-950/60 border border-gray-800 cursor-pointer hover:border-bbq-gold/40 transition">
+          <div>
+            <div className="text-white font-bold text-sm">Show banner on catering page</div>
+            <div className="text-gray-500 text-xs mt-0.5">Toggle off to hide entirely without losing the text below.</div>
+          </div>
+          <button type="button" role="switch" aria-checked={enabled}
+            onClick={() => { setEnabled(!enabled); markDirty(); }}
+            className={`relative shrink-0 w-12 h-7 rounded-full transition ${enabled ? 'bg-bbq-gold' : 'bg-gray-700'}`}>
+            <span className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all ${enabled ? 'left-[22px]' : 'left-0.5'}`}/>
+          </button>
+        </label>
+
+        {/* Title */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Title</label>
+          <input
+            type="text"
+            value={title}
+            onChange={e => { setTitle(e.target.value); markDirty(); }}
+            placeholder={REWARDS_DEFAULTS.title}
+            className="w-full px-4 py-2.5 rounded-lg bg-gray-950/80 border border-gray-800 text-white placeholder-gray-600 focus:outline-none focus:border-bbq-gold/50 focus:ring-2 focus:ring-bbq-gold/20 transition"
+          />
+        </div>
+
+        {/* Body */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Body</label>
+          <textarea
+            rows={3}
+            value={body}
+            onChange={e => { setBody(e.target.value); markDirty(); }}
+            placeholder={REWARDS_DEFAULTS.body}
+            className="w-full px-4 py-2.5 rounded-lg bg-gray-950/80 border border-gray-800 text-white placeholder-gray-600 focus:outline-none focus:border-bbq-gold/50 focus:ring-2 focus:ring-bbq-gold/20 transition resize-y"
+          />
+          <p className="text-xs text-gray-500 mt-1.5">Tip: <code className="px-1 rounded bg-gray-800 text-bbq-gold">**$1,000**</code> renders as <strong>$1,000</strong>.</p>
+        </div>
+      </div>
+
+      {/* ── LIVE PREVIEW ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">
+          <Sparkles size={12}/> Live preview
+        </div>
+        {enabled ? (
+          <div className="bg-gradient-to-r from-yellow-900/40 via-bbq-charcoal to-yellow-900/40 border border-bbq-gold/30 p-4 rounded-xl flex items-center justify-center gap-4 text-center">
+            <Ticket className="text-bbq-gold shrink-0" size={22} />
+            <div>
+              <h4 className="text-white font-bold uppercase tracking-wider text-sm">{previewTitle}</h4>
+              <p className="text-gray-400 text-xs">{previewParts}</p>
+            </div>
+            <Ticket className="text-bbq-gold shrink-0" size={22} />
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-gray-700 p-6 text-center text-gray-500 text-sm">
+            Banner is hidden. Toggle "Show banner on catering page" above to display it.
+          </div>
+        )}
+      </div>
     </div>
   );
 };
