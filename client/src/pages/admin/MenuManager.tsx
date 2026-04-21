@@ -36,25 +36,29 @@ const compressImage = (base64Str: string, maxWidth = 800, quality = 0.6) => {
     });
 };
 
-/** Syncs the Hughesys menu to Square's Catalog so every item lives in both
- *  places. One-way push; Hughesys remains source of truth for name/price. */
+/** Pair of one-way sync buttons between the Hughesys menu and Square's
+ *  catalog. 'Sync to Square' pushes the local menu out (Hughesys → Square),
+ *  'Import from Square' pulls the Square catalog in (Square → Hughesys).
+ *  Both are idempotent — the squareCatalogMap stored in settings keeps
+ *  items matched so repeat runs don't duplicate. */
 const SquareCatalogSyncButton: React.FC = () => {
-  const { settings } = useApp();
+  const { settings, refreshData } = useApp() as any;
   const { toast } = useToast();
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [busy, setBusy] = useState<null | 'push' | 'pull'>(null);
 
   const squareConfigured = !!(settings?.squareAccessToken && settings?.squareLocationId);
   if (!squareConfigured) return null;
 
-  const lastSync = settings?.squareCatalogLastSync
-    ? new Date(settings.squareCatalogLastSync).toLocaleString('en-AU', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  const fmt = (ms?: number) => ms
+    ? new Date(ms).toLocaleString('en-AU', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : null;
+  const lastSync   = fmt(settings?.squareCatalogLastSync);
+  const lastImport = fmt(settings?.squareCatalogLastImport);
 
-  const run = async () => {
-    setIsSyncing(true);
+  const call = async (path: string, onSuccess: (data: any) => string) => {
     try {
       const token = localStorage.getItem('hq_admin_token');
-      const res = await fetch('/api/v1/payment/square-sync-catalog', {
+      const res = await fetch(path, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,23 +66,53 @@ const SquareCatalogSyncButton: React.FC = () => {
         },
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) throw new Error(data.error || 'Sync failed');
-      toast(`Synced ${data.upserted} item${data.upserted === 1 ? '' : 's'} to Square (${data.environment}).`);
+      if (!res.ok || !data.success) throw new Error(data.error || 'Request failed');
+      toast(onSuccess(data));
+      return data;
     } catch (err: any) {
-      toast(err.message || 'Sync failed', 'error');
-    } finally {
-      setIsSyncing(false);
+      toast(err.message || 'Request failed', 'error');
+      return null;
     }
   };
 
+  const push = async () => {
+    setBusy('push');
+    await call('/api/v1/payment/square-sync-catalog',
+      (d) => `Pushed ${d.upserted} item${d.upserted === 1 ? '' : 's'} to Square (${d.environment}).`);
+    setBusy(null);
+  };
+
+  const pull = async () => {
+    if (!window.confirm("Pull the Square catalog into the Hughesys menu?\n\nItems already mapped will be updated (name, price, description). Items only in Square will be added as new menu items. Nothing in Hughesys will be deleted.")) return;
+    setBusy('pull');
+    const data = await call('/api/v1/payment/square-import-catalog',
+      (d) => `Imported ${d.imported} new, updated ${d.updated} existing (${d.environment}).`);
+    if (data?.success && typeof refreshData === 'function') {
+      try { await refreshData(); } catch {}
+    } else if (data?.success) {
+      // Fall back to a full page refresh if the context doesn't expose a refresh.
+      setTimeout(() => window.location.reload(), 1500);
+    }
+    setBusy(null);
+  };
+
   return (
-    <button onClick={run} disabled={isSyncing}
-      className="bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-2 rounded text-sm font-bold flex items-center gap-2 disabled:opacity-50 text-white transition"
-      title={lastSync ? `Last sync: ${lastSync}` : 'Push current menu to your Square catalog'}>
-      {isSyncing ? <Loader2 size={14} className="animate-spin"/> : <RefreshCw size={14}/>}
-      Sync to Square
-      {lastSync && <span className="text-[10px] text-gray-500 font-normal">· {lastSync}</span>}
-    </button>
+    <>
+      <button onClick={push} disabled={!!busy}
+        className="bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-2 rounded text-sm font-bold flex items-center gap-2 disabled:opacity-50 text-white transition"
+        title={lastSync ? `Last pushed: ${lastSync}` : 'Push the Hughesys menu to your Square catalog'}>
+        {busy === 'push' ? <Loader2 size={14} className="animate-spin"/> : <RefreshCw size={14}/>}
+        Sync to Square
+        {lastSync && <span className="text-[10px] text-gray-500 font-normal">· {lastSync}</span>}
+      </button>
+      <button onClick={pull} disabled={!!busy}
+        className="bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-2 rounded text-sm font-bold flex items-center gap-2 disabled:opacity-50 text-white transition"
+        title={lastImport ? `Last imported: ${lastImport}` : "Pull Square's catalog into the Hughesys menu"}>
+        {busy === 'pull' ? <Loader2 size={14} className="animate-spin"/> : <RefreshCw size={14} className="-scale-x-100"/>}
+        Import from Square
+        {lastImport && <span className="text-[10px] text-gray-500 font-normal">· {lastImport}</span>}
+      </button>
+    </>
   );
 };
 
