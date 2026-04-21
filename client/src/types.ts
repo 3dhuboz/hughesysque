@@ -267,6 +267,15 @@ export interface AppSettings {
   // Optional desserts list for the Self Service builder. Empty array or
   // undefined hides the Desserts section entirely on the storefront.
   cateringSelfServiceDesserts?: string[];
+  // Price + unit lookup keyed by item name (matches the strings in the
+  // three *SelfService* lists above). When present, the storefront shows
+  // '$75 / kg' next to each item and the admin form shows a price input
+  // per row. Missing entries fall through to 'POA' on the storefront.
+  cateringSelfServicePrices?: {
+    meats?: Record<string, { price: number; unit: string }>;
+    sides?: Record<string, { price: number; unit: string }>;
+    desserts?: Record<string, { price: number; unit: string }>;
+  };
   // Feasting Table "How We Set Up" info block on the storefront catering page.
   feastingTableInfo?: { bullets: string[] };
   // Cocktail + Function menu tiers (storefront /catering page sub-tabs).

@@ -179,6 +179,11 @@ const StorefrontCatering = () => {
   const SS_MEATS = settings.cateringSelfServiceMeats?.length > 0 ? settings.cateringSelfServiceMeats : CATERING_MEATS;
   const SS_SIDES = settings.cateringSelfServiceSides?.length > 0 ? settings.cateringSelfServiceSides : CATERING_SIDES;
   const SS_DESSERTS = settings.cateringSelfServiceDesserts?.length > 0 ? settings.cateringSelfServiceDesserts : [];
+  const SS_PRICES = settings.cateringSelfServicePrices || {};
+  // Strip any trailing ' *' surcharge flag before looking up the price.
+  const cleanName = (n) => (n || '').replace(/\s*\*\s*$/, '').trim();
+  const priceFor = (section, name) => SS_PRICES[section]?.[cleanName(name)] || null;
+  const unitLabel = (u) => u === 'kg' ? '/kg' : u === 'tray' ? '/tray' : u === 'ea' ? '/ea' : u === 'serve' ? '/serve' : u ? `/${u}` : '';
   const FEASTING_BULLETS = settings.feastingTableInfo?.bullets?.length > 0 ? settings.feastingTableInfo.bullets : [
     'We set your event up as a shared feasting table so guests can dig in and help themselves.',
     'Meats are presented in heated bain-maries, sides in serving bowls alongside.',
@@ -695,93 +700,125 @@ const StorefrontCatering = () => {
               <div className="max-w-5xl mx-auto space-y-12">
 
                 {/* Build Your Self Service Order */}
-                <div className="bg-bbq-charcoal border border-gray-800 rounded-2xl p-6 md:p-8 shadow-xl">
-                  <div className="text-center mb-8">
-                    <h2 className="text-2xl md:text-3xl font-display font-bold text-white uppercase tracking-wider">Build Your Self Service Order</h2>
-                    <p className="text-gray-400 text-sm mt-2">Select items and quantities — we'll quote based on your selections</p>
-                  </div>
+                {(() => {
+                  // Running estimated subtotal (excludes the +$4/pp surcharge,
+                  // which is a per-head fee we can only calculate once guestCount
+                  // is final at step 3).
+                  const subtotalFor = (section, cart) => Object.entries(cart || {}).reduce((sum, [n, q]) => {
+                    const p = priceFor(section, n);
+                    return sum + (p ? p.price * q : 0);
+                  }, 0);
+                  const meatsSubtotal   = subtotalFor('meats',   selfServiceCart.meats);
+                  const sidesSubtotal   = subtotalFor('sides',   selfServiceCart.sides);
+                  const dessertSubtotal = subtotalFor('desserts', selfServiceCart.desserts);
+                  const estimatedSubtotal = meatsSubtotal + sidesSubtotal + dessertSubtotal;
 
-                  <div className="mb-8">
-                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-bbq-red mb-3">Meats (per kg)</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {SS_MEATS.map(name => {
-                        const qty = selfServiceCart.meats[name] || 0;
-                        const surcharge = /\*/.test(name);
-                        const clean = name.replace(/\s*\*\s*$/, '');
-                        return (
-                          <div key={name} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg border transition ${qty > 0 ? 'bg-bbq-red/10 border-bbq-red/50' : 'bg-gray-900/70 border-gray-800'}`}>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-white font-bold text-sm">{clean} <span className="text-gray-500 font-normal text-xs">(kg)</span></div>
-                              {surcharge && <div className="text-[10px] text-bbq-gold font-bold">+$4/pp surcharge</div>}
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <button type="button" disabled={qty === 0} onClick={() => adjustSelfServe('meats', name, -1)}
-                                className="w-8 h-8 rounded-full bg-gray-800 text-gray-300 disabled:opacity-30 hover:bg-gray-700 flex items-center justify-center"><Minus size={14}/></button>
-                              <span className="w-7 text-center text-white font-bold">{qty}</span>
-                              <button type="button" onClick={() => adjustSelfServe('meats', name, 1)}
-                                className="w-8 h-8 rounded-full bg-bbq-red text-white hover:bg-red-600 flex items-center justify-center"><Plus size={14}/></button>
-                            </div>
+                  const SSItemRow = ({ section, name, accent }) => {
+                    const qty = (selfServiceCart[section] || {})[name] || 0;
+                    const surcharge = section === 'meats' && /\*/.test(name);
+                    const clean = cleanName(name);
+                    const p = priceFor(section, name);
+                    const lineTotal = p ? p.price * qty : 0;
+                    const palette = {
+                      red:   { activeBg: 'bg-bbq-red/10',    activeBorder: 'border-bbq-red/50',    addBtn: 'bg-bbq-red hover:bg-red-600 text-white',              accentText: 'text-bbq-red' },
+                      green: { activeBg: 'bg-green-900/15',  activeBorder: 'border-green-700/50', addBtn: 'bg-green-700 hover:bg-green-600 text-white',            accentText: 'text-green-400' },
+                      gold:  { activeBg: 'bg-amber-900/15',  activeBorder: 'border-bbq-gold/50',  addBtn: 'bg-bbq-gold hover:bg-yellow-400 text-black',            accentText: 'text-bbq-gold' },
+                    }[accent];
+                    return (
+                      <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition ${qty > 0 ? `${palette.activeBg} ${palette.activeBorder}` : 'bg-gray-900/70 border-gray-800 hover:border-gray-700'}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="text-white font-bold text-sm leading-tight truncate">{clean}</span>
+                            {p
+                              ? <span className={`${palette.accentText} font-bold text-xs whitespace-nowrap`}>${p.price}<span className="text-gray-500 font-normal">{unitLabel(p.unit)}</span></span>
+                              : <span className="text-gray-600 text-[11px] italic whitespace-nowrap">POA</span>}
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-green-400 mb-3">Sides (per tray)</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {SS_SIDES.map(name => {
-                        const qty = selfServiceCart.sides[name] || 0;
-                        return (
-                          <div key={name} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg border transition ${qty > 0 ? 'bg-green-900/15 border-green-700/50' : 'bg-gray-900/70 border-gray-800'}`}>
-                            <div className="text-white font-bold text-sm">{name} <span className="text-gray-500 font-normal text-xs">(tray)</span></div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <button type="button" disabled={qty === 0} onClick={() => adjustSelfServe('sides', name, -1)}
-                                className="w-8 h-8 rounded-full bg-gray-800 text-gray-300 disabled:opacity-30 hover:bg-gray-700 flex items-center justify-center"><Minus size={14}/></button>
-                              <span className="w-7 text-center text-white font-bold">{qty}</span>
-                              <button type="button" onClick={() => adjustSelfServe('sides', name, 1)}
-                                className="w-8 h-8 rounded-full bg-green-700 text-white hover:bg-green-600 flex items-center justify-center"><Plus size={14}/></button>
-                            </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {surcharge && <span className="text-[10px] text-bbq-gold font-bold uppercase tracking-wider">+$4/pp surcharge</span>}
+                            {qty > 0 && p && <span className="text-[11px] text-gray-400">= <span className="text-white font-bold">${lineTotal.toFixed(2)}</span></span>}
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button type="button" disabled={qty === 0} onClick={() => adjustSelfServe(section, name, -1)}
+                            className="w-8 h-8 rounded-full bg-gray-800 text-gray-300 disabled:opacity-30 hover:bg-gray-700 flex items-center justify-center"><Minus size={14}/></button>
+                          <span className="w-8 text-center text-white font-bold tabular-nums">{qty}</span>
+                          <button type="button" onClick={() => adjustSelfServe(section, name, 1)}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center transition ${palette.addBtn}`}><Plus size={14}/></button>
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  return (
+                <div className="relative overflow-hidden bg-bbq-charcoal border border-gray-800 rounded-2xl shadow-xl">
+                  <div className="p-6 md:p-8 border-b border-gray-800/70">
+                    <h2 className="text-2xl md:text-3xl font-display font-bold text-white uppercase tracking-wider text-center">Build Your Self Service Order</h2>
+                    <p className="text-gray-400 text-sm mt-2 text-center">Pick items and quantities — we'll send you a firm quote based on your selections.</p>
+
+                    {estimatedSubtotal > 0 && (
+                      <div className="mt-5 mx-auto max-w-md bg-gray-950/60 border border-bbq-gold/30 rounded-xl px-5 py-3 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Running Estimate</div>
+                          <div className="text-2xl font-bold text-bbq-gold tabular-nums">${estimatedSubtotal.toFixed(2)}</div>
+                        </div>
+                        <div className="text-right text-[11px] text-gray-500">
+                          {selfServeCount} item{selfServeCount === 1 ? '' : 's'}<br/>
+                          <span className="text-gray-600">ex. GST · any +$4/pp surcharges confirmed at quote</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {SS_DESSERTS.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-bbq-gold mb-3">Desserts</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {SS_DESSERTS.map(name => {
-                          const qty = (selfServiceCart.desserts || {})[name] || 0;
-                          return (
-                            <div key={name} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg border transition ${qty > 0 ? 'bg-amber-900/15 border-bbq-gold/50' : 'bg-gray-900/70 border-gray-800'}`}>
-                              <div className="text-white font-bold text-sm">{name}</div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <button type="button" disabled={qty === 0} onClick={() => adjustSelfServe('desserts', name, -1)}
-                                  className="w-8 h-8 rounded-full bg-gray-800 text-gray-300 disabled:opacity-30 hover:bg-gray-700 flex items-center justify-center"><Minus size={14}/></button>
-                                <span className="w-7 text-center text-white font-bold">{qty}</span>
-                                <button type="button" onClick={() => adjustSelfServe('desserts', name, 1)}
-                                  className="w-8 h-8 rounded-full bg-bbq-gold text-black hover:bg-yellow-400 flex items-center justify-center"><Plus size={14}/></button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                  <div className="p-6 md:p-8 space-y-8">
+                    {/* MEATS */}
+                    <div>
+                      <div className="flex items-baseline justify-between mb-4">
+                        <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-bbq-red flex items-center gap-2"><span className="w-1 h-4 bg-bbq-red rounded-full inline-block"/> Meats</h3>
+                        <span className="text-[11px] text-gray-500 font-bold">Priced per kg unless noted</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {SS_MEATS.map(name => <SSItemRow key={name} section="meats" name={name} accent="red"/>)}
                       </div>
                     </div>
-                  )}
 
-                  {selfServeCount > 0 && (
-                    <button
-                      onClick={() => { setSelectedPackageId('pkg_self_service_quote'); setStep(3); }}
-                      className="group relative w-full font-bold py-4 rounded-xl transition-all duration-200 shadow-lg text-base md:text-lg flex items-center justify-center gap-2 overflow-hidden uppercase tracking-wider
-                        bg-gradient-to-r from-bbq-red via-red-600 to-orange-500 text-white
-                        hover:shadow-[0_0_32px_rgba(239,68,68,0.55)] hover:scale-[1.01] active:scale-100">
-                      <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out"/>
-                      <span className="relative flex items-center gap-2">Request Quote ({selfServeCount} items) <ArrowRight size={18}/></span>
-                    </button>
-                  )}
+                    {/* SIDES */}
+                    <div>
+                      <div className="flex items-baseline justify-between mb-4">
+                        <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-green-400 flex items-center gap-2"><span className="w-1 h-4 bg-green-400 rounded-full inline-block"/> Sides</h3>
+                        <span className="text-[11px] text-gray-500 font-bold">Priced per tray</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {SS_SIDES.map(name => <SSItemRow key={name} section="sides" name={name} accent="green"/>)}
+                      </div>
+                    </div>
+
+                    {/* DESSERTS */}
+                    {SS_DESSERTS.length > 0 && (
+                      <div>
+                        <div className="flex items-baseline justify-between mb-4">
+                          <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-bbq-gold flex items-center gap-2"><span className="w-1 h-4 bg-bbq-gold rounded-full inline-block"/> Desserts</h3>
+                          <span className="text-[11px] text-gray-500 font-bold">Per serve</span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {SS_DESSERTS.map(name => <SSItemRow key={name} section="desserts" name={name} accent="gold"/>)}
+                        </div>
+                      </div>
+                    )}
+
+                    {selfServeCount > 0 && (
+                      <button
+                        onClick={() => { setSelectedPackageId('pkg_self_service_quote'); setStep(3); }}
+                        className="group relative w-full font-bold py-4 rounded-xl transition-all duration-200 shadow-lg text-base md:text-lg flex items-center justify-center gap-2 overflow-hidden uppercase tracking-wider
+                          bg-gradient-to-r from-bbq-red via-red-600 to-orange-500 text-white
+                          hover:shadow-[0_0_32px_rgba(239,68,68,0.55)] hover:scale-[1.01] active:scale-100">
+                        <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out"/>
+                        <span className="relative flex items-center gap-2">Request Quote · ${estimatedSubtotal.toFixed(2)} <ArrowRight size={18}/></span>
+                      </button>
+                    )}
+                  </div>
                 </div>
+                  );
+                })()}
 
                 {/* OR CHOOSE A FEASTING PACKAGE divider */}
                 <div className="flex items-center gap-4">
