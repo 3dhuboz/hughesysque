@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { parseLocalDate } from '../../utils/dateUtils';
 import { useToast } from '../../components/Toast';
-import { Plus, Edit2, Calendar, Wand2, Loader2, Image as ImageIcon, Trash2, Package, CheckSquare, Square, ChevronDown, ChevronUp, HelpCircle, ChefHat, Info, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, Calendar, Wand2, Loader2, Image as ImageIcon, Trash2, Package, CheckSquare, Square, ChevronDown, ChevronUp, HelpCircle, ChefHat, Info, RefreshCw, ExternalLink, X, Link as LinkIcon, Search } from 'lucide-react';
 import { MenuItem, PackGroup } from '../../types';
 import { generateMarketingImage } from '../../services/gemini';
 import { PLACEHOLDER_IMG } from '../../constants';
@@ -96,6 +96,8 @@ const SquareCatalogSyncButton: React.FC = () => {
     setBusy(null);
   };
 
+  const [isInspectorOpen, setInspectorOpen] = useState(false);
+
   return (
     <>
       <button onClick={push} disabled={!!busy}
@@ -112,7 +114,174 @@ const SquareCatalogSyncButton: React.FC = () => {
         Import from Square
         {lastImport && <span className="text-[10px] text-gray-500 font-normal">· {lastImport}</span>}
       </button>
+      <button onClick={() => setInspectorOpen(true)}
+        className="bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-2 rounded text-sm font-bold flex items-center gap-2 text-white transition"
+        title="See everything currently in your Square catalog">
+        <ExternalLink size={14}/> View Square Catalog
+      </button>
+      {isInspectorOpen && <SquareCatalogInspector onClose={() => setInspectorOpen(false)}/>}
     </>
+  );
+};
+
+/** Modal showing everything in Square's catalog. Each row tells you whether
+ *  it's linked to a Hughesys menu item, and lets you delete straight from
+ *  Square (with our local map scrubbed at the same time). */
+const SquareCatalogInspector: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { toast } = useToast();
+  const [rows, setRows] = useState<any[] | null>(null);
+  const [environment, setEnvironment] = useState<string>('');
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const load = React.useCallback(async () => {
+    setRows(null);
+    setLoadError(null);
+    try {
+      const token = localStorage.getItem('hq_admin_token');
+      const res = await fetch('/api/v1/payment/square-catalog', {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to load Square catalog');
+      setRows(data.items || []);
+      setEnvironment(data.environment || '');
+    } catch (err: any) {
+      setLoadError(err.message || 'Failed to load Square catalog');
+      setRows([]);
+    }
+  }, []);
+
+  React.useEffect(() => { load(); }, [load]);
+
+  const filtered = React.useMemo(() => {
+    if (!rows) return null;
+    const q = query.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(r => r.name.toLowerCase().includes(q) || (r.description || '').toLowerCase().includes(q));
+  }, [rows, query]);
+
+  const deleteFromSquare = async (row: any) => {
+    if (!window.confirm(`Delete "${row.name}" from your Square catalog?\n\nThis only removes it from Square — the matching Hughesys menu item (if any) stays. A later 'Sync to Square' would push it back.`)) return;
+    setDeletingId(row.squareId);
+    try {
+      const token = localStorage.getItem('hq_admin_token');
+      const res = await fetch(`/api/v1/payment/square-catalog?id=${encodeURIComponent(row.squareId)}`, {
+        method: 'DELETE',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Delete failed');
+      toast(`Removed "${row.name}" from Square.`);
+      setRows(prev => (prev || []).filter(r => r.squareId !== row.squareId));
+    } catch (err: any) {
+      toast(err.message || 'Delete failed', 'error');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto"
+      onClick={onClose}>
+      <div className="relative w-full max-w-4xl bg-bbq-charcoal border border-gray-800 rounded-2xl shadow-2xl overflow-hidden my-8"
+        onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="bg-gradient-to-br from-gray-900 via-gray-950 to-black border-b border-gray-800 p-5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-800 flex items-center justify-center shrink-0">
+              <ExternalLink size={18} className="text-white"/>
+            </div>
+            <div>
+              <h3 className="text-lg font-display font-bold text-white">Square Catalog</h3>
+              <p className="text-xs text-gray-500">
+                {environment && <span className="uppercase tracking-wider">{environment} · </span>}
+                {rows ? `${rows.length} item${rows.length === 1 ? '' : 's'} in Square` : 'loading…'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={load} className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded" title="Reload"><RefreshCw size={14}/></button>
+            <button onClick={onClose} className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded" title="Close"><X size={18}/></button>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="p-4 border-b border-gray-800">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-3 text-gray-500"/>
+            <input value={query} onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search Square items by name or description…"
+              className="w-full bg-gray-900 border border-gray-800 focus:border-gray-600 rounded-lg p-2 pl-9 text-white text-sm outline-none"/>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="max-h-[60vh] overflow-y-auto">
+          {loadError && (
+            <div className="p-6 text-center text-red-300 bg-red-950/20 border-b border-red-900/40 text-sm">
+              {loadError}
+            </div>
+          )}
+          {rows === null ? (
+            <div className="p-10 text-center text-gray-500 text-sm flex items-center justify-center gap-2">
+              <Loader2 size={16} className="animate-spin"/> Loading Square catalog…
+            </div>
+          ) : filtered && filtered.length === 0 ? (
+            <div className="p-10 text-center text-gray-500 text-sm">
+              {query ? `No items match "${query}".` : 'Your Square catalog is empty.'}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-800/60">
+              {(filtered || []).map(row => (
+                <div key={row.squareId} className="p-4 flex items-center gap-4 hover:bg-white/[0.02] transition">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-800 bg-gray-950 shrink-0">
+                    {row.image
+                      ? <img src={row.image} className="w-full h-full object-cover" alt={row.name}/>
+                      : <div className="w-full h-full flex items-center justify-center text-gray-700"><Package size={18}/></div>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="font-bold text-white truncate">{row.name}</span>
+                      {row.mappedHqId ? (
+                        <span className="text-[10px] bg-green-900/30 text-green-300 border border-green-800 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold uppercase tracking-wider">
+                          <LinkIcon size={9}/> Linked{row.mappedHqName && row.mappedHqName !== row.name ? `: ${row.mappedHqName}` : ''}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                          Square only
+                        </span>
+                      )}
+                    </div>
+                    {row.description && <p className="text-xs text-gray-500 truncate mt-0.5">{row.description}</p>}
+                    <p className="text-[10px] text-gray-600 mt-1 font-mono">{row.squareId}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-lg font-bold text-bbq-gold">
+                      {row.priceAud != null ? `$${row.priceAud.toFixed(2)}` : <span className="text-gray-600 text-sm">—</span>}
+                    </div>
+                  </div>
+                  <button
+                    disabled={deletingId === row.squareId}
+                    onClick={() => deleteFromSquare(row)}
+                    className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition disabled:opacity-50"
+                    title={`Delete "${row.name}" from Square`}>
+                    {deletingId === row.squareId ? <Loader2 size={14} className="animate-spin"/> : <Trash2 size={14}/>}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-3 bg-gray-900/60 border-t border-gray-800 text-[11px] text-gray-500 text-center">
+          Deletes here only remove the item from Square. Your Hughesys menu stays intact.
+        </div>
+      </div>
+    </div>
   );
 };
 
