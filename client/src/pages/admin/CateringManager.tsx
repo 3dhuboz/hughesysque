@@ -251,6 +251,45 @@ const ImageField: React.FC<{
   );
 };
 
+/* Inline `$ [num] / [unit]` chip used on every Self Service row.
+   Empty price string => no entry written on save => storefront falls back to 'POA'. */
+const PriceField: React.FC<{
+  price: string;
+  unit: string;
+  defaultUnit: string;
+  unitOptions: string[];
+  accent: Accent;
+  onPriceChange: (v: string) => void;
+  onUnitChange: (v: string) => void;
+}> = ({ price, unit, defaultUnit, unitOptions, accent, onPriceChange, onUnitChange }) => {
+  const a = accentMap[accent];
+  return (
+    <div className={`shrink-0 flex items-center gap-0.5 bg-gray-950/80 border border-gray-800 rounded-lg pl-1.5 pr-0.5 h-8 focus-within:border-gray-600 transition`}>
+      <span className="text-gray-500 text-[11px] font-bold">$</span>
+      <input
+        type="number"
+        inputMode="decimal"
+        step="0.01"
+        min="0"
+        value={price}
+        onChange={e => onPriceChange(e.target.value)}
+        placeholder="POA"
+        title="Per-unit price (blank = POA on storefront)"
+        className={`w-12 bg-transparent ${price ? a.text : 'text-gray-500'} text-xs font-bold focus:outline-none placeholder:text-gray-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+      />
+      <span className="text-gray-700 text-[11px]">/</span>
+      <select
+        value={unit || defaultUnit}
+        onChange={e => onUnitChange(e.target.value)}
+        title="Unit"
+        className={`bg-transparent ${a.text} text-[11px] font-bold focus:outline-none cursor-pointer pr-0.5`}
+      >
+        {unitOptions.map(u => <option key={u} value={u} className="bg-gray-900">{u}</option>)}
+      </select>
+    </div>
+  );
+};
+
 const ItemCard: React.FC<{
   accent: Accent;
   value: string;
@@ -637,22 +676,54 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
   // Split name + surcharge flag on load so we can present a checkbox instead of forcing Macca to type ' *'
   const parseMeat = (s: string) => ({ name: s.replace(/\s*\*\s*$/, '').trim(), surcharge: /\*\s*$/.test(s) });
   const toMeatString = (m: { name: string; surcharge: boolean }) => m.surcharge ? `${m.name} *` : m.name;
+  const cleanName = (n: string) => (n || '').replace(/\s*\*\s*$/, '').trim();
 
-  const [meats, setMeats] = useState<Array<{ name: string; surcharge: boolean }>>(
-    (settings.cateringSelfServiceMeats?.length ? settings.cateringSelfServiceMeats : defaultMeats).map(parseMeat)
-  );
-  const [sides, setSides] = useState<string[]>(
-    settings.cateringSelfServiceSides?.length ? settings.cateringSelfServiceSides : defaultSides
-  );
-  const [desserts, setDesserts] = useState<string[]>(
-    settings.cateringSelfServiceDesserts || []
-  );
+  // Per-section unit options + the default unit when admin hasn't picked one.
+  const MEAT_UNITS    = ['kg', 'serve', 'pp', 'ea'];
+  const SIDE_UNITS    = ['tray', 'serve', 'pp', 'ea'];
+  const DESSERT_UNITS = ['ea', 'serve', 'pp', 'tray'];
+
+  type PriceRow = { price: string; unit: string };
+  const initPrices = (names: string[], existing: Record<string, { price: number; unit: string }> | undefined): PriceRow[] =>
+    names.map(raw => {
+      const e = existing?.[cleanName(raw)];
+      return { price: e?.price != null ? String(e.price) : '', unit: e?.unit || '' };
+    });
+
+  const initialMeatNames = settings.cateringSelfServiceMeats?.length ? settings.cateringSelfServiceMeats : defaultMeats;
+  const initialSideNames = settings.cateringSelfServiceSides?.length ? settings.cateringSelfServiceSides : defaultSides;
+  const initialDessertNames = settings.cateringSelfServiceDesserts || [];
+
+  const [meats, setMeats] = useState<Array<{ name: string; surcharge: boolean }>>(initialMeatNames.map(parseMeat));
+  const [sides, setSides] = useState<string[]>(initialSideNames);
+  const [desserts, setDesserts] = useState<string[]>(initialDessertNames);
   const [bullets, setBullets] = useState<string[]>(
     settings.feastingTableInfo?.bullets?.length ? settings.feastingTableInfo.bullets : defaultBullets
   );
+
+  const [meatPrices,    setMeatPrices]    = useState<PriceRow[]>(initPrices(initialMeatNames,    settings.cateringSelfServicePrices?.meats));
+  const [sidePrices,    setSidePrices]    = useState<PriceRow[]>(initPrices(initialSideNames,    settings.cateringSelfServicePrices?.sides));
+  const [dessertPrices, setDessertPrices] = useState<PriceRow[]>(initPrices(initialDessertNames, settings.cateringSelfServicePrices?.desserts));
+
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const markDirty = () => setIsDirty(true);
+
+  // Build the keyed price map at save time from current name + price/unit at the same row index.
+  // Renames just work because we read the live name. Empty/zero price => omit the entry, so the
+  // storefront falls back to 'POA'.
+  const buildPriceMap = (names: string[], rows: PriceRow[], defaultUnit: string) => {
+    const out: Record<string, { price: number; unit: string }> = {};
+    names.forEach((raw, i) => {
+      const name = cleanName(raw);
+      if (!name) return;
+      const p = parseFloat(rows[i]?.price ?? '');
+      if (Number.isFinite(p) && p > 0) {
+        out[name] = { price: p, unit: rows[i]?.unit || defaultUnit };
+      }
+    });
+    return out;
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -661,6 +732,11 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
       cateringSelfServiceSides: sides.filter(s => s.trim()),
       cateringSelfServiceDesserts: desserts.filter(d => d.trim()),
       feastingTableInfo: { bullets: bullets.filter(b => b.trim()) },
+      cateringSelfServicePrices: {
+        meats:    buildPriceMap(meats.map(m => m.name), meatPrices,    'kg'),
+        sides:    buildPriceMap(sides,                   sidePrices,    'tray'),
+        desserts: buildPriceMap(desserts,                dessertPrices, 'ea'),
+      },
     });
     setIsSaving(false);
     if (success) { toast('Self service lists saved!'); setIsDirty(false); } else toast('Failed to save.', 'error');
@@ -671,6 +747,8 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
     setMeats(defaultMeats.map(parseMeat));
     setSides([...defaultSides]);
     setBullets([...defaultBullets]);
+    setMeatPrices(defaultMeats.map(() => ({ price: '', unit: '' })));
+    setSidePrices(defaultSides.map(() => ({ price: '', unit: '' })));
     markDirty();
   };
 
@@ -680,6 +758,12 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
     setter(next);
+    markDirty();
+  };
+
+  // Mutate a price-row at a single index. Wrappers for the per-row PriceField slots.
+  const updatePrice = (rows: PriceRow[], setter: (r: PriceRow[]) => void, i: number, patch: Partial<PriceRow>) => {
+    setter(rows.map((r, xi) => xi === i ? { ...r, ...patch } : r));
     markDirty();
   };
 
@@ -731,25 +815,44 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
         <ListEditor
           accent="red"
           title="Meats"
-          unit="per kg"
+          unit="per kg by default · drag to reorder"
           count={meats.length}
           addLabel="Add a meat"
           items={meats}
-          onAdd={() => { setMeats([...meats, { name: '', surcharge: false }]); markDirty(); }}
-          onReorder={(from, to) => moveItem(meats, setMeats, from, to)}
+          onAdd={() => {
+            setMeats([...meats, { name: '', surcharge: false }]);
+            setMeatPrices([...meatPrices, { price: '', unit: '' }]);
+            markDirty();
+          }}
+          onReorder={(from, to) => { moveItem(meats, setMeats, from, to); moveItem(meatPrices, setMeatPrices, from, to); }}
           renderItem={(m, i) => (
             <ItemCard
               accent="red"
               value={m.name}
               placeholder="e.g. Sliced Brisket"
               onChange={v => { setMeats(meats.map((x, xi) => xi === i ? { ...x, name: v } : x)); markDirty(); }}
-              onDelete={() => { setMeats(meats.filter((_, xi) => xi !== i)); markDirty(); }}
+              onDelete={() => {
+                setMeats(meats.filter((_, xi) => xi !== i));
+                setMeatPrices(meatPrices.filter((_, xi) => xi !== i));
+                markDirty();
+              }}
               extra={
-                <button type="button" onClick={() => { setMeats(meats.map((x, xi) => xi === i ? { ...x, surcharge: !x.surcharge } : x)); markDirty(); }}
-                  title="Toggle +$4/pp surcharge"
-                  className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition ${m.surcharge ? 'bg-bbq-gold text-black border-bbq-gold shadow-[0_0_12px_rgba(251,191,36,0.3)]' : 'bg-transparent text-gray-500 border-gray-700 hover:border-bbq-gold/60 hover:text-bbq-gold/60'}`}>
-                  +$4/pp
-                </button>
+                <>
+                  <PriceField
+                    accent="red"
+                    price={meatPrices[i]?.price ?? ''}
+                    unit={meatPrices[i]?.unit ?? ''}
+                    defaultUnit="kg"
+                    unitOptions={MEAT_UNITS}
+                    onPriceChange={v => updatePrice(meatPrices, setMeatPrices, i, { price: v })}
+                    onUnitChange={v => updatePrice(meatPrices, setMeatPrices, i, { unit: v })}
+                  />
+                  <button type="button" onClick={() => { setMeats(meats.map((x, xi) => xi === i ? { ...x, surcharge: !x.surcharge } : x)); markDirty(); }}
+                    title="Toggle +$4/pp surcharge"
+                    className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition ${m.surcharge ? 'bg-bbq-gold text-black border-bbq-gold shadow-[0_0_12px_rgba(251,191,36,0.3)]' : 'bg-transparent text-gray-500 border-gray-700 hover:border-bbq-gold/60 hover:text-bbq-gold/60'}`}>
+                    +$4/pp
+                  </button>
+                </>
               }
             />
           )}
@@ -759,19 +862,38 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
         <ListEditor
           accent="green"
           title="Sides"
-          unit="per tray"
+          unit="per tray by default · drag to reorder"
           count={sides.length}
           addLabel="Add a side"
           items={sides}
-          onAdd={() => { setSides([...sides, '']); markDirty(); }}
-          onReorder={(from, to) => moveItem(sides, setSides, from, to)}
+          onAdd={() => {
+            setSides([...sides, '']);
+            setSidePrices([...sidePrices, { price: '', unit: '' }]);
+            markDirty();
+          }}
+          onReorder={(from, to) => { moveItem(sides, setSides, from, to); moveItem(sidePrices, setSidePrices, from, to); }}
           renderItem={(s, i) => (
             <ItemCard
               accent="green"
               value={s}
               placeholder="e.g. Potato Bake"
               onChange={v => { setSides(sides.map((x, xi) => xi === i ? v : x)); markDirty(); }}
-              onDelete={() => { setSides(sides.filter((_, xi) => xi !== i)); markDirty(); }}
+              onDelete={() => {
+                setSides(sides.filter((_, xi) => xi !== i));
+                setSidePrices(sidePrices.filter((_, xi) => xi !== i));
+                markDirty();
+              }}
+              extra={
+                <PriceField
+                  accent="green"
+                  price={sidePrices[i]?.price ?? ''}
+                  unit={sidePrices[i]?.unit ?? ''}
+                  defaultUnit="tray"
+                  unitOptions={SIDE_UNITS}
+                  onPriceChange={v => updatePrice(sidePrices, setSidePrices, i, { price: v })}
+                  onUnitChange={v => updatePrice(sidePrices, setSidePrices, i, { unit: v })}
+                />
+              }
             />
           )}
         />
@@ -781,19 +903,38 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
       <ListEditor
         accent="gold"
         title="Desserts"
-        unit={desserts.length === 0 ? 'optional · leave empty to hide the Desserts section' : 'shown on the Self Service storefront builder'}
+        unit={desserts.length === 0 ? 'optional · leave empty to hide the Desserts section' : 'per item by default · drag to reorder'}
         count={desserts.length}
         addLabel="Add a dessert"
         items={desserts}
-        onAdd={() => { setDesserts([...desserts, '']); markDirty(); }}
-        onReorder={(from, to) => moveItem(desserts, setDesserts, from, to)}
+        onAdd={() => {
+          setDesserts([...desserts, '']);
+          setDessertPrices([...dessertPrices, { price: '', unit: '' }]);
+          markDirty();
+        }}
+        onReorder={(from, to) => { moveItem(desserts, setDesserts, from, to); moveItem(dessertPrices, setDessertPrices, from, to); }}
         renderItem={(d, i) => (
           <ItemCard
             accent="gold"
             value={d}
             placeholder="e.g. Smoked Apple Crumble"
             onChange={v => { setDesserts(desserts.map((x, xi) => xi === i ? v : x)); markDirty(); }}
-            onDelete={() => { setDesserts(desserts.filter((_, xi) => xi !== i)); markDirty(); }}
+            onDelete={() => {
+              setDesserts(desserts.filter((_, xi) => xi !== i));
+              setDessertPrices(dessertPrices.filter((_, xi) => xi !== i));
+              markDirty();
+            }}
+            extra={
+              <PriceField
+                accent="gold"
+                price={dessertPrices[i]?.price ?? ''}
+                unit={dessertPrices[i]?.unit ?? ''}
+                defaultUnit="ea"
+                unitOptions={DESSERT_UNITS}
+                onPriceChange={v => updatePrice(dessertPrices, setDessertPrices, i, { price: v })}
+                onUnitChange={v => updatePrice(dessertPrices, setDessertPrices, i, { unit: v })}
+              />
+            }
           />
         )}
       />
