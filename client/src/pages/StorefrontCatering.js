@@ -48,10 +48,14 @@ const FUNCTION_IMAGE_DEFAULTS = {
 // override per dessert via settings.cateringSelfServiceDessertImages.
 // Anything that doesn't keyword-match falls back to a Cake-icon placeholder
 // rather than a stock photo of unknown content.
+// Order: most-specific compound keyword first. \b word boundaries so
+// `apple` doesn't match inside `pineapple` (which previously made "Vanilla
+// Bean Panna Cotta with Char Pineapple & Meringue" hit the crumble URL).
 const DESSERT_IMAGE_DEFAULTS_BY_KEYWORD = [
-  { match: /brownie|chocolate/i,             url: 'https://images.unsplash.com/photo-1461009312844-e80697a81cc7?auto=format&fit=crop&w=800&q=80' },
-  { match: /crumble|apple|pie/i,             url: 'https://images.unsplash.com/photo-1772547103123-823bfb230fb0?auto=format&fit=crop&w=800&q=80' },
-  { match: /panna\s*cotta|pudding|custard/i, url: 'https://images.unsplash.com/photo-1518710101263-54e0350377bb?auto=format&fit=crop&w=800&q=80' },
+  { match: /\bpanna\s*cotta\b/i,         url: 'https://images.unsplash.com/photo-1518710101263-54e0350377bb?auto=format&fit=crop&w=800&q=80' },
+  { match: /\b(?:pudding|custard)\b/i,   url: 'https://images.unsplash.com/photo-1518710101263-54e0350377bb?auto=format&fit=crop&w=800&q=80' },
+  { match: /\b(?:crumble|apple|pie)\b/i, url: 'https://images.unsplash.com/photo-1772547103123-823bfb230fb0?auto=format&fit=crop&w=800&q=80' },
+  { match: /\b(?:brownie|chocolate)\b/i, url: 'https://images.unsplash.com/photo-1461009312844-e80697a81cc7?auto=format&fit=crop&w=800&q=80' },
 ];
 const dessertImageFor = (name, overrides) => {
   if (overrides && overrides[name]) return overrides[name];
