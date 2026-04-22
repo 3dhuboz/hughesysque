@@ -41,12 +41,23 @@ const FUNCTION_IMAGE_DEFAULTS = {
   'function_childrens':    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80',
 };
 
-// Per-dessert image override via settings.cateringSelfServiceDessertImages
-// (keyed by exact name). When no override exists the storefront card falls
-// back to a Cake-icon placeholder rather than a remote stock photo —
-// keyword-matched Unsplash defaults rotted (returned wrong content), and a
-// clean placeholder is more honest than a broken-but-200 image.
-const dessertImageFor = (name, overrides) => (overrides && overrides[name]) || null;
+// Default dessert photos for the standard Hughesys Que dessert lineup —
+// keyword-matched against the dessert name. Each URL has been verified via
+// HEAD + Unsplash photo-page lookup against the keyword (so we don't ship
+// a "people around fire pit" image for an apple crumble again). Macca can
+// override per dessert via settings.cateringSelfServiceDessertImages.
+// Anything that doesn't keyword-match falls back to a Cake-icon placeholder
+// rather than a stock photo of unknown content.
+const DESSERT_IMAGE_DEFAULTS_BY_KEYWORD = [
+  { match: /brownie|chocolate/i,             url: 'https://images.unsplash.com/photo-1461009312844-e80697a81cc7?auto=format&fit=crop&w=800&q=80' },
+  { match: /crumble|apple|pie/i,             url: 'https://images.unsplash.com/photo-1772547103123-823bfb230fb0?auto=format&fit=crop&w=800&q=80' },
+  { match: /panna\s*cotta|pudding|custard/i, url: 'https://images.unsplash.com/photo-1518710101263-54e0350377bb?auto=format&fit=crop&w=800&q=80' },
+];
+const dessertImageFor = (name, overrides) => {
+  if (overrides && overrides[name]) return overrides[name];
+  const hit = DESSERT_IMAGE_DEFAULTS_BY_KEYWORD.find(r => r.match.test(name));
+  return hit ? hit.url : null;
+};
 
 /* ── Catering Menu Data (from Hughesey Que Catering Package 2025/26 PDF) ── */
 
