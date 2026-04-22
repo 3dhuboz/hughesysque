@@ -216,7 +216,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <ul className="space-y-4 text-gray-400 text-sm">
                 <li className="flex items-start gap-3 group">
                   <MapPin size={18} className="text-bbq-red shrink-0 group-hover:animate-bounce" />
-                  <span>{settings?.location || 'Yeppoon, QLD'}<br/><span className="text-xs text-gray-600">(Check socials for truck location)</span></span>
+                  <span>{settings?.location || 'Gladstone, QLD'}<br/><span className="text-xs text-gray-600">(Check socials for truck location)</span></span>
                 </li>
                 <li className="flex items-center gap-3">
                   <Mail size={18} className="text-bbq-red shrink-0" />

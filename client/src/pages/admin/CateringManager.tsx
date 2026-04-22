@@ -434,7 +434,7 @@ const MOB_HERO_DEFAULTS = {
   badge: 'Best Value',
   titleLine1: 'BBQ CATERING',
   titleLine2: 'DONE PROPER',
-  body: "Yeppoon's pitmaster brings the whole feed. Twelve hours of low and slow on real wood, hand-pulled brisket, scratch-made sides — none of the cold-tray, bain-marie shortcuts. Pick a pack, we run the lot. Your mob will talk about it for months.",
+  body: "Gladstone's pitmaster brings the whole feed. Twelve hours of low and slow on real wood, hand-pulled brisket, scratch-made sides — none of the cold-tray, bain-marie shortcuts. Pick a pack, we run the lot. Your mob will talk about it for months.",
   ctaLabel: 'View Packs',
 };
 

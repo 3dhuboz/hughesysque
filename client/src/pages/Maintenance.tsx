@@ -50,7 +50,7 @@ const Maintenance: React.FC = () => {
                     <div className="bg-gray-800 p-2 rounded-lg text-bbq-red"><MapPin size={20}/></div>
                     <div>
                         <p className="text-xs text-gray-500 uppercase font-bold">Location</p>
-                        <p className="font-bold">{settings?.location || 'Yeppoon, QLD'}</p>
+                        <p className="font-bold">{settings?.location || 'Gladstone, QLD'}</p>
                     </div>
                 </div>
             </div>

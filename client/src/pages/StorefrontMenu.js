@@ -240,7 +240,7 @@ const StorefrontMenu = () => {
               </span>
             </h2>
             <p className="text-gray-200 text-lg md:text-xl font-medium max-w-lg mb-8 leading-relaxed">
-              {(settings.feedTheMob?.body || '').trim() || "Yeppoon's pitmaster brings the whole feed. Twelve hours of low and slow on real wood, hand-pulled brisket, scratch-made sides — none of the cold-tray, bain-marie shortcuts. Pick a pack, we run the lot. Your mob will talk about it for months."}
+              {(settings.feedTheMob?.body || '').trim() || "Gladstone's pitmaster brings the whole feed. Twelve hours of low and slow on real wood, hand-pulled brisket, scratch-made sides — none of the cold-tray, bain-marie shortcuts. Pick a pack, we run the lot. Your mob will talk about it for months."}
             </p>
             <button onClick={() => { const el = document.getElementById(getCatId('Family Packs')); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
               className="bg-white text-black font-bold uppercase tracking-widest px-8 py-4 rounded-full flex items-center gap-3 hover:bg-gray-200 transition-all shadow-xl">
