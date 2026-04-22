@@ -19,7 +19,7 @@ const StorefrontContact = () => {
   };
 
   const toggleFaq = (index) => { setOpenFaqIndex(openFaqIndex === index ? null : index); };
-  const address = settings.businessAddress || 'Queensland, AU';
+  const address = settings.businessAddress || 'Cnr Breslin St & Dawson Hwy, Gladstone Central QLD 4680';
   const contactEmail = settings.contactEmail || settings.adminEmail || 'hugheseysbbq2021@gmail.com';
   const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
 
