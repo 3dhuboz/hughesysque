@@ -234,9 +234,9 @@ const StorefrontMenu = () => {
               {(settings.feedTheMob?.badge || '').trim() || 'Best Value'}
             </div>
             <h2 className="text-5xl md:text-7xl font-display font-bold text-white mb-4 leading-none drop-shadow-xl">
-              {(settings.feedTheMob?.titleLine1 || '').trim() || 'FEED THE'} <br />
+              {(settings.feedTheMob?.titleLine1 || '').trim() || 'BBQ CATERING'} <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-                {(settings.feedTheMob?.titleLine2 || '').trim() || 'WHOLE MOB'}
+                {(settings.feedTheMob?.titleLine2 || '').trim() || 'DONE PROPER'}
               </span>
             </h2>
             <p className="text-gray-200 text-lg md:text-xl font-medium max-w-lg mb-8 leading-relaxed">
