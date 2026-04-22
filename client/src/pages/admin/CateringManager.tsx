@@ -290,6 +290,58 @@ const PriceField: React.FC<{
   );
 };
 
+/* Compact per-row image picker: 32px thumbnail, click to upload, hover to clear.
+   Uploaded files are read as a base64 data URL and downscaled before being
+   stored on settings (kept under R2's settings-row size by compressImage). */
+const InlineImagePicker: React.FC<{
+  value: string;
+  accent: Accent;
+  onChange: (v: string) => void;
+}> = ({ value, accent, onChange }) => {
+  const a = accentMap[accent];
+  const fileRef = React.useRef<HTMLInputElement>(null);
+  const onFile = async (f: File | null) => {
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const compressed = await compressImage(reader.result as string);
+        onChange(compressed);
+      } catch {
+        onChange(reader.result as string);
+      }
+    };
+    reader.readAsDataURL(f);
+  };
+  return (
+    <div className="shrink-0 relative group/img">
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        title={value ? 'Replace image' : 'Add image'}
+        className={`w-8 h-8 rounded-lg overflow-hidden border ${value ? 'border-gray-700' : 'border-dashed border-gray-700 hover:border-gray-500'} bg-gray-950 flex items-center justify-center transition`}
+      >
+        {value ? (
+          <img src={value} alt="" className="w-full h-full object-cover"/>
+        ) : (
+          <Plus size={14} className={`${a.text} opacity-50`}/>
+        )}
+      </button>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          title="Remove image"
+          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition"
+        >
+          <X size={10}/>
+        </button>
+      )}
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={e => onFile(e.target.files?.[0] ?? null)}/>
+    </div>
+  );
+};
+
 const ItemCard: React.FC<{
   accent: Accent;
   value: string;
@@ -705,6 +757,12 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
   const [sidePrices,    setSidePrices]    = useState<PriceRow[]>(initPrices(initialSideNames,    settings.cateringSelfServicePrices?.sides));
   const [dessertPrices, setDessertPrices] = useState<PriceRow[]>(initPrices(initialDessertNames, settings.cateringSelfServicePrices?.desserts));
 
+  // Per-dessert image URL or base64 data URL — index-aligned with `desserts`.
+  // Initialised from settings.cateringSelfServiceDessertImages keyed by cleaned name.
+  const initDessertImages = (names: string[], existing: Record<string, string> | undefined): string[] =>
+    names.map(raw => existing?.[cleanName(raw)] || '');
+  const [dessertImages, setDessertImages] = useState<string[]>(initDessertImages(initialDessertNames, settings.cateringSelfServiceDessertImages));
+
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const markDirty = () => setIsDirty(true);
@@ -725,6 +783,17 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
     return out;
   };
 
+  // Build the keyed dessert-image map at save time, same renames-just-work pattern as prices.
+  const buildDessertImageMap = () => {
+    const out: Record<string, string> = {};
+    desserts.forEach((raw, i) => {
+      const name = cleanName(raw);
+      const url = (dessertImages[i] || '').trim();
+      if (name && url) out[name] = url;
+    });
+    return out;
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     const success = await updateSettings({
@@ -737,6 +806,7 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
         sides:    buildPriceMap(sides,                   sidePrices,    'tray'),
         desserts: buildPriceMap(desserts,                dessertPrices, 'ea'),
       },
+      cateringSelfServiceDessertImages: buildDessertImageMap(),
     });
     setIsSaving(false);
     if (success) { toast('Self service lists saved!'); setIsDirty(false); } else toast('Failed to save.', 'error');
@@ -903,16 +973,21 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
       <ListEditor
         accent="gold"
         title="Desserts"
-        unit={desserts.length === 0 ? 'optional · leave empty to hide the Desserts section' : 'per item by default · drag to reorder'}
+        unit={desserts.length === 0 ? 'optional · leave empty to hide the Desserts section' : 'per item · upload a photo per dessert · drag to reorder'}
         count={desserts.length}
         addLabel="Add a dessert"
         items={desserts}
         onAdd={() => {
           setDesserts([...desserts, '']);
           setDessertPrices([...dessertPrices, { price: '', unit: '' }]);
+          setDessertImages([...dessertImages, '']);
           markDirty();
         }}
-        onReorder={(from, to) => { moveItem(desserts, setDesserts, from, to); moveItem(dessertPrices, setDessertPrices, from, to); }}
+        onReorder={(from, to) => {
+          moveItem(desserts, setDesserts, from, to);
+          moveItem(dessertPrices, setDessertPrices, from, to);
+          moveItem(dessertImages, setDessertImages, from, to);
+        }}
         renderItem={(d, i) => (
           <ItemCard
             accent="gold"
@@ -922,18 +997,26 @@ const SelfServiceEditor: React.FC<{ settings: any; updateSettings: any; toast: a
             onDelete={() => {
               setDesserts(desserts.filter((_, xi) => xi !== i));
               setDessertPrices(dessertPrices.filter((_, xi) => xi !== i));
+              setDessertImages(dessertImages.filter((_, xi) => xi !== i));
               markDirty();
             }}
             extra={
-              <PriceField
-                accent="gold"
-                price={dessertPrices[i]?.price ?? ''}
-                unit={dessertPrices[i]?.unit ?? ''}
-                defaultUnit="ea"
-                unitOptions={DESSERT_UNITS}
-                onPriceChange={v => updatePrice(dessertPrices, setDessertPrices, i, { price: v })}
-                onUnitChange={v => updatePrice(dessertPrices, setDessertPrices, i, { unit: v })}
-              />
+              <>
+                <InlineImagePicker
+                  accent="gold"
+                  value={dessertImages[i] || ''}
+                  onChange={v => { setDessertImages(dessertImages.map((x, xi) => xi === i ? v : x)); markDirty(); }}
+                />
+                <PriceField
+                  accent="gold"
+                  price={dessertPrices[i]?.price ?? ''}
+                  unit={dessertPrices[i]?.unit ?? ''}
+                  defaultUnit="ea"
+                  unitOptions={DESSERT_UNITS}
+                  onPriceChange={v => updatePrice(dessertPrices, setDessertPrices, i, { price: v })}
+                  onUnitChange={v => updatePrice(dessertPrices, setDessertPrices, i, { unit: v })}
+                />
+              </>
             }
           />
         )}

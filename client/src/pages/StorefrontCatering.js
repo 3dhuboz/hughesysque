@@ -41,20 +41,12 @@ const FUNCTION_IMAGE_DEFAULTS = {
   'function_childrens':    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80',
 };
 
-// Default dessert photos — keyed by keyword match against the dessert
-// name (case-insensitive contains). First match wins. Macca can override
-// via settings.cateringSelfServiceDessertImages (keyed by exact name).
-const DESSERT_IMAGE_DEFAULTS_FALLBACK = 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80';
-const DESSERT_IMAGE_DEFAULTS_BY_KEYWORD = [
-  { match: /brownie|chocolate/i, url: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80' },
-  { match: /crumble|apple|pie/i, url: 'https://images.unsplash.com/photo-1530541930197-ff16ac917b0e?auto=format&fit=crop&w=800&q=80' },
-  { match: /panna\s*cotta|pudding|custard/i, url: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80' },
-];
-const dessertImageFor = (name, overrides) => {
-  if (overrides && overrides[name]) return overrides[name];
-  const hit = DESSERT_IMAGE_DEFAULTS_BY_KEYWORD.find(r => r.match.test(name));
-  return hit ? hit.url : DESSERT_IMAGE_DEFAULTS_FALLBACK;
-};
+// Per-dessert image override via settings.cateringSelfServiceDessertImages
+// (keyed by exact name). When no override exists the storefront card falls
+// back to a Cake-icon placeholder rather than a remote stock photo —
+// keyword-matched Unsplash defaults rotted (returned wrong content), and a
+// clean placeholder is more honest than a broken-but-200 image.
+const dessertImageFor = (name, overrides) => (overrides && overrides[name]) || null;
 
 /* ── Catering Menu Data (from Hughesey Que Catering Package 2025/26 PDF) ── */
 
@@ -724,9 +716,15 @@ const StorefrontCatering = () => {
                           const subline = rest.length ? 'with ' + rest.join(' with ') : '';
                           return (
                             <div key={name} className={`group bg-bbq-charcoal rounded-2xl border overflow-hidden flex flex-col shadow-xl transition ${qty > 0 ? 'border-bbq-gold/60 shadow-[0_0_24px_rgba(251,191,36,0.15)]' : 'border-gray-800 hover:border-bbq-gold/40'}`}>
-                              <div className="relative h-44 bg-gradient-to-br from-gray-900 to-gray-950 overflow-hidden">
-                                <img src={img} onError={e => { if (e.target.src !== DESSERT_IMAGE_DEFAULTS_FALLBACK) e.target.src = DESSERT_IMAGE_DEFAULTS_FALLBACK; }}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={headline}/>
+                              <div className="relative h-44 bg-gradient-to-br from-yellow-900/30 via-gray-900 to-gray-950 overflow-hidden">
+                                {img ? (
+                                  <img src={img} onError={e => { e.target.style.display = 'none'; }}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={headline}/>
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Cake size={56} className="text-bbq-gold/30 group-hover:text-bbq-gold/50 transition-colors"/>
+                                  </div>
+                                )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"/>
                                 {qty > 0 && (
                                   <div className="absolute top-3 right-3 bg-bbq-gold text-black w-8 h-8 rounded-full font-bold flex items-center justify-center text-sm shadow-lg">{qty}</div>

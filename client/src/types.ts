@@ -276,6 +276,11 @@ export interface AppSettings {
     sides?: Record<string, { price: number; unit: string }>;
     desserts?: Record<string, { price: number; unit: string }>;
   };
+  // Per-dessert image override keyed by exact dessert name (or its cleaned
+  // form, stripped of trailing ' *'). Stores either a full URL or a base64
+  // data URL from the admin file picker. Missing entries render a Cake-icon
+  // placeholder on the storefront.
+  cateringSelfServiceDessertImages?: Record<string, string>;
   // Feasting Table "How We Set Up" info block on the storefront catering page.
   feastingTableInfo?: { bullets: string[] };
   // Host Rewards banner shown above the tab bar on the storefront catering page.
