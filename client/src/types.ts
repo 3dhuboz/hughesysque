@@ -290,6 +290,17 @@ export interface AppSettings {
     title?: string;
     body?: string;
   };
+  // FEED THE WHOLE MOB hero shown at the top of the Pre-Order / Menu page.
+  // Promotes catering packs. titleLine2 gets a pink/purple gradient treatment
+  // on the storefront. Set enabled=false to hide the entire hero block.
+  feedTheMob?: {
+    enabled?: boolean;
+    badge?: string;
+    titleLine1?: string;
+    titleLine2?: string;
+    body?: string;
+    ctaLabel?: string;
+  };
   // Cocktail + Function menu tiers (storefront /catering page sub-tabs).
   // Cocktail tiers fall back to hard-coded defaults when empty; function tiers show
   // a "coming soon" empty state until admin adds at least one tier.

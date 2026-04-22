@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
 import { CateringPackage, CocktailTier, FunctionTier } from '../../types';
-import { Plus, Trash2, Edit2, Save, X, Wand2, Loader2, Coffee, UtensilsCrossed, ChefHat, Package as PackageIcon, Info, Sparkles, ChevronUp, ChevronDown, Drumstick, Salad, Zap, GripVertical, Ticket } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Wand2, Loader2, Coffee, UtensilsCrossed, ChefHat, Package as PackageIcon, Info, Sparkles, ChevronUp, ChevronDown, Drumstick, Salad, Zap, GripVertical, Ticket, Megaphone } from 'lucide-react';
 import {
   DndContext,
   PointerSensor,
@@ -388,7 +388,7 @@ const compressImage = (base64Str: string, maxWidth = 800, quality = 0.6) => {
   });
 };
 
-type AdminTab = 'packages' | 'self-service' | 'cocktail' | 'function' | 'rewards';
+type AdminTab = 'packages' | 'self-service' | 'cocktail' | 'function' | 'rewards' | 'mob-hero';
 
 const CateringManager: React.FC = () => {
   const { settings, updateSettings } = useApp();
@@ -401,6 +401,7 @@ const CateringManager: React.FC = () => {
     { id: 'cocktail',     label: 'Cocktail Menu',     Icon: Coffee },
     { id: 'function',     label: 'Function Menu',     Icon: UtensilsCrossed },
     { id: 'rewards',      label: 'Rewards Banner',    Icon: Ticket },
+    { id: 'mob-hero',     label: 'Mob Hero',          Icon: Megaphone },
   ];
 
   return (
@@ -422,6 +423,186 @@ const CateringManager: React.FC = () => {
       {activeTab === 'cocktail'     && <CocktailTiersEditor settings={settings} updateSettings={updateSettings} toast={toast}/>}
       {activeTab === 'function'     && <FunctionTiersEditor settings={settings} updateSettings={updateSettings} toast={toast}/>}
       {activeTab === 'rewards'      && <RewardsEditor settings={settings} updateSettings={updateSettings} toast={toast}/>}
+      {activeTab === 'mob-hero'     && <MobHeroEditor settings={settings} updateSettings={updateSettings} toast={toast}/>}
+    </div>
+  );
+};
+
+/* ─────────────────────────── FEED THE MOB HERO ─────────────────────────── */
+
+const MOB_HERO_DEFAULTS = {
+  badge: 'Best Value',
+  titleLine1: 'FEED THE',
+  titleLine2: 'WHOLE MOB',
+  body: "Yeppoon's pitmaster brings the whole feed. Twelve hours of low and slow on real wood, hand-pulled brisket, scratch-made sides — none of the cold-tray, bain-marie shortcuts. Pick a pack, we run the lot. Your mob will talk about it for months.",
+  ctaLabel: 'View Packs',
+};
+
+const MobHeroEditor: React.FC<{ settings: any; updateSettings: any; toast: any }> = ({ settings, updateSettings, toast }) => {
+  const initial = settings.feedTheMob || {};
+  const [enabled, setEnabled]       = useState<boolean>(initial.enabled !== false);
+  const [badge, setBadge]           = useState<string>(initial.badge ?? '');
+  const [titleLine1, setTitleLine1] = useState<string>(initial.titleLine1 ?? '');
+  const [titleLine2, setTitleLine2] = useState<string>(initial.titleLine2 ?? '');
+  const [body, setBody]             = useState<string>(initial.body ?? '');
+  const [ctaLabel, setCtaLabel]     = useState<string>(initial.ctaLabel ?? '');
+  const [isSaving, setIsSaving]     = useState(false);
+  const [isDirty, setIsDirty]       = useState(false);
+  const markDirty = () => setIsDirty(true);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const success = await updateSettings({
+      feedTheMob: {
+        enabled,
+        badge:      badge.trim(),
+        titleLine1: titleLine1.trim(),
+        titleLine2: titleLine2.trim(),
+        body:       body.trim(),
+        ctaLabel:   ctaLabel.trim(),
+      },
+    });
+    setIsSaving(false);
+    if (success) { toast('Mob Hero saved!'); setIsDirty(false); } else toast('Failed to save.', 'error');
+  };
+
+  const resetToDefaults = () => {
+    if (!window.confirm('Reset hero text to defaults?')) return;
+    setBadge(MOB_HERO_DEFAULTS.badge);
+    setTitleLine1(MOB_HERO_DEFAULTS.titleLine1);
+    setTitleLine2(MOB_HERO_DEFAULTS.titleLine2);
+    setBody(MOB_HERO_DEFAULTS.body);
+    setCtaLabel(MOB_HERO_DEFAULTS.ctaLabel);
+    setEnabled(true);
+    markDirty();
+  };
+
+  // Live preview values mirror the storefront's fallback chain.
+  const pBadge      = badge.trim()      || MOB_HERO_DEFAULTS.badge;
+  const pTitleLine1 = titleLine1.trim() || MOB_HERO_DEFAULTS.titleLine1;
+  const pTitleLine2 = titleLine2.trim() || MOB_HERO_DEFAULTS.titleLine2;
+  const pBody       = body.trim()       || MOB_HERO_DEFAULTS.body;
+  const pCtaLabel   = ctaLabel.trim()   || MOB_HERO_DEFAULTS.ctaLabel;
+
+  return (
+    <div className="space-y-6">
+      {/* ── HEADER CARD ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-black border border-gray-800 p-6 md:p-7">
+        <div aria-hidden className="absolute -top-10 -right-10 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"/>
+        <div aria-hidden className="absolute -bottom-10 -left-10 w-48 h-48 bg-pink-500/15 rounded-full blur-3xl pointer-events-none"/>
+        <div className="relative flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-900 flex items-center justify-center shadow-lg shrink-0">
+              <Megaphone size={22} className="text-white"/>
+            </div>
+            <div>
+              <h4 className="text-xl font-display font-bold text-white">Mob Hero</h4>
+              <p className="text-sm text-gray-400 mt-0.5 max-w-xl">Big purple "FEED THE WHOLE MOB" block at the top of the Pre-Order / Menu page. Brag, hook customers, drive them to the catering packs.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={resetToDefaults} className="px-3 py-2 text-gray-400 hover:text-white text-xs hover:bg-white/5 rounded-lg transition">Reset to defaults</button>
+            <button onClick={handleSave} disabled={isSaving || !isDirty}
+              className={`group relative px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all overflow-hidden ${
+                !isDirty ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-purple-500 via-purple-600 to-pink-500 text-white hover:shadow-[0_0_24px_rgba(168,85,247,0.5)] hover:scale-[1.02]'
+              }`}>
+              {isDirty && <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"/>}
+              <span className="relative flex items-center gap-2">
+                {isSaving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>}
+                {isDirty ? 'Save Changes' : 'Saved'}
+                {isDirty && <span className="w-2 h-2 rounded-full bg-white animate-pulse"/>}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── EDITOR ── */}
+      <div className="rounded-2xl bg-gray-900/60 border border-gray-800 p-5 space-y-5">
+        {/* Enable toggle */}
+        <label className="flex items-center justify-between gap-4 p-4 rounded-xl bg-gray-950/60 border border-gray-800 cursor-pointer hover:border-purple-500/40 transition">
+          <div>
+            <div className="text-white font-bold text-sm">Show hero on Pre-Order page</div>
+            <div className="text-gray-500 text-xs mt-0.5">Toggle off to hide the entire purple block (text and image collage).</div>
+          </div>
+          <button type="button" role="switch" aria-checked={enabled}
+            onClick={() => { setEnabled(!enabled); markDirty(); }}
+            className={`relative shrink-0 w-12 h-7 rounded-full transition ${enabled ? 'bg-purple-500' : 'bg-gray-700'}`}>
+            <span className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all ${enabled ? 'left-[22px]' : 'left-0.5'}`}/>
+          </button>
+        </label>
+
+        {/* Badge */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Yellow badge</label>
+          <input type="text" value={badge} onChange={e => { setBadge(e.target.value); markDirty(); }}
+            placeholder={MOB_HERO_DEFAULTS.badge}
+            className="w-full px-4 py-2.5 rounded-lg bg-gray-950/80 border border-gray-800 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"/>
+          <p className="text-xs text-gray-500 mt-1.5">Short, all-caps. e.g. "Best Value", "Limited", "New".</p>
+        </div>
+
+        {/* Title lines */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Headline — line 1 (white)</label>
+            <input type="text" value={titleLine1} onChange={e => { setTitleLine1(e.target.value); markDirty(); }}
+              placeholder={MOB_HERO_DEFAULTS.titleLine1}
+              className="w-full px-4 py-2.5 rounded-lg bg-gray-950/80 border border-gray-800 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"/>
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Headline — line 2 (gradient)</label>
+            <input type="text" value={titleLine2} onChange={e => { setTitleLine2(e.target.value); markDirty(); }}
+              placeholder={MOB_HERO_DEFAULTS.titleLine2}
+              className="w-full px-4 py-2.5 rounded-lg bg-gray-950/80 border border-gray-800 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"/>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Body</label>
+          <textarea rows={5} value={body} onChange={e => { setBody(e.target.value); markDirty(); }}
+            placeholder={MOB_HERO_DEFAULTS.body}
+            className="w-full px-4 py-2.5 rounded-lg bg-gray-950/80 border border-gray-800 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition resize-y"/>
+          <p className="text-xs text-gray-500 mt-1.5">2–4 sentences. Brag about what makes HQ different — process, quality, the experience customers get.</p>
+        </div>
+
+        {/* CTA */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Button label</label>
+          <input type="text" value={ctaLabel} onChange={e => { setCtaLabel(e.target.value); markDirty(); }}
+            placeholder={MOB_HERO_DEFAULTS.ctaLabel}
+            className="w-full max-w-xs px-4 py-2.5 rounded-lg bg-gray-950/80 border border-gray-800 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition"/>
+          <p className="text-xs text-gray-500 mt-1.5">The button always scrolls to the Family Packs section below.</p>
+        </div>
+      </div>
+
+      {/* ── LIVE PREVIEW ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">
+          <Sparkles size={12}/> Live preview
+        </div>
+        {enabled ? (
+          <div className="rounded-3xl overflow-hidden relative border border-white/10 shadow-2xl">
+            <div className="relative z-20 p-8 md:p-10 flex flex-col justify-center items-start bg-gradient-to-r from-purple-900/95 to-black/80">
+              <div className="bg-yellow-500 text-black font-black uppercase tracking-widest text-xs px-3 py-1 rounded mb-4 shadow-[0_0_20px_rgba(234,179,8,0.5)]">
+                {pBadge}
+              </div>
+              <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-4 leading-none drop-shadow-xl">
+                {pTitleLine1} <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">{pTitleLine2}</span>
+              </h2>
+              <p className="text-gray-200 text-base md:text-lg font-medium max-w-2xl mb-6 leading-relaxed">{pBody}</p>
+              <div className="bg-white text-black font-bold uppercase tracking-widest px-6 py-3 rounded-full inline-flex items-center gap-2 text-sm">
+                <PackageIcon size={16}/> {pCtaLabel}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-gray-700 p-6 text-center text-gray-500 text-sm">
+            Hero is hidden. Toggle "Show hero on Pre-Order page" above to display it.
+          </div>
+        )}
+      </div>
     </div>
   );
 };

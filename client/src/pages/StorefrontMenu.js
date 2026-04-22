@@ -226,21 +226,25 @@ const StorefrontMenu = () => {
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 pb-24 relative animate-fade-in">
       <div className="lg:col-span-3 space-y-8">
 
-        {/* --- HERO COLLAGE --- */}
+        {/* --- HERO COLLAGE — admin-editable via settings.feedTheMob --- */}
+        {(settings.feedTheMob?.enabled !== false) && (
         <div className="rounded-3xl overflow-hidden relative border border-white/10 shadow-2xl group min-h-[450px] flex flex-col md:flex-row">
           <div className="relative z-20 p-8 md:p-12 flex flex-col justify-center items-start w-full md:w-1/2 bg-gradient-to-r from-purple-900/95 to-black/80">
             <div className="bg-yellow-500 text-black font-black uppercase tracking-widest text-xs px-3 py-1 rounded mb-4 shadow-[0_0_20px_rgba(234,179,8,0.5)] animate-pulse">
-              Best Value
+              {(settings.feedTheMob?.badge || '').trim() || 'Best Value'}
             </div>
             <h2 className="text-5xl md:text-7xl font-display font-bold text-white mb-4 leading-none drop-shadow-xl">
-              FEED THE <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">WHOLE MOB</span>
+              {(settings.feedTheMob?.titleLine1 || '').trim() || 'FEED THE'} <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                {(settings.feedTheMob?.titleLine2 || '').trim() || 'WHOLE MOB'}
+              </span>
             </h2>
             <p className="text-gray-200 text-lg md:text-xl font-medium max-w-lg mb-8 leading-relaxed">
-              Yeppoon's pitmaster brings the whole feed. Twelve hours of low and slow on real wood, hand-pulled brisket, scratch-made sides — none of the cold-tray, bain-marie shortcuts. Pick a pack, we run the lot. Your mob will talk about it for months.
+              {(settings.feedTheMob?.body || '').trim() || "Yeppoon's pitmaster brings the whole feed. Twelve hours of low and slow on real wood, hand-pulled brisket, scratch-made sides — none of the cold-tray, bain-marie shortcuts. Pick a pack, we run the lot. Your mob will talk about it for months."}
             </p>
             <button onClick={() => { const el = document.getElementById(getCatId('Family Packs')); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
               className="bg-white text-black font-bold uppercase tracking-widest px-8 py-4 rounded-full flex items-center gap-3 hover:bg-gray-200 transition-all shadow-xl">
-              <Package size={20} /> View Packs
+              <Package size={20} /> {(settings.feedTheMob?.ctaLabel || '').trim() || 'View Packs'}
             </button>
           </div>
           <div className="relative w-full md:w-1/2 min-h-[300px] md:min-h-full">
@@ -260,6 +264,7 @@ const StorefrontMenu = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-purple-900/95 via-transparent to-transparent md:hidden block pointer-events-none"></div>
           </div>
         </div>
+        )}
 
         {/* --- DATE SELECTOR BAR --- */}
         <div id="date-selector-bar" className="sticky top-20 md:top-24 z-30 bg-bbq-charcoal/95 border-y border-gray-700 p-4 -mx-4 md:mx-0 md:rounded-xl shadow-2xl flex flex-col md:flex-row justify-between items-center gap-4 transition-all" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
