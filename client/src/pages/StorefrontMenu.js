@@ -236,7 +236,7 @@ const StorefrontMenu = () => {
               FEED THE <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">WHOLE MOB</span>
             </h2>
             <p className="text-gray-200 text-lg md:text-xl font-medium max-w-lg mb-8 leading-relaxed">
-              Macca starts the smokers 12 hours before service. Brisket pulled apart with a fork, ribs that fall off the bone, sides that hold their own. We roll up, set up, top up, pack down — you just feed your mob.
+              Yeppoon's pitmaster brings the whole feed. Twelve hours of low and slow on real wood, hand-pulled brisket, scratch-made sides — none of the cold-tray, bain-marie shortcuts. Pick a pack, we run the lot. Your mob will talk about it for months.
             </p>
             <button onClick={() => { const el = document.getElementById(getCatId('Family Packs')); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
               className="bg-white text-black font-bold uppercase tracking-widest px-8 py-4 rounded-full flex items-center gap-3 hover:bg-gray-200 transition-all shadow-xl">
