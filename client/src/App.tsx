@@ -14,6 +14,7 @@ const StorefrontOrder = React.lazy(() => import('./pages/StorefrontOrder'));
 const StorefrontCatering = React.lazy(() => import('./pages/StorefrontCatering'));
 const StorefrontLogin = React.lazy(() => import('./pages/StorefrontLogin'));
 const AuthCallback = React.lazy(() => import('./pages/AuthCallback'));
+const StorefrontRewards = React.lazy(() => import('./pages/StorefrontRewards'));
 const StorefrontContact = React.lazy(() => import('./pages/StorefrontContact'));
 const StorefrontEvents = React.lazy(() => import('./pages/StorefrontEvents'));
 const StorefrontGallery = React.lazy(() => import('./pages/StorefrontGallery'));
@@ -92,6 +93,8 @@ const AppRoutes = () => {
                 <Route path="/contact" element={<StorefrontContact />} />
                 <Route path="/login" element={<StorefrontLogin />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
+                {/* /rewards is public — page itself shows a sign-in CTA when not signed in */}
+                <Route path="/rewards" element={<StorefrontRewards />} />
                 <Route path="/promoters" element={<Promoters />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
                 <Route path="/pitmaster-ai" element={<PitmasterAI />} />

@@ -176,8 +176,16 @@ const StorefrontOrder = () => {
 
   const selectedEvent = orderEvents.find(e => e.id === selectedDayId);
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  // Loyalty discount kicks in when the signed-in customer's cumulative
+  // catering spend is at or above settings.hostRewards.thresholdAmount.
+  // The eligibility flag (`user.hasCateringDiscount`) is set by AppContext
+  // from /customers/me. Percent is whatever the admin set on the banner so
+  // promise = applied amount.
   const hasLoyaltyDiscount = user?.hasCateringDiscount === true;
-  const discountAmount = hasLoyaltyDiscount ? cartTotal * 0.10 : 0;
+  const loyaltyDiscountPercent = settings?.hostRewards?.discountPercent && settings.hostRewards.discountPercent > 0
+    ? settings.hostRewards.discountPercent
+    : 10;
+  const discountAmount = hasLoyaltyDiscount ? cartTotal * (loyaltyDiscountPercent / 100) : 0;
   const totalBeforeShipping = cartTotal - discountAmount;
   const finalTotal = fulfillment === 'DELIVERY' && isShippableOnly ? totalBeforeShipping + SHIPPING_COST : totalBeforeShipping;
 
@@ -539,7 +547,7 @@ const StorefrontOrder = () => {
                 </div>
                 {hasLoyaltyDiscount && (
                   <div className="flex justify-between items-center text-sm text-green-400">
-                    <span className="flex items-center gap-1"><Ticket size={12}/> Loyalty Discount (10%)</span>
+                    <span className="flex items-center gap-1"><Ticket size={12}/> Loyalty Discount ({loyaltyDiscountPercent}%)</span>
                     <span>-${discountAmount.toFixed(2)}</span>
                   </div>
                 )}
