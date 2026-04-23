@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStorefront } from '../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
@@ -6,10 +6,17 @@ import { Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 /**
  * Magic-link landing page. The sign-in email points at /#/auth/callback?token=...;
  * we read the token from the URL, exchange it for a customer session via
- * /auth/customer-magic-link-verify, store the session, and bounce to /rewards
- * (or back to whatever the customer was looking at before).
+ * /auth/customer-magic-link-verify, store the session, and bounce to /rewards.
  *
  * Status states: VERIFYING → SUCCESS (auto-redirect) | ERROR (manual retry).
+ *
+ * IMPORTANT: the verify call must run EXACTLY ONCE per mount. Magic links
+ * are one-shot — the second call sees consumed_at != null and 400s. Two
+ * gotchas can re-trigger it:
+ *   1. React StrictMode double-invokes effects in dev.
+ *   2. AppContext re-renders churn the `completeCustomerSignIn` reference,
+ *      so any deps array including it would re-fire the effect.
+ * The didRun ref guards against both — a second invocation no-ops.
  */
 const AuthCallback = () => {
   const { completeCustomerSignIn } = useStorefront();
@@ -17,8 +24,12 @@ const AuthCallback = () => {
   const location = useLocation();
   const [status, setStatus] = useState('VERIFYING');
   const [errorMsg, setErrorMsg] = useState('');
+  const didRun = useRef(false);
 
   useEffect(() => {
+    if (didRun.current) return;
+    didRun.current = true;
+
     // HashRouter puts the query string after the #/path?, so location.search
     // is what we want. But guard against the rare case where it's part of
     // the hash fragment instead.
@@ -30,23 +41,20 @@ const AuthCallback = () => {
       return;
     }
 
-    let cancelled = false;
     (async () => {
       try {
         await completeCustomerSignIn(token);
-        if (cancelled) return;
         setStatus('SUCCESS');
         // Brief pause so the user sees the success state, then redirect.
         setTimeout(() => navigate('/rewards', { replace: true }), 1200);
       } catch (err) {
-        if (cancelled) return;
         setStatus('ERROR');
         setErrorMsg(err?.message || 'Sign-in failed. The link may have expired or been used already.');
       }
     })();
-
-    return () => { cancelled = true; };
-  }, [location.search, completeCustomerSignIn, navigate]);
+    // Empty deps + didRun ref = strictly one execution per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 animate-fade-in">
