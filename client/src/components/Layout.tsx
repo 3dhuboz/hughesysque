@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Link, useLocation } from 'react-router-dom';
-import { Flame, UtensilsCrossed, CalendarDays, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, AlertTriangle, Radio, Music2 } from 'lucide-react';
+import { Flame, UtensilsCrossed, CalendarDays, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, AlertTriangle, Radio, Music2, Shield } from 'lucide-react';
 import InstallPwa from './InstallPwa';
 
 interface LayoutProps {
@@ -91,7 +91,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         <div className="flex items-center gap-4">
           <InstallPwa />
-          {user && (
+          {user ? (
             <div className="flex items-center gap-3">
               <div className="text-right hidden lg:block">
                 <p className="text-xs text-gray-400">Signed in as</p>
@@ -99,6 +99,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
               <button onClick={logout} className="p-2 hover:text-red-500 transition" title="Logout"><LogOut size={20}/></button>
             </div>
+          ) : (
+            // Subtle staff/admin entry — kept low-key so customers don't think
+            // they need an account to order, but still discoverable for Macca.
+            <Link to="/login" title="Admin sign in"
+              className="p-2 text-gray-500 hover:text-bbq-gold transition flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
+              <Shield size={14}/><span className="hidden lg:inline">Admin</span>
+            </Link>
           )}
         </div>
       </header>
@@ -131,8 +138,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     {cart.length} <UtensilsCrossed size={12}/>
                 </Link>
              )}
-             {user && (
+             {user ? (
                  <button onClick={logout} className="text-gray-400 hover:text-white"><LogOut size={20}/></button>
+             ) : (
+                 <Link to="/login" title="Admin sign in" className="text-gray-500 hover:text-bbq-gold transition p-1">
+                     <Shield size={20}/>
+                 </Link>
              )}
         </div>
       </header>

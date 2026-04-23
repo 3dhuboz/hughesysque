@@ -33,12 +33,21 @@ export const onRequest = async (context: any) => {
       return entries ? `<div style="background:#0a0a0a;border:1px solid #333;border-radius:6px;padding:8px 12px;margin:6px 0 8px;">${entries}</div>` : '';
     };
 
+    // Customer's free-text "no onion / no pickles / sauce on side" note,
+    // captured on the storefront and surfaced to the kitchen here.
+    const renderSpecialRequests = (line: any) => {
+      const note = (line.specialRequests || line.item?.specialRequests || '').toString().trim();
+      if (!note) return '';
+      const safe = note.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `<div style="background:#3a2a05;border-left:3px solid #fbbf24;padding:8px 12px;margin:6px 0 8px;border-radius:0 6px 6px 0;"><strong style="color:#fbbf24;">⚠ Special request:</strong> <span style="color:#fef3c7;">${safe}</span></div>`;
+    };
+
     const itemsList = order.items.map((line: any) => {
       const it = line.item || line;
       const name = it.name || 'Item';
       const price = typeof it.price === 'number' ? it.price : 0;
       const qty = line.quantity || 1;
-      return `<li style="margin-bottom:10px;">${qty}x ${name} - $${(price * qty).toFixed(2)}${renderPackSelections(line.packSelections)}</li>`;
+      return `<li style="margin-bottom:10px;">${qty}x ${name} - $${(price * qty).toFixed(2)}${renderPackSelections(line.packSelections)}${renderSpecialRequests(line)}</li>`;
     }).join('');
 
     const cookDate = new Date(order.cookDay).toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });

@@ -254,7 +254,7 @@ const StorefrontOrder = () => {
       customerName: contactInfo.name,
       customerEmail: contactInfo.email,
       customerPhone: contactInfo.phone,
-      items: cart.map(i => ({ item: i, quantity: i.quantity, packSelections: i.packSelections })),
+      items: cart.map(i => ({ item: i, quantity: i.quantity, packSelections: i.packSelections, specialRequests: i.specialRequests || undefined })),
       total: finalTotal,
       depositAmount,
       paymentIntentId,
@@ -515,6 +515,11 @@ const StorefrontOrder = () => {
                               {Object.entries(item.packSelections).map(([group, choices]) => (
                                 <div key={group}><span className="text-gray-500 font-bold">{group}:</span> {Array.isArray(choices) ? choices.join(', ') : ''}</div>
                               ))}
+                            </div>
+                          )}
+                          {item.specialRequests && (
+                            <div className="mt-2 text-xs text-bbq-gold/80 border-l-2 border-bbq-gold/40 pl-2 italic leading-snug">
+                              <span className="text-bbq-gold font-bold not-italic">Note:</span> {item.specialRequests}
                             </div>
                           )}
                         </div>

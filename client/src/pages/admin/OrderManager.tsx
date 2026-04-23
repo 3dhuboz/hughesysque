@@ -1081,6 +1081,13 @@ const normalizePhone = (raw: string): string => {
                                         })}
                                       </div>
                                     )}
+                                    {/* Customer's per-item special request — surfaced loudly so kitchen doesn't miss it. */}
+                                    {(line.specialRequests || (line as any).item?.specialRequests) && (
+                                      <div className="mt-2 bg-amber-950/40 border-l-2 border-bbq-gold rounded-r px-2 py-1.5 text-[11px] text-amber-100">
+                                        <span className="text-bbq-gold font-bold uppercase tracking-wider">⚠ Special:</span>{' '}
+                                        <span className="italic">{line.specialRequests || (line as any).item?.specialRequests}</span>
+                                      </div>
+                                    )}
                                 </td>
                                 <td className="p-3">
                                     <div className="flex items-center justify-center gap-2">

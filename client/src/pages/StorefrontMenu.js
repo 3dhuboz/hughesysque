@@ -20,6 +20,9 @@ const ItemDetailsModal = ({ item, onClose, onAddToCart }) => {
     }
     return init;
   });
+  // Free-text customer requests — "no onion", "extra sauce on side", etc.
+  // Carried through to cart, order, and the kitchen-facing order email.
+  const [specialRequests, setSpecialRequests] = useState('');
 
   const handleIncrement = () => setQty(q => q + 1);
   const handleDecrement = () => setQty(q => Math.max(item.minQuantity || 1, q - 1));
@@ -46,7 +49,7 @@ const ItemDetailsModal = ({ item, onClose, onAddToCart }) => {
   const isPackComplete = !item.isPack || (item.packGroups?.every(g => (packSelections[g.name]?.length || 0) === g.limit));
 
   const handleAdd = () => {
-    onAddToCart(qty, item.isPack ? packSelections : undefined, selectedOption);
+    onAddToCart(qty, item.isPack ? packSelections : undefined, selectedOption, specialRequests.trim());
     onClose();
   };
 
@@ -85,6 +88,23 @@ const ItemDetailsModal = ({ item, onClose, onAddToCart }) => {
               </div>
             </div>
           )}
+          {/* Special requests — works for every item, used most often for burgers
+              and tailgate boxes where customers want to take items off ("no
+              pickles", "extra slaw on side", "gluten-free bun if poss"). */}
+          <div>
+            <label className="block">
+              <span className="font-bold text-white mb-2 uppercase text-sm tracking-wider block">Special requests <span className="text-gray-500 font-normal normal-case tracking-normal">(optional)</span></span>
+              <textarea
+                value={specialRequests}
+                onChange={e => setSpecialRequests(e.target.value)}
+                placeholder="e.g. no pickles, no onion, sauce on the side"
+                rows={2}
+                maxLength={200}
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-bbq-gold focus:ring-2 focus:ring-bbq-gold/20 transition resize-y"
+              />
+              <span className="text-[10px] text-gray-500 mt-1 block">{specialRequests.length}/200 — Macca reads every order before he fires it.</span>
+            </label>
+          </div>
           {item.isPack && item.packGroups && (
             <div className="space-y-6 bg-black/20 p-4 rounded-xl border border-white/5">
               {item.packGroups.map(group => {
@@ -203,9 +223,9 @@ const StorefrontMenu = () => {
     setTimeout(() => setRecentlyAdded(null), 2000);
   };
 
-  const handleAddToCartFromModal = (qty, packSelections, option) => {
+  const handleAddToCartFromModal = (qty, packSelections, option, specialRequests) => {
     if (selectedItem) {
-      const itemToAdd = { ...selectedItem, packSelections, selectedOption: option };
+      const itemToAdd = { ...selectedItem, packSelections, selectedOption: option, specialRequests: specialRequests || undefined };
       addToCart(itemToAdd, qty, selectedOrderDate || undefined);
       triggerAddedFeedback(selectedItem._id || selectedItem.id);
     }
