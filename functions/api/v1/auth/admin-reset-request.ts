@@ -64,11 +64,25 @@ export const onRequestPost = async (context: any) => {
       <p style="margin:16px 0 0;font-size:12px;color:#737373;">If you didn't request this, ignore this email and consider changing your password.</p>
     </div>`;
 
-    try {
-      await sendEmail(env, settings.emailSettings, settings.adminEmail, subject, text, html);
-    } catch (e) {
-      console.error('Failed to send admin reset email', e);
-      // Still return success to avoid enumeration; admin can check logs if no email arrives.
+    // Send the code to the email the admin actually entered (which we just
+    // confirmed matches a valid on-file address). Previously this hard-coded
+    // settings.adminEmail, which silently broke when that field still held a
+    // placeholder default like "admin@hugheseysque.au" — emails went into the
+    // void and admin had no way to recover.
+    // emailSettings.adminEmail is a sensible secondary destination (where
+    // order receipts go) but we always include the submitted address first.
+    const recipients = Array.from(new Set([
+      submittedEmail,
+      (settings.emailSettings?.adminEmail || '').toString().trim().toLowerCase(),
+    ].filter(Boolean)));
+
+    for (const to of recipients) {
+      try {
+        await sendEmail(env, settings.emailSettings, to, subject, text, html);
+      } catch (e) {
+        console.error(`Failed to send admin reset email to ${to}`, e);
+        // Try the next recipient; still return success to avoid enumeration.
+      }
     }
 
     return json({ success: true });
