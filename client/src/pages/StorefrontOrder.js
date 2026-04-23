@@ -228,7 +228,9 @@ const StorefrontOrder = () => {
   };
 
   const handleStartCheckout = () => {
-    if (!user) return navigate('/login');
+    // Guest checkout — no account required. The contact info captured below
+    // is the only customer detail we need; userId on the order is left blank
+    // for guests so the admin order list still works without an account.
     if (!isShippableOnly) {
       if (!selectedDayId) { alert("Please select a pickup date!"); return; }
       if (!pickupTime) { alert("Please select a pickup time!"); return; }
@@ -243,11 +245,12 @@ const StorefrontOrder = () => {
   };
 
   const processOrder = async (paymentIntentId, depositAmount) => {
-    if (!user) return;
     const orderId = `o${Date.now()}`;
+    // Guest orders use a synthesised id so admin reports still group cleanly.
+    const userId = user?.id || `guest_${Date.now()}`;
     const newOrder = {
       id: orderId,
-      userId: user.id,
+      userId,
       customerName: contactInfo.name,
       customerEmail: contactInfo.email,
       customerPhone: contactInfo.phone,
@@ -589,17 +592,11 @@ const StorefrontOrder = () => {
                 </div>
               ) : (
                 <div className="mt-6 space-y-3">
-                  {!user ? (
-                    <Link to="/login" className="block w-full bg-white text-black text-center py-4 rounded-lg font-bold hover:bg-gray-200 transition uppercase tracking-widest text-sm shadow-lg">
-                      Login to Checkout
-                    </Link>
-                  ) : (
-                    <button onClick={handleStartCheckout} disabled={cart.length === 0}
-                      className="w-full bg-gradient-to-r from-bbq-red to-red-800 text-white py-4 rounded-lg font-bold hover:shadow-[0_0_20px_rgba(217,56,30,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm shadow-xl flex justify-center items-center gap-2">
-                      {isShippableOnly ? 'Proceed to Payment' : (!selectedDayId ? 'Select a Date' : !pickupTime ? 'Select a Time' : 'Proceed to Payment')}
-                      <ArrowRight size={16}/>
-                    </button>
-                  )}
+                  <button onClick={handleStartCheckout} disabled={cart.length === 0}
+                    className="w-full bg-gradient-to-r from-bbq-red to-red-800 text-white py-4 rounded-lg font-bold hover:shadow-[0_0_20px_rgba(217,56,30,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm shadow-xl flex justify-center items-center gap-2">
+                    {isShippableOnly ? 'Proceed to Payment' : (!selectedDayId ? 'Select a Date' : !pickupTime ? 'Select a Time' : 'Proceed to Payment')}
+                    <ArrowRight size={16}/>
+                  </button>
                 </div>
               )}
             </div>
