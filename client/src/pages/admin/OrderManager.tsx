@@ -191,8 +191,16 @@ const normalizePhone = (raw: string): string => {
       const origin = window.location.origin;
       const redirectUrl = `${origin}${window.location.pathname}#/payment-success?orderId=${encodeURIComponent(order.id)}`;
 
+      // depositAmount is what's due NOW — equals order.total for normal menu
+      // orders (paid in full at checkout) and order.total * 0.5 for catering
+      // orders (50% deposit, balance billed via a separate Square link before
+      // the service date). Falling back to order.total covers legacy orders
+      // that pre-date the deposit/full split.
+      const dueNow = (order as any).depositAmount && (order as any).depositAmount > 0
+        ? (order as any).depositAmount
+        : order.total;
       const baseBody = {
-        amount: order.total,
+        amount: dueNow,
         currency: 'AUD',
         locationId: settings.squareLocationId,
         accessToken: settings.squareAccessToken,

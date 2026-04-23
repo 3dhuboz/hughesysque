@@ -189,6 +189,17 @@ const StorefrontOrder = () => {
   const totalBeforeShipping = cartTotal - discountAmount;
   const finalTotal = fulfillment === 'DELIVERY' && isShippableOnly ? totalBeforeShipping + SHIPPING_COST : totalBeforeShipping;
 
+  // Deposit-vs-full split. Catering / function orders take a 50% deposit
+  // and the balance is invoiced via Square before service. Everyday menu
+  // items pay in full at checkout — no Square reconciliation step needed.
+  // "Catering" = anything with isPack true (multi-meat package builders) or
+  // an explicit catering-style category.
+  const CATERING_CATEGORIES = ['Catering Packs', 'Family Packs', 'Trays', 'Catering'];
+  const requiresDeposit = cart.some(i => i.isPack || CATERING_CATEGORIES.includes(i.category));
+  const DEPOSIT_PERCENT = 0.5;
+  const amountDueNow = requiresDeposit ? finalTotal * DEPOSIT_PERCENT : finalTotal;
+  const balanceRemaining = finalTotal - amountDueNow;
+
   const availableItems = menu.filter(item => {
     // Catering-only items belong on the /catering page, not pre-order pickup.
     // Mirrors the filter in StorefrontMenu.js — catch isCatering flag, the
@@ -290,8 +301,10 @@ const StorefrontOrder = () => {
     if (user && (user.name !== contactInfo.name || user.email !== contactInfo.email || user.phone !== contactInfo.phone)) {
       updateUserProfile({ ...user, name: contactInfo.name, email: contactInfo.email, phone: contactInfo.phone, address: fulfillment === 'DELIVERY' ? deliveryAddress : user.address });
     }
-    const depositAmount = finalTotal * 0.5;
-    processOrder('generic_placeholder', depositAmount);
+    // depositAmount = what the customer pays NOW. Equals total for normal
+    // menu orders (full payment), or 50% for catering orders (balance via
+    // Square link from admin before service).
+    processOrder('generic_placeholder', amountDueNow);
   };
 
   if (isSuccess) {
@@ -302,7 +315,11 @@ const StorefrontOrder = () => {
         </div>
         <div>
           <h2 className="text-4xl font-display font-bold text-white mb-2">ORDER RECEIVED</h2>
-          <p className="text-gray-400">Your order is pending approval. A 50% hold has been placed on your card.</p>
+          <p className="text-gray-400">
+            {requiresDeposit
+              ? 'Your catering booking is pending approval. A 50% deposit has been authorised on your card.'
+              : 'Your order is pending approval. The full payment has been authorised on your card.'}
+          </p>
           <p className="text-sm text-gray-500 mt-2">We'll notify you once the Pitmaster confirms availability.</p>
         </div>
         <div className="bg-bbq-charcoal p-6 rounded-xl border border-gray-700 max-w-md w-full text-left space-y-4">
@@ -327,10 +344,23 @@ const StorefrontOrder = () => {
             <span className="text-gray-500">Total Order Value</span>
             <span className="text-white font-bold">${finalTotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between border-b border-gray-700 pb-2">
-            <span className="text-gray-500">Authorized Deposit (50%)</span>
-            <span className="text-bbq-gold font-bold">${(finalTotal * 0.5).toFixed(2)}</span>
-          </div>
+          {requiresDeposit ? (
+            <>
+              <div className="flex justify-between border-b border-gray-700 pb-2">
+                <span className="text-gray-500">Deposit (50%)</span>
+                <span className="text-bbq-gold font-bold">${amountDueNow.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between border-b border-gray-700 pb-2">
+                <span className="text-gray-500">Balance — billed before service</span>
+                <span className="text-gray-300">${balanceRemaining.toFixed(2)}</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-between border-b border-gray-700 pb-2">
+              <span className="text-gray-500">Paid in full</span>
+              <span className="text-bbq-gold font-bold">${amountDueNow.toFixed(2)}</span>
+            </div>
+          )}
           <div className="text-center text-xs text-gray-500 pt-2">You will only be charged if the order is accepted.</div>
         </div>
         <Link to="/" className="bg-white text-black px-10 py-3 rounded-full font-bold hover:bg-gray-200 transition uppercase tracking-widest text-sm">Back Home</Link>
@@ -559,6 +589,19 @@ const StorefrontOrder = () => {
                 <div className="flex justify-between items-center text-xl font-bold pt-2">
                   <span>TOTAL</span><span className="text-bbq-gold">${finalTotal.toFixed(2)}</span>
                 </div>
+                {requiresDeposit && (
+                  <div className="mt-3 pt-3 border-t border-dashed border-bbq-gold/30 space-y-1">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-bbq-gold font-bold">Deposit due now (50%)</span>
+                      <span className="text-bbq-gold font-bold">${amountDueNow.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-gray-400">
+                      <span>Balance due before service</span>
+                      <span>${balanceRemaining.toFixed(2)}</span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 italic pt-1">Catering orders secure your date with a 50% deposit. We'll send a Square invoice link for the balance before your service date.</p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3 bg-black/30 p-4 rounded-lg border border-white/5">
@@ -597,7 +640,9 @@ const StorefrontOrder = () => {
                       </div>
                       <button onClick={handleGenericPayment}
                         className="w-full bg-bbq-red text-white font-bold py-3 rounded-lg hover:bg-red-700 shadow-md transition flex justify-center items-center gap-2 mt-2">
-                        Pay ${finalTotal.toFixed(2)}
+                        {requiresDeposit
+                          ? `Pay deposit $${amountDueNow.toFixed(2)}`
+                          : `Pay $${amountDueNow.toFixed(2)}`}
                       </button>
                       <p className="text-[10px] text-gray-500 text-center flex items-center justify-center gap-1"><Lock size={10}/> Secure 256-bit SSL Payment</p>
                     </div>
