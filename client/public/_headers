@@ -1,0 +1,15 @@
+# Never let a browser hold onto a stale index.html. Vite emits content-hashed
+# chunk filenames into /assets/, so the moment a deploy lands every user
+# needs a fresh index.html that points at the new hashes — otherwise their
+# cached index references chunk hashes that no longer exist on the server
+# and React falls into "Failed to fetch dynamically imported module".
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Hashed assets are safe to cache forever — the filename changes when content
+# changes, so a stale cached chunk is never wrong, just unused.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
