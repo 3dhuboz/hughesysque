@@ -285,10 +285,15 @@ export interface AppSettings {
   feastingTableInfo?: { bullets: string[] };
   // Host Rewards banner shown above the tab bar on the storefront catering page.
   // body supports **bold** markdown (rendered as <strong>). Set enabled=false to hide.
+  // thresholdAmount + discountPercent drive both the banner copy AND the
+  // admin loyalty toggle in OrderManager — keep them in one place so the
+  // promise on the storefront matches what admin actually applies.
   hostRewards?: {
     enabled?: boolean;
     title?: string;
     body?: string;
+    thresholdAmount?: number; // default 1000 — past-catering-spend threshold to qualify
+    discountPercent?: number; // default 10 — % off the next order once eligible
   };
   // FEED THE WHOLE MOB hero shown at the top of the Pre-Order / Menu page.
   // Promotes catering packs. titleLine2 gets a pink/purple gradient treatment
