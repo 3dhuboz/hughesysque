@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStorefront } from '../context/AppContext';
 import { ShoppingBag, Trash2, CheckCircle, Clock, User, Mail, Phone, AlertCircle, ArrowRight, Truck, Check, Plus, Minus, Flame, Snowflake, X, Package, MapPin, CreditCard, Lock, Info, Ticket } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { parseLocalDate } from '../utils/dateUtils';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80';
 
@@ -162,14 +163,16 @@ const StorefrontOrder = () => {
   const isShippableOnly = cart.length > 0 && cart.every(item => ['Rubs & Sauces', 'Merch'].includes(item.category));
   const SHIPPING_COST = 15.00;
 
+  // Cutoff filter intentionally removed — Macca/Aaron want orders accepted
+  // right up until the cook-day finishes, regardless of the old "9 AM the day
+  // before" rule. Only filter out past dates and non-orderable event types.
   const orderEvents = calendarEvents
     .filter(e => {
       if (e.type !== 'ORDER_PICKUP' && e.type !== 'PUBLIC_EVENT') return false;
-      if (new Date(e.date) < new Date(new Date().setHours(0,0,0,0))) return false;
-      if (isDatePastCutoff(e.date)) return false;
+      if (parseLocalDate(e.date) < new Date(new Date().setHours(0,0,0,0))) return false;
       return true;
     })
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
+    .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
 
   const selectedEvent = orderEvents.find(e => e.id === selectedDayId);
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -385,8 +388,11 @@ const StorefrontOrder = () => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {orderEvents.map(evt => {
-                    const pickupDate = new Date(evt.date);
-                    pickupDate.setDate(pickupDate.getDate() + 1);
+                    // parseLocalDate uses T12:00:00 to dodge the UTC-midnight
+                    // shift that previously caused dates to render one day
+                    // ahead (Fri 24 Apr → "Saturday 25 Apr"). The earlier
+                    // setDate(+1) was a workaround that masked it; gone now.
+                    const pickupDate = parseLocalDate(evt.date);
                     return (
                       <button key={evt.id} onClick={() => { setSelectedDayId(evt.id); setPickupTime(''); }}
                         className={`p-5 rounded-xl border transition-all flex justify-between items-center group relative overflow-hidden text-left ${selectedDayId === evt.id ? 'border-bbq-red bg-bbq-red/10 shadow-[0_0_15px_rgba(217,56,30,0.2)]' : 'border-gray-800 bg-bbq-charcoal hover:border-gray-600'}`}>

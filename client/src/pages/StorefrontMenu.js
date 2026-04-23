@@ -142,11 +142,13 @@ const ItemDetailsModal = ({ item, onClose, onAddToCart }) => {
 const StorefrontMenu = () => {
   const { menu, addToCart, user, cart, calendarEvents, selectedOrderDate, setSelectedOrderDate, settings, isDatePastCutoff } = useStorefront();
 
+  // Cutoff filter intentionally removed — Macca/Aaron want orders accepted
+  // right up until the cook day passes, regardless of the old "9 AM the day
+  // before" rule. Only filter out past dates and non-orderable event types.
   const orderEvents = calendarEvents
     .filter(evt => {
       if (evt.type !== 'ORDER_PICKUP' && evt.type !== 'PUBLIC_EVENT') return false;
       if (parseLocalDate(evt.date) < new Date(new Date().setHours(0, 0, 0, 0))) return false;
-      if (isEventPastCutoff(evt)) return false;
       return true;
     })
     .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
@@ -299,15 +301,7 @@ const StorefrontMenu = () => {
           </div>
         </div>
 
-        {/* CUTOFF WARNING - only show when cook days exist */}
-        {orderEvents.some(e => e.type === 'ORDER_PICKUP') && (
-          <div className="bg-red-900/30 border border-red-800 p-3 rounded-lg flex items-center gap-3 mx-auto max-w-2xl">
-            <AlertCircle className="text-red-500 shrink-0" size={20} />
-            <p className="text-red-200 text-xs font-bold leading-relaxed">
-              IMPORTANT: Pre-orders close 24 hours before cook days. Pop-up events accept walk-ups until 1 hour before close. Don't miss out!
-            </p>
-          </div>
-        )}
+        {/* Cutoff warning removed — orders accepted up until the cook day passes. */}
 
         {!selectedOrderDate && (
           <div className="bg-blue-900/20 border border-blue-800/50 p-4 rounded-xl flex items-center justify-between">
