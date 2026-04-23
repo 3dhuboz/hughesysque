@@ -26,6 +26,10 @@ import {
   toggleGalleryLike as apiToggleGalleryLike,
   fetchSettings,
   updateSettings as apiUpdateSettings,
+  requestCustomerMagicLink,
+  verifyCustomerMagicLink,
+  fetchCustomerMe,
+  updateCustomerMe,
 } from '../services/api';
 
 interface AppContextType {
@@ -82,6 +86,14 @@ interface AppContextType {
   selectedOrderDate: string | null;
   setSelectedOrderDate: (date: string | null) => void;
 
+  // Customer magic-link sign-in. user.role === 'CUSTOMER' once signed in.
+  // loyalty is populated alongside; null when customer isn't signed in.
+  loyalty: { thresholdAmount: number; discountPercent: number; eligible: boolean; remainingToThreshold: number } | null;
+  requestCustomerSignIn: (email: string) => Promise<void>;
+  completeCustomerSignIn: (magicToken: string) => Promise<void>;
+  refreshCustomer: () => Promise<void>;
+  updateCustomerProfile: (data: { name?: string; phone?: string }) => Promise<void>;
+
   isLoading: boolean;
   connectionError: string | null;
 }
@@ -110,6 +122,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try { return localStorage.getItem('hq_admin_token'); } catch { return null; }
   });
 
+  // Customer HMAC session token — issued by /api/v1/auth/customer-magic-link-verify
+  // after the user clicks their email link. Same Bearer header path as admin
+  // tokens; the server distinguishes them by `typ` in the JWT-style header.
+  const [customerToken, setCustomerToken] = useState<string | null>(() => {
+    try { return localStorage.getItem('hq_customer_token'); } catch { return null; }
+  });
+  const [loyalty, setLoyalty] = useState<{ thresholdAmount: number; discountPercent: number; eligible: boolean; remainingToThreshold: number } | null>(null);
+
   const [cart, setCart] = useState<CartItem[]>(() => {
     try { const s = localStorage.getItem('hq_cart'); return s ? JSON.parse(s) : []; } catch { return []; }
   });
@@ -130,10 +150,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [selectedOrderDate]);
 
   useEffect(() => {
-    // Admin HMAC session token is the only auth path; public pages call the
-    // API unauthenticated and the server applies the public-routes allowlist.
-    initApi(async () => adminToken || null);
-  }, [adminToken]);
+    // Two possible auth tokens — admin first (privileged endpoints), then
+    // customer (rewards / order history). Each has a distinct `typ` in the
+    // header so the server only honours each token on its own endpoints;
+    // sending the wrong one to the wrong endpoint just 401s rather than
+    // confusing privileges.
+    initApi(async () => adminToken || customerToken || null);
+  }, [adminToken, customerToken]);
 
   // Restore admin user state from a persisted session token on mount so
   // a refresh doesn't log Macca out. Token signature + expiry are verified
@@ -228,6 +251,72 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [user?.role]);
 
+  // Hydrate the customer profile + loyalty from a persisted token on mount.
+  // If the token is stale/invalid the API 401s and we wipe local state; the
+  // customer can request a fresh magic link.
+  const refreshCustomer = async () => {
+    if (!customerToken) return;
+    try {
+      const data = await fetchCustomerMe();
+      setUser({
+        id: data.customer.email,
+        name: data.customer.name || data.customer.email.split('@')[0],
+        email: data.customer.email,
+        phone: data.customer.phone,
+        role: UserRole.CUSTOMER,
+        isVerified: true,
+        hasCateringDiscount: data.loyalty.eligible,
+      });
+      setLoyalty(data.loyalty);
+    } catch {
+      // Bad token (expired, revoked, signing-secret rotated) — wipe and bail.
+      try { localStorage.removeItem('hq_customer_token'); } catch {}
+      setCustomerToken(null);
+      setUser(prev => prev?.role === 'CUSTOMER' ? null : prev);
+      setLoyalty(null);
+    }
+  };
+
+  useEffect(() => {
+    // Only hydrate if no admin user is already in place — admin takes
+    // precedence in the shared `user` slot.
+    if (customerToken && (!user || user.role === 'CUSTOMER')) {
+      refreshCustomer();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerToken]);
+
+  const requestCustomerSignIn = async (email: string) => {
+    if (!email || !email.trim()) throw new Error('Email is required');
+    await requestCustomerMagicLink(email.trim().toLowerCase());
+  };
+
+  const completeCustomerSignIn = async (magicToken: string) => {
+    const result = await verifyCustomerMagicLink(magicToken);
+    if (!result?.success || !result.token) throw new Error('Sign-in failed');
+    try { localStorage.setItem('hq_customer_token', result.token); } catch {}
+    setCustomerToken(result.token);
+    // Optimistically populate user from the verify response so the UI updates
+    // immediately; refreshCustomer will run via the customerToken effect and
+    // fill in computed loyalty fields.
+    setUser({
+      id: result.customer.email,
+      name: result.customer.name || result.customer.email.split('@')[0],
+      email: result.customer.email,
+      phone: result.customer.phone,
+      role: UserRole.CUSTOMER,
+      isVerified: true,
+    });
+  };
+
+  const updateCustomerProfile = async (data: { name?: string; phone?: string }) => {
+    await updateCustomerMe(data);
+    // Reflect locally without a refetch.
+    setUser(prev => prev && prev.role === 'CUSTOMER'
+      ? { ...prev, name: data.name ?? prev.name, phone: data.phone ?? prev.phone }
+      : prev);
+  };
+
   const login = async (role: UserRole | string, email?: string, password?: string) => {
     const normalizedRole = (role as string).toUpperCase();
     if (normalizedRole === UserRole.ADMIN || normalizedRole === UserRole.DEV) {
@@ -260,14 +349,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const logout = async () => {
-    // Admin logout — clear the session token so no further privileged API
-    // calls can be made from this browser.
+    // Single logout for whichever session is active — admin OR customer.
+    // We always wipe both so a partial state can't leave a stale token behind.
     try {
       localStorage.removeItem('hq_admin_token');
       localStorage.removeItem('hq_must_change_password');
+      localStorage.removeItem('hq_customer_token');
     } catch {}
     setAdminToken(null);
+    setCustomerToken(null);
     setUser(null);
+    setLoyalty(null);
   };
 
   const addUser = async (newUser: User) => { await apiUpdateUser(newUser.id, newUser); };
@@ -478,6 +570,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       settings, updateSettings,
       reminders, toggleReminder,
       selectedOrderDate, setSelectedOrderDate,
+      loyalty, requestCustomerSignIn, completeCustomerSignIn, refreshCustomer, updateCustomerProfile,
       isLoading, connectionError,
     }}>
       {children}

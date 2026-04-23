@@ -73,6 +73,46 @@ export const fetchSettings = () => apiFetch<AppSettings>('/settings');
 export const updateSettings = (data: Partial<AppSettings>) =>
   apiFetch<AppSettings>('/settings', { method: 'PATCH', body: JSON.stringify(data) });
 
+// Customer auth — magic-link sign-in (no password ever).
+// Always returns { success: true } even if email is unknown (enumeration defence).
+export const requestCustomerMagicLink = (email: string) =>
+  apiFetch<{ success: boolean }>('/auth/customer-magic-link-request', { method: 'POST', body: JSON.stringify({ email }) });
+
+export interface CustomerMagicLinkVerifyResult {
+  success: boolean;
+  token: string;
+  customer: {
+    email: string;
+    name: string;
+    phone: string;
+    cateringSpendCents: number;
+    totalOrders: number;
+    lastOrderAt: number | null;
+  };
+}
+export const verifyCustomerMagicLink = (token: string) =>
+  apiFetch<CustomerMagicLinkVerifyResult>('/auth/customer-magic-link-verify', { method: 'POST', body: JSON.stringify({ token }) });
+
+export interface CustomerMeResponse {
+  customer: {
+    email: string;
+    name: string;
+    phone: string;
+    cateringSpend: number;
+    totalOrders: number;
+    lastOrderAt: number | null;
+  };
+  loyalty: {
+    thresholdAmount: number;
+    discountPercent: number;
+    eligible: boolean;
+    remainingToThreshold: number;
+  };
+}
+export const fetchCustomerMe = () => apiFetch<CustomerMeResponse>('/customers/me');
+export const updateCustomerMe = (data: { name?: string; phone?: string }) =>
+  apiFetch<{ success: boolean }>('/customers/me', { method: 'PATCH', body: JSON.stringify(data) });
+
 // Seed
 export const seedDatabase = () =>
   apiFetch('/seed', { method: 'POST' });

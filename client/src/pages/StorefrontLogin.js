@@ -2,15 +2,22 @@ import React, { useState } from 'react';
 import { useStorefront } from '../context/AppContext';
 import { useClientConfig } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { Mail, User, Lock, Shield, ArrowLeft, Loader2, Flame, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Mail, User, Lock, Shield, ArrowLeft, Loader2, Flame, KeyRound, CheckCircle2, Send } from 'lucide-react';
 
-// Public storefront has no customer accounts — this page is staff/admin only.
-// Modes: ADMIN (login) | ADMIN_RESET_REQUEST | ADMIN_RESET_CONFIRM
+// Two flows live on /login:
+//   1. CUSTOMER (default) — email-only magic-link sign-in. No password ever.
+//      Used by anyone wanting to track stamps / get the auto loyalty discount.
+//   2. ADMIN — username + password for Macca/staff. Discreet entry point at
+//      the bottom of the customer card; not advertised to customers.
+//
+// Modes:
+//   CUSTOMER, CUSTOMER_LINK_SENT,
+//   ADMIN, ADMIN_RESET_REQUEST, ADMIN_RESET_CONFIRM
 const StorefrontLogin = () => {
-  const { login } = useStorefront();
+  const { login, requestCustomerSignIn } = useStorefront();
   const { brandName } = useClientConfig();
   const navigate = useNavigate();
-  const [mode, setMode] = useState('ADMIN');
+  const [mode, setMode] = useState('CUSTOMER');
   const [resetEmail, setResetEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [resetNewPass, setResetNewPass] = useState('');
@@ -19,6 +26,7 @@ const StorefrontLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [adminUser, setAdminUser] = useState('');
   const [adminPass, setAdminPass] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [error, setError] = useState('');
 
   const requestReset = async (e) => {
@@ -58,19 +66,29 @@ const StorefrontLogin = () => {
     } finally { setIsLoading(false); }
   };
 
-  const handleSubmit = async (e) => {
+  const handleAdminSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    setIsLoading(true); setError('');
     try {
       await login('admin', adminUser, adminPass);
       navigate('/admin');
     } catch (err) {
       setError(err.message || 'Invalid credentials. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   };
+
+  const handleCustomerSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true); setError('');
+    try {
+      await requestCustomerSignIn(customerEmail);
+      setMode('CUSTOMER_LINK_SENT');
+    } catch (err) {
+      setError(err.message || 'Could not send sign-in link');
+    } finally { setIsLoading(false); }
+  };
+
+  const isAdminFlow = mode.startsWith('ADMIN');
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 animate-fade-in">
@@ -85,17 +103,21 @@ const StorefrontLogin = () => {
 
         <div className="bg-bbq-charcoal rounded-2xl shadow-2xl border border-gray-800 p-8 space-y-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
-            <Shield size={100} />
+            {isAdminFlow ? <Shield size={100} /> : <User size={100} />}
           </div>
 
           <div className="text-center space-y-1 relative z-10">
             <h2 className="text-3xl font-display font-bold text-white">
-              {mode === 'ADMIN_RESET_REQUEST' ? 'RESET PASSWORD'
+              {mode === 'CUSTOMER' ? 'SIGN IN'
+                : mode === 'CUSTOMER_LINK_SENT' ? 'CHECK YOUR INBOX'
+                : mode === 'ADMIN_RESET_REQUEST' ? 'RESET PASSWORD'
                 : mode === 'ADMIN_RESET_CONFIRM' ? 'ENTER CODE'
                 : 'STAFF ACCESS'}
             </h2>
             <p className="text-gray-400 text-sm">
-              {mode === 'ADMIN_RESET_REQUEST' ? "We'll email a 6-digit code to the admin email on file."
+              {mode === 'CUSTOMER' ? 'Sign in to track your stamps and unlock the loyalty discount on your next order.'
+                : mode === 'CUSTOMER_LINK_SENT' ? "We just emailed you a sign-in link. Tap it from any device — no password needed."
+                : mode === 'ADMIN_RESET_REQUEST' ? "We'll email a 6-digit code to the admin email on file."
                 : mode === 'ADMIN_RESET_CONFIRM' ? 'Check the admin email inbox — enter the code and set a new password.'
                 : 'Secure area for authorised personnel only.'}
             </p>
@@ -107,8 +129,45 @@ const StorefrontLogin = () => {
             </div>
           )}
 
-          {mode === 'ADMIN' ? (
-            <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
+          {mode === 'CUSTOMER' ? (
+            <form onSubmit={handleCustomerSubmit} className="space-y-4 relative z-10">
+              <div className="relative">
+                <Mail className="absolute left-3 top-3.5 text-bbq-red" size={18} />
+                <input type="email" placeholder="you@email.com" value={customerEmail}
+                  onChange={e => setCustomerEmail(e.target.value)} required autoFocus
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-bbq-red outline-none transition" />
+              </div>
+              <button type="submit" disabled={isLoading || !customerEmail.trim()}
+                className="w-full bg-gradient-to-r from-bbq-red to-red-800 text-white py-3 rounded-lg font-bold hover:shadow-[0_0_20px_rgba(217,56,30,0.4)] transition-all shadow-xl flex justify-center items-center gap-2 disabled:opacity-50">
+                {isLoading ? <Loader2 className="animate-spin" size={20} /> : (<><Send size={16}/> Send sign-in link</>)}
+              </button>
+              <p className="text-[11px] text-gray-500 text-center leading-relaxed">
+                No password needed. We'll email you a one-tap link that expires in 15 minutes.
+              </p>
+              <div className="pt-4 border-t border-gray-800 text-center">
+                <button type="button" onClick={() => { setMode('ADMIN'); setError(''); }}
+                  className="text-xs text-gray-600 hover:text-gray-400 font-mono transition">
+                  [Staff / Admin Access]
+                </button>
+              </div>
+            </form>
+          ) : mode === 'CUSTOMER_LINK_SENT' ? (
+            <div className="relative z-10 text-center py-4 space-y-4">
+              <div className="w-16 h-16 rounded-full bg-bbq-red/20 border border-bbq-red flex items-center justify-center mx-auto">
+                <Mail className="text-bbq-red" size={32}/>
+              </div>
+              <div className="space-y-1">
+                <p className="text-white font-bold">Sign-in link sent</p>
+                <p className="text-sm text-gray-400">If <span className="text-bbq-gold">{customerEmail}</span> matches an account or new sign-up, the link will arrive within a minute.</p>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">Check your spam folder if it doesn't arrive — Gmail sometimes hides BBQ emails. The link works on any device, even one you haven't signed in on before.</p>
+              <button type="button" onClick={() => { setMode('CUSTOMER'); setCustomerEmail(''); setError(''); }}
+                className="w-full text-gray-400 hover:text-white text-xs flex items-center justify-center gap-2 transition">
+                <ArrowLeft size={12} /> Use a different email
+              </button>
+            </div>
+          ) : mode === 'ADMIN' ? (
+            <form onSubmit={handleAdminSubmit} className="space-y-4 relative z-10">
               <div className="relative">
                 <User className="absolute left-3 top-3.5 text-bbq-red" size={18} />
                 <input type="text" placeholder="Username" value={adminUser} onChange={e => setAdminUser(e.target.value)} required
@@ -123,7 +182,11 @@ const StorefrontLogin = () => {
                 className="w-full bg-bbq-red text-white py-3 rounded-lg font-bold hover:bg-red-700 transition shadow-lg flex justify-center items-center gap-2">
                 {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Access Dashboard'}
               </button>
-              <div className="flex items-center justify-end text-xs">
+              <div className="flex items-center justify-between text-xs">
+                <button type="button" onClick={() => { setMode('CUSTOMER'); setError(''); }}
+                  className="text-gray-400 hover:text-white flex items-center gap-1.5 transition">
+                  <ArrowLeft size={12} /> Back
+                </button>
                 <button type="button" onClick={() => { setMode('ADMIN_RESET_REQUEST'); setError(''); }}
                   className="text-bbq-gold hover:text-white flex items-center gap-1.5 transition font-bold">
                   <KeyRound size={12}/> Forgot password?
@@ -145,7 +208,7 @@ const StorefrontLogin = () => {
                 className="w-full text-gray-400 hover:text-white text-xs flex items-center justify-center gap-2 transition">
                 <ArrowLeft size={12} /> Back to admin login
               </button>
-              <p className="text-[11px] text-gray-500 text-center">If the email matches the one on file, you'll get a 6-digit code within a minute. The response doesn't confirm whether the email matched — that's a security feature.</p>
+              <p className="text-[11px] text-gray-500 text-center">If the email matches the one on file, you'll get a 6-digit code within a minute.</p>
             </form>
           ) : (
             // ADMIN_RESET_CONFIRM

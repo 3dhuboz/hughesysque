@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Link, useLocation } from 'react-router-dom';
-import { Flame, UtensilsCrossed, CalendarDays, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, AlertTriangle, Radio, Music2, Shield } from 'lucide-react';
+import { Flame, UtensilsCrossed, CalendarDays, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, AlertTriangle, Radio, Music2, Shield, Gift, User as UserIcon } from 'lucide-react';
 import InstallPwa from './InstallPwa';
 
 interface LayoutProps {
@@ -93,19 +93,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <InstallPwa />
           {user ? (
             <div className="flex items-center gap-3">
-              <div className="text-right hidden lg:block">
-                <p className="text-xs text-gray-400">Signed in as</p>
-                <p className="text-sm font-bold text-bbq-gold leading-none">{user.name.split(' ')[0]}</p>
-              </div>
-              <button onClick={logout} className="p-2 hover:text-red-500 transition" title="Logout"><LogOut size={20}/></button>
+              {user.role === 'CUSTOMER' ? (
+                // Customers get a Rewards quick-link + name pill that doubles
+                // as their profile entry point.
+                <Link to="/rewards" title="My rewards"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-bbq-gold/10 hover:bg-bbq-gold/20 border border-bbq-gold/30 transition">
+                  <Gift size={14} className="text-bbq-gold"/>
+                  <span className="text-xs font-bold text-bbq-gold uppercase tracking-wider hidden lg:inline">{user.name.split(' ')[0] || 'Account'}</span>
+                </Link>
+              ) : (
+                <div className="text-right hidden lg:block">
+                  <p className="text-xs text-gray-400">Signed in as</p>
+                  <p className="text-sm font-bold text-bbq-gold leading-none">{user.name.split(' ')[0]}</p>
+                </div>
+              )}
+              <button onClick={logout} className="p-2 hover:text-red-500 transition" title="Sign out"><LogOut size={20}/></button>
             </div>
           ) : (
-            // Subtle staff/admin entry — kept low-key so customers don't think
-            // they need an account to order, but still discoverable for Macca.
-            <Link to="/login" title="Admin sign in"
-              className="p-2 text-gray-500 hover:text-bbq-gold transition flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-              <Shield size={14}/><span className="hidden lg:inline">Admin</span>
-            </Link>
+            // Two distinct entry points: customer sign-in (User icon) and
+            // admin (Shield icon, smaller). Customer is primary now.
+            <div className="flex items-center gap-1">
+              <Link to="/login" title="Sign in / track rewards"
+                className="px-3 py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
+                <UserIcon size={14}/><span className="hidden lg:inline">Sign in</span>
+              </Link>
+              <Link to="/login" title="Admin sign in"
+                className="p-2 text-gray-600 hover:text-bbq-gold transition" aria-label="Admin">
+                <Shield size={14}/>
+              </Link>
+            </div>
           )}
         </div>
       </header>
@@ -139,10 +155,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </Link>
              )}
              {user ? (
-                 <button onClick={logout} className="text-gray-400 hover:text-white"><LogOut size={20}/></button>
+                 <>
+                   {user.role === 'CUSTOMER' && (
+                     <Link to="/rewards" className="p-1 text-bbq-gold hover:text-yellow-300 transition" title="My rewards">
+                       <Gift size={20}/>
+                     </Link>
+                   )}
+                   <button onClick={logout} className="text-gray-400 hover:text-white" title="Sign out"><LogOut size={20}/></button>
+                 </>
              ) : (
-                 <Link to="/login" title="Admin sign in" className="text-gray-500 hover:text-bbq-gold transition p-1">
-                     <Shield size={20}/>
+                 <Link to="/login" title="Sign in" className="text-gray-300 hover:text-bbq-gold transition p-1">
+                     <UserIcon size={20}/>
                  </Link>
              )}
         </div>
