@@ -146,7 +146,7 @@ const MenuItemCard = ({ item, onAdd }) => {
 
 // --- MAIN ORDER PAGE ---
 const StorefrontOrder = () => {
-  const { calendarEvents, cart, addToCart: addToCartContext, removeFromCart, updateCartItemQuantity, createOrder, user, updateUserProfile, menu, isDatePastCutoff, settings } = useStorefront();
+  const { calendarEvents, cart, addToCart: addToCartContext, removeFromCart, updateCartItemQuantity, createOrder, user, updateUserProfile, menu, settings } = useStorefront();
   const [selectedDayId, setSelectedDayId] = useState('');
   const [pickupTime, setPickupTime] = useState('');
   const [temperature, setTemperature] = useState('HOT');
@@ -378,12 +378,8 @@ const StorefrontOrder = () => {
               {isShippableOnly ? 'PANTRY & MERCH' : 'PRE-ORDER PICKUP'}
             </h1>
             <p className="text-gray-400">{isShippableOnly ? 'Stock up on rubs, sauces, and gear.' : 'Secure your smoked meats before they sell out.'}</p>
-            {!isShippableOnly && (
-              <div className="mt-4 text-xs font-bold bg-red-900/40 text-red-200 inline-flex items-center gap-2 px-4 py-2 rounded border border-red-500/50">
-                <AlertCircle size={16} className="text-red-500"/>
-                <span>ORDER CUTOFF: <strong>9:00 AM</strong> on the morning PRIOR to cook day.</span>
-              </div>
-            )}
+            {/* "9:00 AM the morning PRIOR" cutoff banner removed — orders are
+                accepted right up until the cook day finishes. */}
           </div>
           <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-bbq-red/20 to-transparent"></div>
         </div>

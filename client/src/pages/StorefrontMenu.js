@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStorefront } from '../context/AppContext';
-import { parseLocalDate, isEventPastCutoff } from '../utils/dateUtils';
+import { parseLocalDate } from '../utils/dateUtils';
 import SmartHeroImg from '../components/SmartHeroImg';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, Package, Users, Calendar, X, Plus, Minus, Check, Truck, Info, Clock, Utensils, AlertCircle } from 'lucide-react';
@@ -160,7 +160,7 @@ const ItemDetailsModal = ({ item, onClose, onAddToCart }) => {
 };
 
 const StorefrontMenu = () => {
-  const { menu, addToCart, user, cart, calendarEvents, selectedOrderDate, setSelectedOrderDate, settings, isDatePastCutoff } = useStorefront();
+  const { menu, addToCart, user, cart, calendarEvents, selectedOrderDate, setSelectedOrderDate, settings } = useStorefront();
 
   // Cutoff filter intentionally removed — Macca/Aaron want orders accepted
   // right up until the cook day passes, regardless of the old "9 AM the day

@@ -206,7 +206,7 @@ const CalendarPicker = ({ value, onChange, minDate }) => {
 };
 
 const StorefrontCatering = () => {
-  const { menu, checkAvailability, createOrder, user, settings, isDatePastCutoff } = useStorefront();
+  const { menu, checkAvailability, createOrder, user, settings } = useStorefront();
   const navigate = useNavigate();
 
   const CATERING_PACKAGES = settings.cateringPackages?.length > 0 ? settings.cateringPackages : DEFAULT_PACKAGES;
