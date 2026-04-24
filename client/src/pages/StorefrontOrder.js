@@ -230,13 +230,17 @@ const StorefrontOrder = () => {
   const totalBeforeShipping = cartTotal - discountAmount;
   const finalTotal = fulfillment === 'DELIVERY' && isShippableOnly ? totalBeforeShipping + SHIPPING_COST : totalBeforeShipping;
 
-  // Deposit-vs-full split. Catering / function orders take a 50% deposit
-  // and the balance is invoiced via Square before service. Everyday menu
-  // items pay in full at checkout — no Square reconciliation step needed.
-  // "Catering" = anything with isPack true (multi-meat package builders) or
-  // an explicit catering-style category.
-  const CATERING_CATEGORIES = ['Catering Packs', 'Family Packs', 'Trays', 'Catering'];
-  const requiresDeposit = cart.some(i => i.isPack || CATERING_CATEGORIES.includes(i.category));
+  // Deposit-vs-full split. ONLY items explicitly flagged as catering take
+  // a 50% deposit — function bookings billed through the catering page.
+  // Cook-day menu items pay in full at checkout, even when they happen to
+  // be packs (Tailgate Feast for Two etc) — those are still menu orders,
+  // not catering bookings.
+  // The `isPack` flag is shared between cook-day Family Packs and catering
+  // packages, so it's NOT the discriminator. Only `isCatering === true`
+  // (set by admin on catering-specific items) and the explicit Catering
+  // categories trigger the deposit path.
+  const CATERING_CATEGORIES = ['Catering', 'Catering Packs'];
+  const requiresDeposit = cart.some(i => i.isCatering === true || CATERING_CATEGORIES.includes(i.category));
   const DEPOSIT_PERCENT = 0.5;
   const amountDueNow = requiresDeposit ? finalTotal * DEPOSIT_PERCENT : finalTotal;
   const balanceRemaining = finalTotal - amountDueNow;
