@@ -9,6 +9,7 @@ const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1555939594-58d7cb561a
 // --- PACK MODAL ---
 const PackModal = ({ item, onClose, onConfirm }) => {
   const [selections, setSelections] = useState({});
+  const [specialRequests, setSpecialRequests] = useState('');
 
   useEffect(() => {
     const init = {};
@@ -74,9 +75,19 @@ const PackModal = ({ item, onClose, onConfirm }) => {
               </div>
             );
           })}
+          {/* Special requests — same pattern as the menu page modal. */}
+          <div className="space-y-1.5 pt-2 border-t border-gray-800">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">
+              Special requests <span className="font-normal normal-case tracking-normal text-gray-600">(optional)</span>
+            </label>
+            <textarea value={specialRequests} onChange={e => setSpecialRequests(e.target.value)}
+              placeholder="e.g. no pickles, sauce on the side, gluten-free if poss"
+              rows={2} maxLength={200}
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-bbq-gold focus:ring-2 focus:ring-bbq-gold/20 transition resize-y"/>
+          </div>
         </div>
         <div className="p-4 border-t border-gray-700 bg-black/20">
-          <button onClick={() => onConfirm(selections)} disabled={!isComplete}
+          <button onClick={() => onConfirm(selections, specialRequests.trim())} disabled={!isComplete}
             className="w-full bg-bbq-red text-white font-bold py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
             {isComplete ? 'Add Pack to Order' : 'Complete Selections'}
           </button>
@@ -91,15 +102,24 @@ const MenuItemCard = ({ item, onAdd }) => {
   const [qty, setQty] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
   const [showPackModal, setShowPackModal] = useState(false);
+  // Per-card special requests note. Hidden behind a "+ Add note" toggle so
+  // the card stays compact for customers who don't need it.
+  const [specialRequests, setSpecialRequests] = useState('');
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const handleClick = () => {
     if (item.isPack) { setShowPackModal(true); }
     else { triggerAdd(); }
   };
 
-  const triggerAdd = (packSelections) => {
-    onAdd(qty, packSelections);
+  const triggerAdd = (packSelections, packNotes) => {
+    // Pack notes come from PackModal's own textarea (overrides card-level
+    // notes for pack items). Regular items use the card-level note.
+    const notes = packNotes !== undefined ? packNotes : specialRequests.trim();
+    onAdd(qty, packSelections, notes || undefined);
     setQty(1);
+    setSpecialRequests('');
+    setNoteOpen(false);
     setIsAdded(true);
     setShowPackModal(false);
     setTimeout(() => setIsAdded(false), 2000);
@@ -124,6 +144,27 @@ const MenuItemCard = ({ item, onAdd }) => {
             <h4 className="font-bold text-lg text-white mb-1 leading-tight">{item.name}</h4>
             <p className="text-sm text-gray-400 line-clamp-2 mb-4">{item.description}</p>
           </div>
+          {/* Note toggle — packs get their own textarea inside PackModal so we
+              hide this control for them to avoid double-input. */}
+          {!item.isPack && (
+            <div className="mb-3">
+              {noteOpen ? (
+                <div className="space-y-1">
+                  <textarea value={specialRequests} onChange={e => setSpecialRequests(e.target.value)}
+                    placeholder="e.g. no pickles, sauce on the side"
+                    rows={2} maxLength={200} autoFocus
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-xs placeholder-gray-600 focus:outline-none focus:border-bbq-gold focus:ring-2 focus:ring-bbq-gold/20 transition resize-y"/>
+                  <button onClick={() => { setNoteOpen(false); setSpecialRequests(''); }}
+                    className="text-[10px] text-gray-500 hover:text-gray-300 transition">Cancel note</button>
+                </div>
+              ) : (
+                <button onClick={() => setNoteOpen(true)}
+                  className="text-xs text-bbq-gold/70 hover:text-bbq-gold font-bold flex items-center gap-1 transition">
+                  + Add a note for the kitchen
+                </button>
+              )}
+            </div>
+          )}
           <div className="mt-auto pt-4 border-t border-gray-700">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center bg-black/40 rounded-lg p-1 border border-gray-700">
@@ -139,7 +180,7 @@ const MenuItemCard = ({ item, onAdd }) => {
           </div>
         </div>
       </div>
-      {showPackModal && <PackModal item={item} onClose={() => setShowPackModal(false)} onConfirm={(selections) => triggerAdd(selections)} />}
+      {showPackModal && <PackModal item={item} onClose={() => setShowPackModal(false)} onConfirm={(selections, packNotes) => triggerAdd(selections, packNotes)} />}
     </>
   );
 };
@@ -241,8 +282,11 @@ const StorefrontOrder = () => {
     }
   }, [orderEvents, selectedDayId, isShippableOnly]);
 
-  const handleAddToCart = (item, quantity, packSelections) => {
-    const cartItemObj = { ...item, packSelections };
+  const handleAddToCart = (item, quantity, packSelections, specialRequests) => {
+    // specialRequests is whatever the customer typed in the per-card note
+    // (or the PackModal note for packs). Carries through to the cart row,
+    // the order JSON, the admin OrderManager line, and the kitchen email.
+    const cartItemObj = { ...item, packSelections, specialRequests: specialRequests || undefined };
     addToCartContext(cartItemObj, quantity);
   };
 
@@ -504,7 +548,7 @@ const StorefrontOrder = () => {
             {(selectedEvent || isShippableOnly) ? (
               availableItems.length > 0 ? (
                 availableItems.map(item => (
-                  <MenuItemCard key={item._id || item.id} item={item} onAdd={(qty, packSelections) => handleAddToCart(item, qty, packSelections)} />
+                  <MenuItemCard key={item._id || item.id} item={item} onAdd={(qty, packSelections, specialRequests) => handleAddToCart(item, qty, packSelections, specialRequests)} />
                 ))
               ) : (
                 <div className="col-span-2 text-center py-12 text-gray-500 italic border border-dashed border-gray-800 rounded-xl">No additional items available.</div>
