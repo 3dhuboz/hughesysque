@@ -414,8 +414,11 @@ const StorefrontMenu = () => {
               <Clock size={14} className="text-bbq-gold" /> Next Collection
             </h4>
             {selectedEvent ? (() => {
+              // parseLocalDate parses the YYYY-MM-DD as local-noon to dodge
+              // the UTC-midnight shift; the previous +1 day was an old
+              // workaround for that and just made every date display one
+              // day ahead.
               const pickupDate = parseLocalDate(selectedEvent.date);
-              pickupDate.setDate(pickupDate.getDate() + 1);
               return (
                 <div>
                   <p className="text-white font-display text-2xl font-bold">{pickupDate.toLocaleDateString('en-AU', { weekday: 'long' })}</p>
@@ -426,7 +429,6 @@ const StorefrontMenu = () => {
             })() : orderEvents.length > 0 ? (() => {
               const nextEvt = orderEvents[0];
               const pickupDate = parseLocalDate(nextEvt.date);
-              pickupDate.setDate(pickupDate.getDate() + 1);
               return (
                 <div>
                   <p className="text-white font-display text-2xl font-bold">{pickupDate.toLocaleDateString('en-AU', { weekday: 'long' })}</p>
