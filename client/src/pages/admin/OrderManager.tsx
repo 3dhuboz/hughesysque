@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
-import { MessageCircle, Check, Clock, XCircle, CheckCircle, AlertTriangle, Edit2, Plus, Trash2, X, Save, DollarSign, Mail, Smartphone, CreditCard, Flame, Snowflake, Truck, ShoppingBag, Package, Loader2, MapPin } from 'lucide-react';
+import { MessageCircle, Check, Clock, XCircle, CheckCircle, AlertTriangle, Edit2, Plus, Trash2, X, Save, DollarSign, Mail, Smartphone, CreditCard, Flame, Snowflake, Truck, ShoppingBag, Package, Loader2, MapPin, Undo2 } from 'lucide-react';
 import { Order, MenuItem } from '../../types';
 import { toLocalDateStr } from '../../utils/dateUtils';
 
@@ -539,6 +539,37 @@ const normalizePhone = (raw: string): string => {
               }
           }
       }
+  };
+
+  // One-step revert. Maps each "post-action" status back to the one before
+  // it so a fat-finger Mark Ready doesn't strand an order in the wrong state.
+  // Side effects (SMS/email already sent to the customer) can't be undone —
+  // the confirm dialog warns about that explicitly.
+  const PREVIOUS_STATUS: Partial<Record<Order['status'], Order['status']>> = {
+    'Completed': 'Ready',
+    'Shipped': 'Ready',
+    'Ready': 'Cooking',
+    'Cooking': 'Confirmed',
+    'Confirmed': 'Pending',
+    'Paid': 'Pending',
+  };
+
+  const handleRevertStatus = async (order: Order) => {
+    const prev = PREVIOUS_STATUS[order.status];
+    if (!prev) {
+      toast(`Can't revert from "${order.status}".`, 'warning');
+      return;
+    }
+    const sentNotifWarning = ['Ready', 'Completed', 'Shipped'].includes(order.status)
+      ? '\n\n⚠ Heads up: the customer was already sent the SMS/email for this status. They won\'t be told you reverted it — message them directly if needed.'
+      : '';
+    if (!window.confirm(`Revert ${order.customerName}'s order from "${order.status}" back to "${prev}"?${sentNotifWarning}`)) return;
+    try {
+      await updateOrderStatus(order.id, prev);
+      toast(`Order reverted: "${order.status}" → "${prev}".`);
+    } catch (e: any) {
+      toast(`Revert failed: ${e?.message || 'unknown error'}`, 'error');
+    }
   };
 
   const handleStartCooking = async (order: Order) => {
@@ -1445,6 +1476,17 @@ const normalizePhone = (raw: string): string => {
                            >
                                 <CreditCard size={16} /> Paid?
                            </button>
+                        )}
+
+                        {/* Undo / revert one step. Visible whenever a status
+                            change has happened — gives Macca an out for fat-
+                            finger taps without poking the database. */}
+                        {PREVIOUS_STATUS[order.status] && (
+                          <button onClick={() => handleRevertStatus(order)}
+                            className="p-2 bg-gray-700 rounded hover:bg-gray-600 text-gray-300 hover:text-white"
+                            title={`Revert: "${order.status}" → "${PREVIOUS_STATUS[order.status]}"`}>
+                            <Undo2 size={16}/>
+                          </button>
                         )}
 
                         {/* 3. Paid/Confirmed -> Start Cooking */}
