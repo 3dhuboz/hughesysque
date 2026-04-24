@@ -326,10 +326,16 @@ export interface AppSettings {
   };
   smsSettings?: {
     enabled: boolean;
+    // Twilio credentials (legacy). Used when ClickSend isn't configured.
     accountSid: string;
     authToken: string;
     fromNumber: string;
     adminPhone: string;
+    // ClickSend credentials (preferred — used by HQ). When populated,
+    // sendSms picks ClickSend ahead of MessageBird/Twilio.
+    clicksendUsername?: string;
+    clicksendApiKey?: string;
+    clicksendFrom?: string; // optional sender id, e.g. "HughesysQ"
   };
   invoiceSettings?: {
     paymentUrl: string;
