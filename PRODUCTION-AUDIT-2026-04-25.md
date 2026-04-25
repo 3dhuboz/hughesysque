@@ -1,10 +1,31 @@
 # Hughesys Que — Production Readiness Audit
 
-**Date:** 2026-04-25
+**Date:** 2026-04-25 (audit) · 2026-04-26 (remediation complete)
 **Audit team:** 5 specialist agents (Security, Frontend Quality, Backend & Data, Payments & Business Logic, DevOps & Reliability) + Tech Lead synthesis
 **Repo:** `C:\Users\Steve\Desktop\GitHub\hughesysque`
 **Live URL:** https://hugheseysque.au
 **Stack:** React 19/Vite SPA · Cloudflare Pages · Pages Functions (TS) · D1 · Resend · ClickSend · Square
+
+---
+
+## ✅ Remediation status — 2026-04-26
+
+**30 of 31 prioritised audit items shipped to production over 2 days.**
+
+- **STOP THE BLEED** (#1–7): ✅ all done 2026-04-25 (commits `237fd9d`, `6dfb1da`)
+- **THIS WEEK** (#8–17): ✅ 9/10 done — `#8 Logo` blocked on Steve providing an optimised asset. Ship date 2026-04-26.
+- **THIS MONTH** (#18–31): ✅ all 14 done 2026-04-26 (cross-client extraction alone removed ~43k LoC).
+- **BACKLOG quick wins**: ✅ price guards, past-time slots, HTML-escape emails, status-machine guards + audit trail, pre-registration backfill, source logging, ErrorBoundary build-time key, parseLocalDate doc, isSameDay bug, refund flow, GST/cents math.
+
+**Live in production (every deploy green):** https://hugheseysque.au · CI typecheck gate active · D1 backed by `migrations/0001_orders_loyalty_balance.sql` and `0002_order_history.sql` · `/api/health` available for uptime monitors · admin-triggered R2 backup endpoint behind a one-time bucket-create.
+
+**Open follow-ups:**
+- 🚨 **URGENT — rotate MongoDB Atlas password + JWT secret** (the deleted `Penny Wise I.T` root file leaked them; still in git history).
+- ⏳ `#8` 3.4 MB logo replacement — needs a binary asset from Steve.
+- ⏳ `wrangler d1 migrations apply hughesys-que-db --remote` — apply the new migrations on prod D1.
+- ⏳ Set `GITHUB_SHA` env var in CF Pages so `VITE_BUILD_ID` resolves to the deploy SHA.
+- ⏳ Optional: `wrangler r2 bucket create hughesys-que-backups` to enable the new backup endpoint.
+- ⏳ Configure CF WAF rate-limit on `/api/v1/auth/customer-magic-link-request`.
 
 ---
 
