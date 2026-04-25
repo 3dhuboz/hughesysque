@@ -2,6 +2,35 @@ import { getDB, rowToOrder } from '../_lib/db';
 import { verifyAuth, requireAuth } from '../_lib/auth';
 import { creditLoyaltyIfNeeded } from '../_lib/loyalty';
 
+/**
+ * Order status state-machine. Forward + permitted-revert legal transitions
+ * only — anything else returns 400 unless the caller passes
+ * `forceStatus: true` in the body.
+ *
+ * Revert nuance: this map is deliberately stricter than the UI's
+ * PREVIOUS_STATUS map in client/src/pages/admin/OrderManager.tsx. The UI
+ * lets Macca undo any forward step (Completed → Ready, Confirmed → Pending,
+ * Paid → Pending, etc.) for fat-finger fixes; those non-listed reverts are
+ * intentionally illegal here so they require an explicit `forceStatus`
+ * acknowledgement from the caller. See PRODUCTION-AUDIT-2026-04-25.md
+ * BACKLOG (status-machine guards).
+ *
+ * Cancelled → Pending IS in the legal map because it's the only undo path
+ * the audit explicitly calls out as "revert only" (see PREVIOUS_STATUS).
+ */
+const LEGAL_TRANSITIONS: Record<string, string[]> = {
+  'Pending': ['Confirmed', 'Awaiting Payment', 'Cancelled', 'Rejected'],
+  'Awaiting Payment': ['Paid', 'Cancelled', 'Rejected'],
+  'Paid': ['Confirmed', 'Cooking', 'Cancelled'],
+  'Confirmed': ['Cooking', 'Cancelled'],
+  'Cooking': ['Ready', 'Cancelled'],
+  'Ready': ['Completed', 'Shipped', 'Cooking'],
+  'Shipped': ['Completed', 'Cancelled'],
+  'Completed': [],
+  'Cancelled': ['Pending'],
+  'Rejected': [],
+};
+
 export const onRequest = async (context: any) => {
   const { request, env, params } = context;
   const json = (d: any, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'Content-Type': 'application/json' } });
@@ -12,6 +41,29 @@ export const onRequest = async (context: any) => {
     if (request.method === 'PUT') {
       requireAuth(await verifyAuth(request, env), 'ADMIN');
       const data = await request.json();
+
+      // Status-machine guard. Look up the current status before applying the
+      // UPDATE so we can reject illegal transitions with a 400 + a list of
+      // what's allowed. forceStatus: true bypasses the check — Macca needs
+      // an out for unusual edge cases like recovering from a stuck webhook
+      // or a manual support correction.
+      if (data.status !== undefined) {
+        const currentRow: any = await db.prepare('SELECT status FROM orders WHERE id = ?').bind(params.id).first();
+        if (!currentRow) return json({ error: 'Not found' }, 404);
+        if (data.status !== currentRow.status) {
+          const from = currentRow.status;
+          const to = data.status;
+          const allowed = LEGAL_TRANSITIONS[from] ?? [];
+          const legal = allowed.includes(to);
+          if (!legal && data.forceStatus !== true) {
+            return json({ error: `Illegal transition: ${from} -> ${to}`, allowed }, 400);
+          }
+          if (!legal && data.forceStatus === true) {
+            console.warn(`[orders] forceStatus used for ${params.id}: ${from} -> ${to}`);
+          }
+        }
+      }
+
       const fields: string[] = [];
       const values: any[] = [];
       const map: Record<string, string> = {
