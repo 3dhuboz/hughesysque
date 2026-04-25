@@ -33,6 +33,7 @@ function b64urlDecode(str: string): Uint8Array {
 
 async function getSecret(env: any): Promise<string> {
   if (env.ADMIN_SESSION_SECRET && env.ADMIN_SESSION_SECRET.length >= 32) {
+    console.info('[adminSession] secret (source: env)');
     return env.ADMIN_SESSION_SECRET;
   }
   // Lazy-initialise a persistent secret in the settings row so tokens survive
@@ -41,6 +42,7 @@ async function getSecret(env: any): Promise<string> {
   const row = await db.prepare("SELECT data FROM settings WHERE key = 'general'").first();
   const settings = row ? parseJson(row.data as string, {}) : {};
   if (settings.adminSessionSecret && settings.adminSessionSecret.length >= 32) {
+    console.info('[adminSession] secret (source: settings)');
     return settings.adminSessionSecret;
   }
   const bytes = new Uint8Array(32);
@@ -49,6 +51,7 @@ async function getSecret(env: any): Promise<string> {
   const updated = { ...settings, adminSessionSecret: secret };
   await db.prepare("INSERT OR REPLACE INTO settings (key, data) VALUES ('general', ?)")
     .bind(JSON.stringify(updated)).run();
+  console.info('[adminSession] secret (source: settings, freshly generated)');
   return secret;
 }
 

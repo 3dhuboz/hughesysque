@@ -1,7 +1,26 @@
 /**
- * Parse a YYYY-MM-DD date string as LOCAL midnight instead of UTC.
- * new Date('2026-04-04') → UTC midnight → wrong day in AEST.
- * parseLocalDate('2026-04-04') → local midnight → correct day.
+ * Parse a YYYY-MM-DD date string as LOCAL midnight (well, local NOON — see below)
+ * instead of UTC. `new Date('2026-04-04')` interprets the string as UTC midnight,
+ * which renders as the previous day once shifted into AEST. `parseLocalDate('2026-04-04')`
+ * pins it to noon local time so the calendar day is unambiguous regardless of
+ * timezone, DST, or the user's clock skew.
+ *
+ *   IMPORTANT: this helper is for **DISPLAY DATES ONLY** — i.e. taking a
+ *   stored YYYY-MM-DD and rendering it as a Date for `toLocaleDateString` /
+ *   month-day formatting. It is NOT safe to compare against `new Date()`
+ *   (i.e. "now") for cook-day-cutoff or "is X past now" logic — the noon
+ *   pin can roll the comparison the wrong direction in evenings (after
+ *   noon local time, the date the user picked still parses to noon today,
+ *   so `parseLocalDate(today) > new Date()` flips false even though the
+ *   cook day hasn't ended yet).
+ *
+ *   For cutoff/order-window comparisons, use `isEventPastCutoff` below
+ *   (which sets explicit hours from the event's startTime/endTime), or
+ *   compare YYYY-MM-DD strings directly — string compare on ISO dates
+ *   is the right answer for "did this calendar day pass" questions.
+ *
+ *   Audit ref: 2026-04-25 Backend Med #12 / BACKLOG — parseLocalDate
+ *   cook-day cutoff documentation fix.
  */
 export function parseLocalDate(dateStr: string): Date {
   if (!dateStr) return new Date();

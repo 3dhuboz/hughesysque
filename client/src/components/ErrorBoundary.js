@@ -22,11 +22,22 @@ class ErrorBoundary extends React.Component {
     this.setState({ isChunkError });
     if (!isChunkError) return;
 
-    // Counter is per-deploy: reset whenever the live index.html hash differs
+    // Counter is per-deploy: reset whenever the live build id differs
     // from the one we last reloaded against. That way each new deploy gets a
     // fresh budget of retries instead of being stuck at "give up" because the
     // user already burned through retries on previous deploys today.
-    const deployKey = document.querySelector('script[type=module][src*="index-"]')?.getAttribute('src') || 'unknown';
+    //
+    // Source priority:
+    //   1. import.meta.env.VITE_BUILD_ID — injected at build time via vite.config
+    //      (GITHUB_SHA in CI, Date.now() locally). Stable, doesn't depend on
+    //      Vite's chunk-naming conventions.
+    //   2. <script type=module src*="index-"> DOM scrape — only used as a
+    //      dev-mode fallback when the constant is undefined (no build step).
+    //      Audit flagged this scrape as brittle if Vite changes chunk names.
+    const deployKey =
+      (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BUILD_ID)
+      || document.querySelector('script[type=module][src*="index-"]')?.getAttribute('src')
+      || 'unknown';
     const lastDeployKey = sessionStorage.getItem('hq_chunk_deploy_key');
     if (lastDeployKey !== deployKey) {
       sessionStorage.setItem('hq_chunk_deploy_key', deployKey);

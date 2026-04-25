@@ -34,6 +34,10 @@ export async function sendSms(
   const csUser = settings?.clicksendUsername || env.CLICKSEND_USERNAME;
   const csKey = settings?.clicksendApiKey || env.CLICKSEND_API_KEY;
   if (csUser && csKey) {
+    const csSource = (settings?.clicksendUsername && settings?.clicksendApiKey)
+      ? 'settings.smsSettings'
+      : 'env';
+    console.info(`[sms] using clicksend (source: ${csSource})`);
     const sender = settings?.clicksendFrom || settings?.fromNumber || env.CLICKSEND_FROM || 'HughesysQ';
     const recipient = normaliseAuPhone(to);
     const auth = btoa(`${csUser}:${csKey}`);
@@ -60,6 +64,7 @@ export async function sendSms(
 
   // 2. MessageBird — env var only.
   if (env.MESSAGEBIRD_API_KEY) {
+    console.info('[sms] using messagebird (source: env)');
     const originator = env.MESSAGEBIRD_ORIGINATOR || 'HughesysQue';
     let recipient = normaliseAuPhone(to);
     if (recipient.startsWith('+')) recipient = recipient.slice(1);
@@ -84,6 +89,14 @@ export async function sendSms(
   const from = settings?.fromNumber || settings?.twilioFrom || env.TWILIO_PHONE_NUMBER;
 
   if (sid && token && from) {
+    const twSource = (
+      (settings?.accountSid || settings?.twilioSid)
+      && (settings?.authToken || settings?.twilioToken)
+      && (settings?.fromNumber || settings?.twilioFrom)
+    )
+      ? 'settings.smsSettings'
+      : 'env';
+    console.info(`[sms] using twilio (source: ${twSource})`);
     const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
     const auth = btoa(`${sid}:${token}`);
     const params = new URLSearchParams();
