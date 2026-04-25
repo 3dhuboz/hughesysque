@@ -2,24 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Auto-Push Watcher",
+      "label": "Install Client Dependencies",
       "type": "shell",
-      "command": "node scripts/autopush.js",
-      "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "silent",
-        "panel": "dedicated",
-        "echo": true
-      },
-      "runOptions": {
-        "runOn": "folderOpen"
-      }
-    },
-    {
-      "label": "Install Dependencies",
-      "type": "shell",
-      "command": "npm install",
+      "command": "cd client && npm install",
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
@@ -27,9 +12,9 @@
       }
     },
     {
-      "label": "Start Dev Server",
+      "label": "Start Vite Dev Server",
       "type": "shell",
-      "command": "npm run dev",
+      "command": "cd client && npm run dev",
       "isBackground": true,
       "problemMatcher": [],
       "presentation": {
