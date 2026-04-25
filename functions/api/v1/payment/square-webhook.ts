@@ -24,20 +24,26 @@ export const onRequest = async (context: any) => {
     const rawBody = await request.text();
     const event = JSON.parse(rawBody);
 
-    // Verify HMAC signature if key is configured
-    const signature = request.headers.get('x-square-hmacsha256-signature');
+    // Verify HMAC signature — MANDATORY. Refuse to process the webhook at
+    // all if the signing key isn't configured. Previously this was a soft
+    // check that silently allowed unsigned POSTs whenever the env var was
+    // unset, which meant any deploy that lost the secret turned the webhook
+    // into an unauthenticated "mark-paid" endpoint.
     const webhookSignatureKey = env.SQUARE_WEBHOOK_SIGNATURE_KEY;
-    if (webhookSignatureKey) {
-      if (!signature) {
-        return json({ error: 'Missing signature' }, 401);
-      }
-      const host = new URL(request.url).host;
-      const notificationUrl = env.SQUARE_WEBHOOK_URL || `https://${host}/api/v1/payment/square-webhook`;
-      const valid = await verifySignature(rawBody, signature, webhookSignatureKey, notificationUrl);
-      if (!valid) {
-        console.error('[Square Webhook] Signature verification failed');
-        return json({ error: 'Invalid signature' }, 403);
-      }
+    if (!webhookSignatureKey) {
+      console.error('[Square Webhook] SQUARE_WEBHOOK_SIGNATURE_KEY not configured — refusing to process webhook');
+      return json({ error: 'Webhook not configured' }, 503);
+    }
+    const signature = request.headers.get('x-square-hmacsha256-signature');
+    if (!signature) {
+      return json({ error: 'Missing signature' }, 401);
+    }
+    const host = new URL(request.url).host;
+    const notificationUrl = env.SQUARE_WEBHOOK_URL || `https://${host}/api/v1/payment/square-webhook`;
+    const valid = await verifySignature(rawBody, signature, webhookSignatureKey, notificationUrl);
+    if (!valid) {
+      console.error('[Square Webhook] Signature verification failed');
+      return json({ error: 'Invalid signature' }, 403);
     }
 
     const eventType = event.type;

@@ -1,5 +1,6 @@
 import { sendSms } from '../_lib/sendSms';
 import { getDB, parseJson } from '../_lib/db';
+import { verifyAuth, requireAuth } from '../_lib/auth';
 
 export const onRequest = async (context: any) => {
   const { request, env } = context;
@@ -8,6 +9,8 @@ export const onRequest = async (context: any) => {
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   try {
+    requireAuth(await verifyAuth(request, env), 'ADMIN');
+
     let { settings, to, message } = await request.json();
 
     if (!to) return json({ error: 'Recipient phone number is required' }, 400);
@@ -27,6 +30,6 @@ export const onRequest = async (context: any) => {
     return json({ success: true, ...result });
   } catch (error: any) {
     console.error('SMS blast error:', error);
-    return json({ error: error.message }, 500);
+    return json({ error: error.message }, error.status || 500);
   }
 };

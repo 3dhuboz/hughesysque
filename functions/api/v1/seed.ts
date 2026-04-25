@@ -8,12 +8,13 @@ export const onRequest = async (context: any) => {
   try {
     if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-    // Allow seeding without auth if no users exist (first-time setup)
+    // Always require ADMIN. The previous "skip auth if users table is empty"
+    // bypass was a permanent open door on every fresh deploy and could be
+    // re-armed by an attacker who first emptied the users table via any
+    // other unauth path.
+    requireAuth(await verifyAuth(request, env), 'ADMIN');
+
     const db = getDB(env);
-    const userCount = await db.prepare('SELECT COUNT(*) as count FROM users').first();
-    if ((userCount as any)?.count > 0) {
-      requireAuth(await verifyAuth(request, env), 'ADMIN');
-    }
 
     // Seed default settings
     await db.prepare("INSERT OR REPLACE INTO settings (key, data) VALUES ('general', ?)")

@@ -9,8 +9,11 @@
  * upgrade the stored value to the hashed record. Plaintext is deleted as
  * part of the upgrade.
  *
- * 'dev' / '123' is a break-glass for development — always works, bypasses
- * hashing so a developer can always recover the site.
+ * Recovery path if the admin password is lost: use /auth/admin-reset-request
+ * to email a reset code to the configured admin address, or edit the
+ * `adminPasswordRecord` field of the `general` settings row in D1 directly.
+ * (The previous `dev`/`123` break-glass was removed — it was a permanent
+ * full-admin bypass shipped to production.)
  */
 import { getDB, parseJson } from '../_lib/db';
 import { hashPassword, verifyPassword } from '../_lib/password';
@@ -24,12 +27,6 @@ export const onRequestPost = async (context: any) => {
     const body = await request.json().catch(() => null);
     if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') {
       return json({ error: 'username and password required' }, 400);
-    }
-
-    // Dev break-glass
-    if (body.username === 'dev' && body.password === '123') {
-      const token = await issueAdminSession(env, 'DEV');
-      return json({ success: true, role: 'DEV', token, mustChangePassword: false });
     }
 
     const db = getDB(env);

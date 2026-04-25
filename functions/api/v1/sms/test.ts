@@ -1,4 +1,5 @@
 import { sendSms } from '../_lib/sendSms';
+import { verifyAuth, requireAuth } from '../_lib/auth';
 
 export const onRequest = async (context: any) => {
   const { request, env } = context;
@@ -6,10 +7,9 @@ export const onRequest = async (context: any) => {
 
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-  const secret = env.EMAIL_API_SECRET;
-  if (secret && request.headers.get('x-api-secret') !== secret) return json({ error: 'Unauthorized' }, 401);
-
   try {
+    requireAuth(await verifyAuth(request, env), 'ADMIN');
+
     const { settings, to } = await request.json();
     const recipient = to || settings?.adminPhone;
     if (!recipient) return json({ error: 'No recipient phone number. Set an Admin Phone first.' }, 400);
@@ -18,6 +18,6 @@ export const onRequest = async (context: any) => {
     return json({ success: true, ...result });
   } catch (error: any) {
     console.error('SMS test error:', error);
-    return json({ error: error.message }, 500);
+    return json({ error: error.message }, error.status || 500);
   }
 };

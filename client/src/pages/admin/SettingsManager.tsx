@@ -1822,7 +1822,10 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                               try {
                                   const res = await fetch('/api/v1/email/test', {
                                       method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
+                                      headers: {
+                                          'Content-Type': 'application/json',
+                                          Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+                                      },
                                       body: JSON.stringify({
                                           settings: formData.emailSettings,
                                           to: formData.emailSettings?.adminEmail || formData.emailSettings?.fromEmail
@@ -1951,7 +1954,10 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                               try {
                                   const res = await fetch('/api/v1/sms/test', {
                                       method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
+                                      headers: {
+                                          'Content-Type': 'application/json',
+                                          Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+                                      },
                                       body: JSON.stringify({
                                           settings: formData.smsSettings,
                                           to: formData.smsSettings?.adminPhone

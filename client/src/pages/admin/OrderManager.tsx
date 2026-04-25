@@ -74,7 +74,10 @@ const normalizePhone = (raw: string): string => {
             await Promise.allSettled([
                 fetch('/api/v1/email/order-notification', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+                    },
                     body: JSON.stringify({ settings: settings.emailSettings, order: { ...order, status: 'Confirmed' } }),
                 }),
                 fetch('/api/v1/sms/order-notification', {
@@ -113,7 +116,10 @@ const normalizePhone = (raw: string): string => {
               await Promise.allSettled([
                   fetch('/api/v1/email/order-notification', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+                      },
                       body: JSON.stringify({ settings: settings.emailSettings, order: { ...order, status: 'Rejected' } }),
                   }),
                   fetch('/api/v1/sms/order-notification', {
