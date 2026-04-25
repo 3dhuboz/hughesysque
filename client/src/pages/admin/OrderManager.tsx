@@ -58,19 +58,16 @@ const normalizePhone = (raw: string): string => {
        if (!confirmOverride) return;
     }
 
-    if (window.confirm(`Accept request for ${order.customerName}? This will capture the 50% deposit ($${order.depositAmount?.toFixed(2)}) and confirm the booking.`)) {
+    if (window.confirm(`Accept request for ${order.customerName}? This confirms the booking and notifies them by email + SMS. Payment is collected separately via the Square invoice link (Send Invoice).`)) {
         try {
-            // 1. Capture Payment (if Stripe)
-            if (order.paymentIntentId && order.paymentIntentId.startsWith('pi_')) {
-                const res = await fetch('/api/payment/capture', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ paymentIntentId: order.paymentIntentId }),
-                });
-                if (!res.ok) throw new Error('Failed to capture payment');
-            }
+            // No payment-capture call here — we don't process payments
+            // synchronously on approval. Customer pays via the Square
+            // hosted page from the link admin sends in "Send Invoice";
+            // the webhook flips the order to Paid when that completes.
+            // The previous Stripe-shaped capture block was dead (we don't
+            // use Stripe and /api/payment/capture doesn't exist).
 
-            // 2. Send Email + SMS
+            // Send Email + SMS
             await Promise.allSettled([
                 fetch('/api/v1/email/order-notification', {
                     method: 'POST',
@@ -105,17 +102,15 @@ const normalizePhone = (raw: string): string => {
       const reason = prompt("Enter a reason for rejection (this will be sent to the customer):", "Unfortunately we are fully booked on this date.");
       if (reason) {
           try {
-              // 1. Void Payment (if Stripe)
-              if (order.paymentIntentId && order.paymentIntentId.startsWith('pi_')) {
-                  const res = await fetch('/api/payment/void', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ paymentIntentId: order.paymentIntentId }),
-                  });
-                  if (!res.ok) throw new Error('Failed to void payment');
-              }
+              // No payment-void call here — no money has moved at this
+              // point in the flow. The customer hasn't paid the Square
+              // link yet (admin sends it via "Send Invoice" only after
+              // approval). If a deposit IS already paid (e.g. customer
+              // paid before admin clicked Approve), refund manually via
+              // the Square dashboard for now — refund flow is a separate
+              // audit item (#21).
 
-              // 2. Send Email + SMS
+              // Send Email + SMS
               await Promise.allSettled([
                   fetch('/api/v1/email/order-notification', {
                       method: 'POST',
