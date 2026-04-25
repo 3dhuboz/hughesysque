@@ -1,6 +1,6 @@
 
-import React, { Suspense } from 'react';
-import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import React, { Suspense, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { ToastProvider } from './components/Toast';
 import Layout from './components/Layout';
@@ -39,6 +39,34 @@ const ProtectedAdminRoute: React.FC<React.PropsWithChildren<{}>> = ({ children }
   const { user } = useApp();
   if (!user || (user.role !== 'ADMIN' && user.role !== 'DEV')) return <Navigate to="/login" replace />;
   return <>{children}</>;
+};
+
+const TITLE_MAP: Record<string, string> = {
+  '/': 'Hughesys Que · BBQ catering & cook-day',
+  '/menu': 'Menu · Hughesys Que',
+  '/order': 'Order · Hughesys Que',
+  '/catering': 'Catering · Hughesys Que',
+  '/events': 'Events · Hughesys Que',
+  '/gallery': 'Gallery · Hughesys Que',
+  '/rewards': 'Rewards · Hughesys Que',
+  '/login': 'Sign in · Hughesys Que',
+};
+
+const TitleByRoute: React.FC = () => {
+  const location = useLocation();
+  useEffect(() => {
+    const path = location.pathname;
+    let title: string;
+    if (path.startsWith('/admin')) {
+      title = 'Admin · Hughesys Que';
+    } else if (TITLE_MAP[path]) {
+      title = TITLE_MAP[path];
+    } else {
+      title = 'Hughesys Que';
+    }
+    document.title = title;
+  }, [location.pathname]);
+  return null;
 };
 
 const AppRoutes = () => {
@@ -119,10 +147,11 @@ const App: React.FC = () => (
   <ErrorBoundary>
     <ToastProvider>
       <AppProvider>
-        <HashRouter>
+        <BrowserRouter>
+          <TitleByRoute />
           <ScrollToTop />
           <AppRoutes />
-        </HashRouter>
+        </BrowserRouter>
       </AppProvider>
     </ToastProvider>
   </ErrorBoundary>
