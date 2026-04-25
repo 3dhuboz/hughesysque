@@ -37,6 +37,21 @@ export const onRequestPost = async (context: any) => {
 
     const db = getDB(env);
 
+    // Opportunistic cleanup of expired magic-link rows (1% sample per request).
+    // Cheap (~ms) thanks to the idx_magic_links_email index, keeps the table
+    // bounded without needing a separate Workers cron project. We only delete
+    // rows whose expires_at is more than 24h in the past — keeps recently
+    // expired ones around for a day so an admin debugging a "link didn't
+    // work" report can still see them.
+    if (Math.random() < 0.01) {
+      try {
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+        await db.prepare('DELETE FROM magic_links WHERE expires_at < ?').bind(cutoff).run();
+      } catch (e) {
+        console.error('[magic-link] expired-row cleanup failed', e);
+      }
+    }
+
     // Throttle: refuse to issue a fresh link if we issued ANY link to this
     // email (consumed or not) less than THROTTLE_MS ago. Issued_at is
     // derived from expires_at (TTL_MS is the same for every link).
