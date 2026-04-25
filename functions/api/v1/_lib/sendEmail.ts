@@ -20,6 +20,12 @@ export async function sendEmail(
     throw new Error('No email provider configured. Set RESEND_API_KEY in Cloudflare Pages environment variables.');
   }
 
+  // Diagnostic — purely so the CF logs make it obvious whether sender
+  // identity is coming from the admin settings row or the deploy env.
+  // Resend API key itself is env-only; from-name/from-email may be either.
+  const fromSource = (settings?.fromEmail || settings?.fromName) ? 'settings' : 'env';
+  console.info(`[email] resend api key (source: env), from (source: ${fromSource})`);
+
   const r = await fetchWithTimeout('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
