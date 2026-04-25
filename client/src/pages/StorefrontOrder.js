@@ -195,10 +195,13 @@ const StorefrontOrder = () => {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [contactInfo, setContactInfo] = useState({ name: '', email: '', phone: '' });
-  const [showPayment, setShowPayment] = useState(false);
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvc, setCvc] = useState('');
+  // Note: cards are NOT collected here. The order is submitted as 'Pending'
+  // and admin reviews then dispatches a Square invoice link from
+  // /admin/orders. Customer pays on Square's hosted page from that link —
+  // we never see card details. (Previously this page rendered a fake card
+  // form that collected number/expiry/CVC into local state and submitted
+  // the order with a placeholder payment id, charging nothing — fixed as
+  // part of the 2026-04-25 production audit.)
   const navigate = useNavigate();
 
   const isShippableOnly = cart.length > 0 && cart.every(item => ['Rubs & Sauces', 'Merch'].includes(item.category));
@@ -294,10 +297,14 @@ const StorefrontOrder = () => {
     addToCartContext(cartItemObj, quantity);
   };
 
-  const handleStartCheckout = () => {
+  const handlePlaceOrder = () => {
     // Guest checkout — no account required. The contact info captured below
     // is the only customer detail we need; userId on the order is left blank
     // for guests so the admin order list still works without an account.
+    //
+    // No card is collected here. The order is submitted as 'Pending' and
+    // admin sends a Square invoice link from /admin/orders. Customer pays
+    // on Square's hosted page.
     if (!isShippableOnly) {
       if (!selectedDayId) { alert("Please select a pickup date!"); return; }
       if (!pickupTime) { alert("Please select a pickup time!"); return; }
@@ -308,7 +315,10 @@ const StorefrontOrder = () => {
       alert("Please provide your Name, Email, and Phone number to proceed.");
       return;
     }
-    setShowPayment(true);
+    if (user && (user.name !== contactInfo.name || user.email !== contactInfo.email || user.phone !== contactInfo.phone)) {
+      updateUserProfile({ ...user, name: contactInfo.name, email: contactInfo.email, phone: contactInfo.phone, address: fulfillment === 'DELIVERY' ? deliveryAddress : user.address });
+    }
+    processOrder('pending_invoice', amountDueNow);
   };
 
   const processOrder = async (paymentIntentId, depositAmount) => {
@@ -344,17 +354,6 @@ const StorefrontOrder = () => {
     }
   };
 
-  const handleGenericPayment = async () => {
-    if (!cardNumber || !expiry || !cvc) { alert("Please enter valid payment details."); return; }
-    if (user && (user.name !== contactInfo.name || user.email !== contactInfo.email || user.phone !== contactInfo.phone)) {
-      updateUserProfile({ ...user, name: contactInfo.name, email: contactInfo.email, phone: contactInfo.phone, address: fulfillment === 'DELIVERY' ? deliveryAddress : user.address });
-    }
-    // depositAmount = what the customer pays NOW. Equals total for normal
-    // menu orders (full payment), or 50% for catering orders (balance via
-    // Square link from admin before service).
-    processOrder('generic_placeholder', amountDueNow);
-  };
-
   if (isSuccess) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-8 animate-fade-in">
@@ -362,13 +361,13 @@ const StorefrontOrder = () => {
           <CheckCircle className="text-green-500 w-16 h-16" />
         </div>
         <div>
-          <h2 className="text-4xl font-display font-bold text-white mb-2">ORDER RECEIVED</h2>
+          <h2 className="text-4xl font-display font-bold text-white mb-2">ORDER REQUEST RECEIVED</h2>
           <p className="text-gray-400">
             {requiresDeposit
-              ? 'Your catering booking is pending approval. A 50% deposit has been authorised on your card.'
-              : 'Your order is pending approval. The full payment has been authorised on your card.'}
+              ? 'Your catering request is in. The Pitmaster will review and email you a secure Square payment link for the 50% deposit.'
+              : 'Your order is in. The Pitmaster will review and email you a secure Square payment link to confirm your booking.'}
           </p>
-          <p className="text-sm text-gray-500 mt-2">We'll notify you once the Pitmaster confirms availability.</p>
+          <p className="text-sm text-gray-500 mt-2">Watch your inbox (and spam) for the link — we'll also follow up by SMS.</p>
         </div>
         <div className="bg-bbq-charcoal p-6 rounded-xl border border-gray-700 max-w-md w-full text-left space-y-4">
           {isShippableOnly && fulfillment === 'DELIVERY' ? (
@@ -667,40 +666,16 @@ const StorefrontOrder = () => {
                 </div>
               </div>
 
-              {showPayment ? (
-                <div className="mt-4">
-                  <div className="bg-white text-gray-900 p-4 rounded-xl shadow-lg">
-                    <div className="flex justify-between items-center mb-3">
-                      <h3 className="font-bold text-sm flex items-center gap-2"><CreditCard size={16} className="text-bbq-red"/> Payment Details</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <input value={cardNumber} onChange={e => setCardNumber(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 rounded p-2 text-sm font-mono focus:border-bbq-red outline-none" placeholder="Card Number" maxLength={19} />
-                      <div className="flex gap-3">
-                        <input value={expiry} onChange={e => setExpiry(e.target.value)}
-                          className="flex-1 bg-gray-100 border border-gray-300 rounded p-2 text-sm font-mono focus:border-bbq-red outline-none" placeholder="MM/YY" maxLength={5} />
-                        <input value={cvc} onChange={e => setCvc(e.target.value)}
-                          className="w-20 bg-gray-100 border border-gray-300 rounded p-2 text-sm font-mono focus:border-bbq-red outline-none" placeholder="CVC" maxLength={4} />
-                      </div>
-                      <button onClick={handleGenericPayment}
-                        className="w-full bg-bbq-red text-white font-bold py-3 rounded-lg hover:bg-red-700 shadow-md transition flex justify-center items-center gap-2 mt-2">
-                        {requiresDeposit
-                          ? `Pay deposit $${amountDueNow.toFixed(2)}`
-                          : `Pay $${amountDueNow.toFixed(2)}`}
-                      </button>
-                      <p className="text-[10px] text-gray-500 text-center flex items-center justify-center gap-1"><Lock size={10}/> Secure 256-bit SSL Payment</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-6 space-y-3">
-                  <button onClick={handleStartCheckout} disabled={cart.length === 0}
-                    className="w-full bg-gradient-to-r from-bbq-red to-red-800 text-white py-4 rounded-lg font-bold hover:shadow-[0_0_20px_rgba(217,56,30,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm shadow-xl flex justify-center items-center gap-2">
-                    {isShippableOnly ? 'Proceed to Payment' : (!selectedDayId ? 'Select a Date' : !pickupTime ? 'Select a Time' : 'Proceed to Payment')}
-                    <ArrowRight size={16}/>
-                  </button>
-                </div>
-              )}
+              <div className="mt-6 space-y-3">
+                <button onClick={handlePlaceOrder} disabled={cart.length === 0}
+                  className="w-full bg-gradient-to-r from-bbq-red to-red-800 text-white py-4 rounded-lg font-bold hover:shadow-[0_0_20px_rgba(217,56,30,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm shadow-xl flex justify-center items-center gap-2">
+                  {isShippableOnly ? 'Submit Order Request' : (!selectedDayId ? 'Select a Date' : !pickupTime ? 'Select a Time' : 'Submit Order Request')}
+                  <ArrowRight size={16}/>
+                </button>
+                <p className="text-[10px] text-gray-500 text-center flex items-center justify-center gap-1">
+                  <Lock size={10}/> No card needed now — we'll review and email you a secure Square payment link.
+                </p>
+              </div>
             </div>
           )}
         </div>
