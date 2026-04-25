@@ -136,3 +136,35 @@ CREATE TABLE IF NOT EXISTS chat_bans (
   banned_by TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_chat_bans_name ON chat_bans(user_name);
+
+-- Customer accounts (added 2026-04-21 as part of the magic-link rewards
+-- system, but missing from this schema file until 2026-04-26 — a fresh
+-- `wrangler d1 execute --file=schema.sql` deploy was broken until now).
+-- Timestamp columns are INTEGER Unix ms (Date.now()) to match the runtime
+-- code in functions/api/v1/customers/* and the magic-link auth flow.
+CREATE TABLE IF NOT EXISTS customers (
+  email TEXT PRIMARY KEY,
+  name TEXT,
+  phone TEXT,
+  catering_spend_cents INTEGER NOT NULL DEFAULT 0,
+  total_orders INTEGER NOT NULL DEFAULT 0,
+  last_order_at INTEGER,
+  created_at INTEGER NOT NULL,
+  email_verified_at INTEGER
+);
+
+-- Single-use customer sign-in tokens. 15-minute TTL, marked consumed_at on
+-- exchange. Cleanup of expired rows runs on a schedule (TBD).
+CREATE TABLE IF NOT EXISTS magic_links (
+  token TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
+  consumed_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_magic_links_email ON magic_links(email, expires_at DESC);
+
+-- Order lookup indexes — admin order list filters by status / cook_day, and
+-- the /orders/mine endpoint (separate audit item) will filter by email.
+CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email);
+CREATE INDEX IF NOT EXISTS idx_orders_cook_day ON orders(cook_day);
+CREATE INDEX IF NOT EXISTS idx_orders_status_created ON orders(status, created_at DESC);
