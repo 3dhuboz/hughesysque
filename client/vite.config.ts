@@ -36,4 +36,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
+  // Inject a per-build identifier the client reads via import.meta.env.VITE_BUILD_ID.
+  // ErrorBoundary uses it to scope the chunk-error retry counter to this deploy
+  // so each new deploy gets a fresh budget of retries. Falls back to Date.now()
+  // for local dev where GITHUB_SHA is undefined. Audit ref: 2026-04-25 BACKLOG —
+  // ErrorBoundary build-time deploy key.
+  define: {
+    'import.meta.env.VITE_BUILD_ID': JSON.stringify(process.env.GITHUB_SHA || Date.now().toString()),
+  },
 });
