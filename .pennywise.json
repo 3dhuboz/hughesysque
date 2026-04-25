@@ -1,8 +1,0 @@
-{
-  "scaffoldedAt": "2026-03-06T01:00:00.000Z",
-  "scaffoldedBy": "Penny Wise I.T",
-  "template": "foodtruc",
-  "templateRepo": "https://github.com/3dhuboz/Penny-Wise-IT.git",
-  "clientName": "Hughesys Que",
-  "apps": ["foodtruc", "social-ai-studio"]
-}
