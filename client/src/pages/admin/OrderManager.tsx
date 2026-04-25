@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
-import { MessageCircle, Check, Clock, XCircle, CheckCircle, AlertTriangle, Edit2, Plus, Trash2, X, Save, DollarSign, Mail, Smartphone, CreditCard, Flame, Snowflake, Truck, ShoppingBag, Package, Loader2, MapPin, Undo2 } from 'lucide-react';
+import { MessageCircle, Check, Clock, XCircle, CheckCircle, AlertTriangle, Edit2, Plus, Trash2, X, Save, DollarSign, Mail, Smartphone, CreditCard, Flame, Snowflake, Truck, ShoppingBag, Package, Loader2, MapPin, Undo2, RotateCcw } from 'lucide-react';
 import { Order, MenuItem } from '../../types';
 import { toLocalDateStr } from '../../utils/dateUtils';
 
@@ -682,6 +682,47 @@ const normalizePhone = (raw: string): string => {
           
           updateOrderStatus(order.id, 'Completed');
           toast(`Order collected! Thank-you email sent to ${order.customerName}.`);
+      }
+  };
+
+  // Cancel + refund. Hits /api/v1/payment/square-refund which calls the
+  // Square refund API, marks the order Cancelled, and reverses any catering
+  // loyalty credit. Confirms with the dollar amount and a typed CANCEL
+  // safeguard since this is destructive and triggers a real payment refund.
+  const handleCancelAndRefund = async (order: Order) => {
+      const total = (order.total || 0).toFixed(2);
+      const typed = window.prompt(
+          `Refund $${total} to ${order.customerName} and cancel this order?\n\n` +
+          `This will:\n` +
+          `  • Refund the customer via Square (real money)\n` +
+          `  • Set the order to "Cancelled"\n` +
+          `  • Reverse any catering loyalty credit\n\n` +
+          `Type CANCEL to confirm:`
+      );
+      if (typed !== 'CANCEL') {
+          if (typed !== null) toast('Refund aborted — type CANCEL exactly to confirm.', 'warning');
+          return;
+      }
+      try {
+          const res = await fetch('/api/v1/payment/square-refund', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+              },
+              body: JSON.stringify({ orderId: order.id, reason: 'Order cancelled by admin' }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+          await updateOrderStatus(order.id, 'Cancelled');
+          if (data.refunded) {
+              toast(`Refund issued ($${total}). Order marked Cancelled.`);
+          } else {
+              toast(`Order Cancelled. No Square payment to refund (${data.reason || 'placeholder payment id'}).`, 'info');
+          }
+      } catch (e: any) {
+          console.error('Refund error:', e);
+          toast(`Refund failed: ${e.message}`, 'error');
       }
   };
 
@@ -1515,6 +1556,17 @@ const normalizePhone = (raw: string): string => {
                         {(order.status === 'Paid' || order.status === 'Confirmed') && (
                            <button onClick={() => handleStartCooking(order)} className="p-2 bg-orange-600 rounded hover:bg-orange-500 text-white" title="Start Cooking & Notify">
                             <Clock size={16} />
+                           </button>
+                        )}
+
+                        {/* Cancel & Refund — visible for paid/in-progress orders, NOT
+                            for already-Cancelled or Completed. Strong typed-confirm
+                            inside handleCancelAndRefund. */}
+                        {(order.status === 'Paid' || order.status === 'Confirmed' || order.status === 'Cooking' || order.status === 'Ready') && (
+                           <button onClick={() => handleCancelAndRefund(order)}
+                                className="p-2 bg-red-900 hover:bg-red-700 rounded text-red-200 hover:text-white"
+                                title="Cancel order + refund customer">
+                            <RotateCcw size={16} />
                            </button>
                         )}
                         
