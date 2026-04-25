@@ -3,6 +3,8 @@
  * Uses Resend API — pure fetch, zero Node.js packages, CF Workers native.
  */
 
+import { fetchWithTimeout } from './fetchWithTimeout';
+
 export async function sendEmail(
   env: any,
   settings: any,
@@ -18,7 +20,7 @@ export async function sendEmail(
     throw new Error('No email provider configured. Set RESEND_API_KEY in Cloudflare Pages environment variables.');
   }
 
-  const r = await fetch('https://api.resend.com/emails', {
+  const r = await fetchWithTimeout('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${env.RESEND_API_KEY}`,

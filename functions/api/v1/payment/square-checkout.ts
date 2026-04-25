@@ -4,6 +4,7 @@
  * Reads Square credentials from D1 settings.
  */
 import { getDB, parseJson } from '../_lib/db';
+import { fetchWithTimeout } from '../_lib/fetchWithTimeout';
 
 async function getSquareSettings(env: any) {
   const db = getDB(env);
@@ -112,7 +113,7 @@ export const onRequest = async (context: any) => {
       };
     }
 
-    const checkoutRes = await fetch(`${baseUrl}/v2/online-checkout/payment-links`, {
+    const checkoutRes = await fetchWithTimeout(`${baseUrl}/v2/online-checkout/payment-links`, {
       method: 'POST',
       headers: {
         'Square-Version': '2024-01-18',
@@ -120,6 +121,10 @@ export const onRequest = async (context: any) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
+      // Don't auto-retry on 5xx — Square POSTs that create payment links
+      // are non-idempotent without an idempotency_key match; rely on
+      // Square's own idempotency_key handling instead of our retry.
+      retryOn5xx: false,
     });
 
     const data: any = await checkoutRes.json();

@@ -13,6 +13,8 @@
  * as needed.
  */
 
+import { fetchWithTimeout } from './fetchWithTimeout';
+
 function normaliseAuPhone(raw: string): string {
   let p = (raw || '').replace(/[\s\-()]/g, '');
   if (p.startsWith('+')) return p;
@@ -35,7 +37,7 @@ export async function sendSms(
     const sender = settings?.clicksendFrom || settings?.fromNumber || env.CLICKSEND_FROM || 'HughesysQ';
     const recipient = normaliseAuPhone(to);
     const auth = btoa(`${csUser}:${csKey}`);
-    const r = await fetch('https://rest.clicksend.com/v3/sms/send', {
+    const r = await fetchWithTimeout('https://rest.clicksend.com/v3/sms/send', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
@@ -61,7 +63,7 @@ export async function sendSms(
     const originator = env.MESSAGEBIRD_ORIGINATOR || 'HughesysQue';
     let recipient = normaliseAuPhone(to);
     if (recipient.startsWith('+')) recipient = recipient.slice(1);
-    const r = await fetch('https://rest.messagebird.com/messages', {
+    const r = await fetchWithTimeout('https://rest.messagebird.com/messages', {
       method: 'POST',
       headers: {
         'Authorization': `AccessKey ${env.MESSAGEBIRD_API_KEY}`,
@@ -88,7 +90,7 @@ export async function sendSms(
     params.append('To', normaliseAuPhone(to));
     params.append('From', from);
     params.append('Body', body);
-    const r = await fetch(url, {
+    const r = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
