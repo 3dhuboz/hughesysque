@@ -389,9 +389,30 @@ const normalizePhone = (raw: string): string => {
     if (!editingOrder) return;
     
     if (isCustomItem) {
-        if (!customItemName || !customItemPrice) return;
+        if (!customItemName.trim() || !customItemPrice) {
+            toast('Custom item needs a name and price.', 'warning');
+            return;
+        }
         const price = parseFloat(customItemPrice);
-        if (isNaN(price)) return;
+        if (isNaN(price)) {
+            toast('Custom item price must be a number.', 'error');
+            return;
+        }
+        // Guard rails for fat-finger price entry. Negative is never legitimate;
+        // anything over $5000 for a single line item is almost certainly a
+        // misplaced decimal (typed 50000 instead of 500.00). High-value but
+        // legitimate prices ($1000-$5000) get a confirm prompt.
+        if (price < 0) {
+            toast('Custom item price must be ≥ 0.', 'error');
+            return;
+        }
+        if (price > 5000) {
+            toast('Custom item price cannot exceed $5,000. Adjust the quantity instead.', 'error');
+            return;
+        }
+        if (price > 1000 && !window.confirm(`Add custom item "${customItemName}" at $${price.toFixed(2)}? (over $1,000 — double-check the price)`)) {
+            return;
+        }
 
         const customItem: MenuItem = {
             id: `custom_${Date.now()}`,

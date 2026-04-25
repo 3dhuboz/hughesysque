@@ -311,9 +311,20 @@ const StorefrontOrder = () => {
       const slots = [];
       let startHour = parseInt(selectedEvent.startTime?.split(':')[0] || '11');
       let endHour = parseInt(selectedEvent.endTime?.split(':')[0] || '18');
+      // For same-day pickup, drop time slots that are already in the past
+      // (plus a 15-minute buffer so a customer can't pick a slot starting
+      // in 5 minutes — kitchen needs prep time). For future-day pickup,
+      // all slots are offered.
+      const eventDate = parseLocalDate(selectedEvent.date);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const isSameDay = eventDate.getTime() === today.getTime();
+      const nowMins = isSameDay ? new Date().getHours() * 60 + new Date().getMinutes() + 15 : -1;
       for (let h = startHour; h < endHour; h++) {
-        slots.push(`${h > 12 ? h - 12 : h}:00 ${h >= 12 ? 'PM' : 'AM'}`);
-        slots.push(`${h > 12 ? h - 12 : h}:30 ${h >= 12 ? 'PM' : 'AM'}`);
+        for (const m of [0, 30]) {
+          if (isSameDay && (h * 60 + m) <= nowMins) continue;
+          const display = `${h > 12 ? h - 12 : h}:${m === 0 ? '00' : '30'} ${h >= 12 ? 'PM' : 'AM'}`;
+          slots.push(display);
+        }
       }
       setTimeSlots(slots);
     } else { setTimeSlots([]); }

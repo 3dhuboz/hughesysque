@@ -42,15 +42,24 @@ export const onRequest = async (context: any) => {
       return `<div style="background:#3a2a05;border-left:3px solid #fbbf24;padding:8px 12px;margin:6px 0 8px;border-radius:0 6px 6px 0;"><strong style="color:#fbbf24;">⚠ Special request:</strong> <span style="color:#fef3c7;">${safe}</span></div>`;
     };
 
+    // HTML-escape customer-controlled strings before interpolating into the
+    // email body. Most modern mail clients sandbox HTML, but Gmail's
+    // "view source" and some webmail UIs render naive markup. A malicious
+    // order with a customerName like `<img src=x onerror=alert(1)>` would
+    // otherwise reach Macca's inbox unaltered.
+    const esc = (s: any) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
     const itemsList = order.items.map((line: any) => {
       const it = line.item || line;
-      const name = it.name || 'Item';
+      const name = esc(it.name || 'Item');
       const price = typeof it.price === 'number' ? it.price : 0;
       const qty = line.quantity || 1;
       return `<li style="margin-bottom:10px;">${qty}x ${name} - $${(price * qty).toFixed(2)}${renderPackSelections(line.packSelections)}${renderSpecialRequests(line)}</li>`;
     }).join('');
 
     const cookDate = new Date(order.cookDay).toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const safeCustomerName = esc(order.customerName);
+    const safeCustomerEmail = esc(order.customerEmail);
 
     const adminHtml = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#1a1a1a;color:#fff;border-radius:12px;overflow:hidden;">
@@ -58,10 +67,10 @@ export const onRequest = async (context: any) => {
           <h1 style="margin:0;color:#fff;">🔥 New Order Received!</h1>
         </div>
         <div style="padding:24px;">
-          <p><strong>Order ID:</strong> #${order.id?.slice(-6) || order.id}</p>
-          <p><strong>Customer:</strong> ${order.customerName} (${order.customerEmail})</p>
-          <p><strong>Cook Day:</strong> ${cookDate} at ${order.pickupTime}</p>
-          <p><strong>Type:</strong> ${order.type}</p>
+          <p><strong>Order ID:</strong> #${esc(order.id?.slice(-6) || order.id)}</p>
+          <p><strong>Customer:</strong> ${safeCustomerName} (${safeCustomerEmail})</p>
+          <p><strong>Cook Day:</strong> ${esc(cookDate)} at ${esc(order.pickupTime)}</p>
+          <p><strong>Type:</strong> ${esc(order.type)}</p>
           <h3 style="color:#eab308;">Items:</h3>
           <ul>${itemsList}</ul>
           <hr style="border-color:#333;"/>
@@ -73,7 +82,7 @@ export const onRequest = async (context: any) => {
     await sendEmail(env, settings, settings.adminEmail,
       `New Order: ${order.customerName} - $${order.total.toFixed(2)}`,
       `New Order from ${order.customerName} for $${order.total.toFixed(2)}`,
-      adminHtml
+      adminHtml,
     );
 
     if (order.customerEmail) {
@@ -84,7 +93,7 @@ export const onRequest = async (context: any) => {
             <p style="margin:4px 0 0;color:#ffdddd;">Hughesys Que</p>
           </div>
           <div style="padding:24px;">
-            <p>Hey <strong>${order.customerName}</strong>,</p>
+            <p>Hey <strong>${safeCustomerName}</strong>,</p>
             <p>Thanks for your order! Here's your summary:</p>
             <div style="background:#222;padding:16px;border-radius:8px;margin:16px 0;">
               <h3 style="color:#eab308;margin-top:0;">Your Order</h3>
