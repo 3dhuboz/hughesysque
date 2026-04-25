@@ -1,5 +1,6 @@
 import { getDB } from '../_lib/db';
 import { verifyAuth, requireAuth } from '../_lib/auth';
+import { readCustomerFromRequest } from '../_lib/customerSession';
 
 function rowToChatMessage(r: any) {
   return {
@@ -107,23 +108,47 @@ export const onRequest = async (context: any) => {
       // Regular message
       const { streamId, message, userName, userId } = body;
 
-      if (!streamId || !message || !userName) {
-        return json({ error: 'streamId, message, and userName are required' }, 400);
+      if (!streamId || !message) {
+        return json({ error: 'streamId and message are required' }, 400);
       }
 
-      // Check if user is banned
-      const ban = await db.prepare('SELECT id FROM chat_bans WHERE user_name = ?').bind(userName).first();
-      if (ban) {
-        return json({ error: 'You have been banned from chat.' }, 403);
-      }
-
+      // Resolve the display name. Anti-impersonation rules:
+      //   - Authenticated CUSTOMER: ignore body.userName, derive from the
+      //     customers row (name column, falling back to the local-part of
+      //     the email). Stops a customer posting under another customer's
+      //     name (or pretending to be Macca) — audit Security Medium.
+      //   - ADMIN / DEV: allow body.userName for display freedom, but the
+      //     is_admin flag is still server-derived from the session.
+      //   - Anonymous: keep accepting body.userName since live chat is open
+      //     to logged-out viewers by design. body.userName is required for
+      //     this branch only.
       let isAdmin = 0;
-      const authHeader = request.headers.get('Authorization');
-      if (authHeader) {
-        const auth = await verifyAuth(request, env);
-        if (auth && (auth.role === 'ADMIN' || auth.role === 'DEV')) {
-          isAdmin = 1;
+      let resolvedUserName = (userName || '').toString().trim().slice(0, 60);
+      let resolvedUserId: string | null = userId || null;
+
+      const adminAuth = await verifyAuth(request, env);
+      if (adminAuth && (adminAuth.role === 'ADMIN' || adminAuth.role === 'DEV')) {
+        isAdmin = 1;
+        if (!resolvedUserName) resolvedUserName = 'Hughesys Que';
+      } else {
+        const customerSession = await readCustomerFromRequest(request, env);
+        if (customerSession) {
+          const customer = await db
+            .prepare('SELECT name FROM customers WHERE email = ?')
+            .bind(customerSession.sub)
+            .first<{ name: string | null }>();
+          const profileName = customer?.name?.toString().trim();
+          resolvedUserName = profileName || customerSession.sub.split('@')[0] || 'Customer';
+          resolvedUserId = customerSession.sub; // sub = email; keys ban-list more reliably
+        } else if (!resolvedUserName) {
+          return json({ error: 'userName is required for anonymous posts' }, 400);
         }
+      }
+
+      // Check if user is banned (by resolved name AND by userId/email if we have one)
+      const banByName = await db.prepare('SELECT id FROM chat_bans WHERE user_name = ?').bind(resolvedUserName).first();
+      if (banByName) {
+        return json({ error: 'You have been banned from chat.' }, 403);
       }
 
       const id = crypto.randomUUID();
@@ -131,12 +156,12 @@ export const onRequest = async (context: any) => {
 
       await db.prepare(
         'INSERT INTO live_chat (id, stream_id, user_name, user_id, message, created_at, is_admin) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).bind(id, streamId, userName, userId || null, message, now, isAdmin).run();
+      ).bind(id, streamId, resolvedUserName, resolvedUserId, message, now, isAdmin).run();
 
       const inserted = {
         id,
         streamId,
-        userName,
+        userName: resolvedUserName,
         message,
         createdAt: now,
         isAdmin: !!isAdmin,
