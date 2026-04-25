@@ -83,15 +83,13 @@ export const onRequest = async (context: any) => {
     const db = getDB(env);
 
     if (request.method === 'GET') {
-      const auth = await verifyAuth(request, env);
-      let results;
-      if (auth?.role === 'ADMIN' || auth?.role === 'DEV') {
-        ({ results } = await db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all());
-      } else if (auth) {
-        ({ results } = await db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC').bind(auth.userId).all());
-      } else {
-        return json({ error: 'Unauthorized' }, 401);
-      }
+      // Admin-only. Customer-self order listing lives at /api/v1/orders/mine
+      // (keyed on customer_email from the magic-link session, since customer
+      // sessions don't carry a user_id — the auth model migrated post-Clerk
+      // and the legacy `else if (auth)` branch here was structurally
+      // unreachable. Audit Backend High #8 + Security Medium.)
+      requireAuth(await verifyAuth(request, env), 'ADMIN');
+      const { results } = await db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
       return json(results.map(rowToOrder));
     }
 
