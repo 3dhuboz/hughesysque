@@ -593,7 +593,15 @@ const normalizePhone = (raw: string): string => {
       : '';
     if (!window.confirm(`Revert ${order.customerName}'s order from "${order.status}" back to "${prev}"?${sentNotifWarning}`)) return;
     try {
-      await updateOrderStatus(order.id, prev);
+      // forceStatus: true — the server's LEGAL_TRANSITIONS map is forward-only
+      // (only Cancelled → Pending is a legal revert). The UI's PREVIOUS_STATUS
+      // is broader on purpose (Completed → Ready, Confirmed → Pending, etc.)
+      // so reverts must explicitly opt out of the guard. See _lib/loyalty.ts
+      // for why the server side is conservative — the loyalty_credited flag
+      // can drift if a paid order bounces back through Pending without the
+      // refund flow. Reverts here are deliberate admin actions; logged via
+      // [orders] forceStatus used... in CF logs.
+      await updateOrderStatus(order.id, prev, { forceStatus: true });
       toast(`Order reverted: "${order.status}" → "${prev}".`);
     } catch (e: any) {
       toast(`Revert failed: ${e?.message || 'unknown error'}`, 'error');

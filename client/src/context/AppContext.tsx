@@ -59,7 +59,7 @@ interface AppContextType {
 
   orders: Order[];
   createOrder: (order: Order) => void;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
+  updateOrderStatus: (orderId: string, status: Order['status'], opts?: { forceStatus?: boolean }) => void;
   updateOrder: (order: Order) => void;
 
   cart: CartItem[];
@@ -466,8 +466,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     clearCart();
   };
 
-  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
-    await apiUpdateOrder(orderId, { status });
+  const updateOrderStatus = async (orderId: string, status: Order['status'], opts?: { forceStatus?: boolean }) => {
+    // forceStatus is required for "illegal" reverts (e.g. Confirmed → Pending,
+    // Completed → Ready) — the server's LEGAL_TRANSITIONS map in
+    // functions/api/v1/orders/[id].ts is forward-only with one revert. The
+    // PREVIOUS_STATUS revert UI in OrderManager.tsx is broader, so its calls
+    // must pass forceStatus to bypass the guard. See PRODUCTION-AUDIT-2026-04-25
+    // BACKLOG (status-machine guards) + Leader review of the 2026-04-26 batch.
+    const body: any = { status };
+    if (opts?.forceStatus) body.forceStatus = true;
+    await apiUpdateOrder(orderId, body);
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
     if (status === 'Confirmed') {
       const order = orders.find(o => o.id === orderId);

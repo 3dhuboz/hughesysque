@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStorefront } from '../context/AppContext';
 import { ShoppingBag, Trash2, CheckCircle, Clock, User, Mail, Phone, AlertCircle, ArrowRight, Truck, Check, Plus, Minus, Flame, Snowflake, X, Package, MapPin, CreditCard, Lock, Info, Ticket } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { parseLocalDate } from '../utils/dateUtils';
+import { parseLocalDate, toLocalDateStr } from '../utils/dateUtils';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80';
 
@@ -315,9 +315,11 @@ const StorefrontOrder = () => {
       // (plus a 15-minute buffer so a customer can't pick a slot starting
       // in 5 minutes — kitchen needs prep time). For future-day pickup,
       // all slots are offered.
-      const eventDate = parseLocalDate(selectedEvent.date);
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const isSameDay = eventDate.getTime() === today.getTime();
+      // Compare via local YYYY-MM-DD strings — the previous Date.getTime()
+      // compare was always false because parseLocalDate noon-pins while the
+      // midnight-floored `today` did not, so the same-day branch was dead.
+      // Caught by the Leader review of the 2026-04-26 audit batch.
+      const isSameDay = selectedEvent.date === toLocalDateStr(new Date());
       const nowMins = isSameDay ? new Date().getHours() * 60 + new Date().getMinutes() + 15 : -1;
       for (let h = startHour; h < endHour; h++) {
         for (const m of [0, 30]) {
