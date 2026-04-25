@@ -1,9 +1,0 @@
-# Railway backend-only deploy — React client is on Cloudflare Pages separately.
-# Use npm install (not npm ci) to avoid lock file sync issues.
-# Skip the build phase — no React build needed on the API server.
-
-[phases.install]
-cmds = ["npm install --omit=dev"]
-
-[phases.build]
-cmds = []
