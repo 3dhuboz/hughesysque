@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Link, useLocation } from 'react-router-dom';
 import { Flame, UtensilsCrossed, CalendarDays, LogOut, LayoutDashboard, Facebook, Instagram, Mail, MapPin, Image as ImageIcon, AlertTriangle, Radio, Music2, Shield, Gift, User as UserIcon } from 'lucide-react';
-import InstallPwa from './InstallPwa';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -90,7 +89,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
 
         <div className="flex items-center gap-4">
-          <InstallPwa />
           {user ? (
             <div className="flex items-center gap-3">
               {user.role === 'CUSTOMER' ? (
@@ -148,8 +146,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </h1>
         </Link>
         <div className="flex items-center gap-3">
-             <InstallPwa />
-             {cart.length > 0 && (
+                {cart.length > 0 && (
                 <Link to="/order" className="bg-bbq-red text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 animate-pulse">
                     {cart.length} <UtensilsCrossed size={12}/>
                 </Link>

@@ -7,42 +7,7 @@
   <meta name="description" content="Hughesys Que - Quality Street Food" />
   <link rel="icon" href="/logo.png" type="image/png" />
   <link rel="apple-touch-icon" href="/logo.png" />
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Hughesys Que" />
   <title>Hughesys Que</title>
-  <!--
-    Early cache/SW nuke. Runs before any bundle is fetched so that a stale
-    service worker from a previous deploy can't intercept this load and
-    serve old index.html pointing at dead chunk hashes.
-    If we detect either an active SW or a Cache API store, we kill them both
-    and hard-reload once (gated by sessionStorage to avoid loops).
-  -->
-  <script>
-    (function() {
-      if (!('serviceWorker' in navigator) && !('caches' in window)) return;
-      var KEY = 'hq_sw_nuke_done_v1';
-      if (sessionStorage.getItem(KEY)) return;
-      Promise.all([
-        'serviceWorker' in navigator
-          ? navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })
-          : Promise.resolve([]),
-        'caches' in window
-          ? caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })
-          : Promise.resolve([])
-      ]).then(function(results) {
-        var hadSW = Array.isArray(results[0]) && results[0].length > 0;
-        var hadCache = Array.isArray(results[1]) && results[1].length > 0;
-        sessionStorage.setItem(KEY, '1');
-        if (hadSW || hadCache) {
-          // Force-fetch fresh index.html since we've just ejected the thing
-          // that was serving the stale one.
-          window.location.reload();
-        }
-      }).catch(function(){ sessionStorage.setItem(KEY, '1'); });
-    })();
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
