@@ -1,6 +1,42 @@
 import { getDB, parseJson } from '../_lib/db';
 import { verifyAuth, requireAuth } from '../_lib/auth';
 
+/**
+ * Settings keys that are server-managed and must never be set/overwritten via
+ * the PUT endpoint, even by an authenticated admin. Forging these would let
+ * an attacker mint admin/customer session tokens at will (session secrets) or
+ * impersonate the admin (password record). Reject the whole request — at any
+ * depth — if any of these names appear.
+ */
+const PROTECTED_KEYS = new Set([
+  'adminSessionSecret',
+  'customerSessionSecret',
+  'adminPasswordRecord',
+  'adminPassword',
+  'adminResetCode',
+  'adminResetExpiresAt',
+  'adminResetIssuedAt',
+  'adminResetAttempts',
+]);
+
+function findProtectedKey(obj: any, path = ''): string | null {
+  if (!obj || typeof obj !== 'object') return null;
+  if (Array.isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      const found = findProtectedKey(obj[i], `${path}[${i}]`);
+      if (found) return found;
+    }
+    return null;
+  }
+  for (const key of Object.keys(obj)) {
+    const fullPath = path ? `${path}.${key}` : key;
+    if (PROTECTED_KEYS.has(key)) return fullPath;
+    const found = findProtectedKey(obj[key], fullPath);
+    if (found) return found;
+  }
+  return null;
+}
+
 export const onRequest = async (context: any) => {
   const { request, env } = context;
   const json = (d: any, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'Content-Type': 'application/json' } });
@@ -36,6 +72,10 @@ export const onRequest = async (context: any) => {
     if (request.method === 'PUT' || request.method === 'PATCH' || request.method === 'POST') {
       requireAuth(await verifyAuth(request, env), 'ADMIN');
       const data = await request.json();
+      const offending = findProtectedKey(data);
+      if (offending) {
+        return json({ error: `Field '${offending}' is server-managed and cannot be set via this endpoint.` }, 400);
+      }
       const existing = await db.prepare("SELECT data FROM settings WHERE key = 'general'").first();
       const current = existing ? parseJson(existing.data as string, {}) : {};
       const deepMerge = (target: any, source: any): any => {
