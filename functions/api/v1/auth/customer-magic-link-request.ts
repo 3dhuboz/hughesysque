@@ -37,14 +37,25 @@ export const onRequestPost = async (context: any) => {
 
     const db = getDB(env);
 
-    // Throttle: did we issue a link for this email less than THROTTLE_MS ago?
+    // Throttle: refuse to issue a fresh link if we issued ANY link to this
+    // email (consumed or not) less than THROTTLE_MS ago. Issued_at is
+    // derived from expires_at (TTL_MS is the same for every link).
+    //
+    // Per-IP rate limiting is NOT done here — configure a Cloudflare WAF
+    // rate-limit rule on /api/v1/auth/customer-magic-link-request to cap
+    // requests per source IP (recommended: 5/min). Audit reference:
+    // 2026-04-25 audit, Backend Low #18 + Security High.
     const recent = await db
-      .prepare("SELECT expires_at FROM magic_links WHERE email = ? AND consumed_at IS NULL ORDER BY expires_at DESC LIMIT 1")
+      .prepare("SELECT expires_at FROM magic_links WHERE email = ? ORDER BY expires_at DESC LIMIT 1")
       .bind(submittedEmail)
       .first<{ expires_at: number }>();
-    if (recent && (recent.expires_at - (Date.now() + TTL_MS - THROTTLE_MS)) > 0) {
-      // Most recent unconsumed link issued within the last THROTTLE_MS — silently no-op.
-      return json({ success: true });
+    if (recent) {
+      const issuedAt = recent.expires_at - TTL_MS;
+      if (Date.now() - issuedAt < THROTTLE_MS) {
+        // Most recent link issued within the last THROTTLE_MS — silent no-op
+        // (don't reveal whether the email is on file).
+        return json({ success: true });
+      }
     }
 
     const token = generateToken();

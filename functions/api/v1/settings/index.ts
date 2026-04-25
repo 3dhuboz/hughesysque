@@ -17,6 +17,8 @@ const PROTECTED_KEYS = new Set([
   'adminResetExpiresAt',
   'adminResetIssuedAt',
   'adminResetAttempts',
+  'adminResetDailyCount',
+  'adminResetDailyWindowStart',
 ]);
 
 function findProtectedKey(obj: any, path = ''): string | null {

@@ -20,7 +20,10 @@ export const onRequestPost = async (context: any) => {
 
   try {
     const body = await request.json().catch(() => null);
-    const code = (body?.code || '').toString().trim();
+    // Uppercase the submitted code so a hand-typed lowercase entry still
+    // matches the stored uppercase value. The reset alphabet is uppercase
+    // only (see generateResetCode in _lib/password.ts).
+    const code = (body?.code || '').toString().trim().toUpperCase();
     const newPassword = (body?.newPassword || '').toString();
 
     if (!code || !newPassword) return json({ error: 'code and newPassword required' }, 400);
@@ -50,7 +53,9 @@ export const onRequestPost = async (context: any) => {
       return json({ error: 'Incorrect code.' }, 401);
     }
 
-    // Hash + write the new password, wipe reset + plaintext fields
+    // Hash + write the new password, wipe reset + plaintext fields. Also
+    // clear the daily-reset counter — once you've successfully reset, the
+    // window resets too.
     const record = await hashPassword(newPassword);
     const updated = { ...settings, adminPasswordRecord: record };
     delete updated.adminPassword;
@@ -58,6 +63,8 @@ export const onRequestPost = async (context: any) => {
     delete updated.adminResetExpiresAt;
     delete updated.adminResetIssuedAt;
     delete updated.adminResetAttempts;
+    delete updated.adminResetDailyCount;
+    delete updated.adminResetDailyWindowStart;
     await db.prepare("INSERT OR REPLACE INTO settings (key, data) VALUES ('general', ?)")
       .bind(JSON.stringify(updated)).run();
 

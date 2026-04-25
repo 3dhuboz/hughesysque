@@ -63,8 +63,19 @@ export async function verifyPassword(password: string, record: PasswordRecord): 
   }
 }
 
-/** 6-digit reset code */
+/**
+ * 8-char alphanumeric reset code. ~37 bits of entropy (31^8 ≈ 8.5 * 10^11)
+ * vs the previous 6-digit-only (1 * 10^6) — a ~850,000x larger keyspace.
+ *
+ * Character set excludes ambiguous glyphs (0/O, 1/I/L, U/V) so an admin
+ * can read the code from an email without misreads. Uppercase only;
+ * verification is case-insensitive (admin-reset-confirm uppercases the
+ * submitted value before comparing).
+ */
 export function generateResetCode(): string {
-  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000;
-  return n.toString().padStart(6, '0');
+  const chars = 'ABCDEFGHJKMNPQRSTWXYZ23456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  let out = '';
+  for (let i = 0; i < 8; i++) out += chars[bytes[i] % chars.length];
+  return out;
 }

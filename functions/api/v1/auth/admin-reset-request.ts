@@ -15,6 +15,8 @@ import { generateResetCode } from '../_lib/password';
 import { sendEmail } from '../_lib/sendEmail';
 
 const TTL_MS = 15 * 60 * 1000; // 15 minutes
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_RESETS_PER_DAY = 5;
 
 export const onRequestPost = async (context: any) => {
   const { request, env } = context;
@@ -37,10 +39,24 @@ export const onRequestPost = async (context: any) => {
       return json({ success: true });
     }
 
-    // Throttle: refuse to re-generate if we issued a code less than 60s ago.
+    // Per-second throttle: refuse to re-generate if we issued a code less
+    // than 60s ago. Catches the "spam-click the button" case.
     if (settings.adminResetIssuedAt && Date.now() - settings.adminResetIssuedAt < 60_000) {
       return json({ success: true }); // still don't leak
     }
+
+    // Daily cap: refuse to issue more than MAX_RESETS_PER_DAY codes in any
+    // rolling 24-hour window. Combined with the 5-attempts-per-code limit
+    // in admin-reset-confirm, this caps brute-force at 25 guesses/day
+    // against the 8.5×10¹¹-keyspace 8-char alphanumeric code (audit High).
+    const now = Date.now();
+    const windowStart = settings.adminResetDailyWindowStart || 0;
+    let dailyCount = settings.adminResetDailyCount || 0;
+    const newWindowStart = (now - windowStart > DAY_MS) ? now : windowStart;
+    if (now - windowStart <= DAY_MS && dailyCount >= MAX_RESETS_PER_DAY) {
+      return json({ success: true }); // silent — don't leak that we're rate-limiting
+    }
+    dailyCount = (now - windowStart > DAY_MS) ? 1 : dailyCount + 1;
 
     const code = generateResetCode();
     const expiresAt = Date.now() + TTL_MS;
@@ -51,6 +67,8 @@ export const onRequestPost = async (context: any) => {
       adminResetExpiresAt: expiresAt,
       adminResetIssuedAt: Date.now(),
       adminResetAttempts: 0,
+      adminResetDailyCount: dailyCount,
+      adminResetDailyWindowStart: newWindowStart,
     };
     await db.prepare("INSERT OR REPLACE INTO settings (key, data) VALUES ('general', ?)")
       .bind(JSON.stringify(updated)).run();
