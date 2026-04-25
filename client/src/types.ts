@@ -108,11 +108,12 @@ export interface Order {
   customerName: string;
   customerEmail?: string;
   customerPhone?: string;
-  items: { 
-    item: MenuItem; 
+  items: {
+    item: MenuItem;
     quantity: number;
-    selectedOption?: string; 
+    selectedOption?: string;
     packSelections?: Record<string, string[]>; // e.g. { "Proteins": ["Brisket", "Brisket"] }
+    specialRequests?: string; // Customer's per-line note ("no onion", "well done", etc.)
   }[];
   total: number;
   depositAmount?: number; // New field for catering deposits
