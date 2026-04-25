@@ -177,3 +177,20 @@ CREATE INDEX IF NOT EXISTS idx_magic_links_email ON magic_links(email, expires_a
 CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email);
 CREATE INDEX IF NOT EXISTS idx_orders_cook_day ON orders(cook_day);
 CREATE INDEX IF NOT EXISTS idx_orders_status_created ON orders(status, created_at DESC);
+
+-- Order edit-history audit trail. One row per changed field per PUT to
+-- /api/v1/orders/:id. `field` is the camelCase API field name (matches
+-- what the admin UI displays); `actor_email` is the staff member who
+-- made the edit. changed_at is INTEGER Unix ms (Date.now()) for cheap
+-- DESC sorts. See PRODUCTION-AUDIT-2026-04-25.md BACKLOG (order-edit
+-- audit trail) and migrations/0002_order_history.sql.
+CREATE TABLE IF NOT EXISTS order_history (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL,
+  actor_email TEXT,
+  field TEXT NOT NULL,
+  old_value TEXT,
+  new_value TEXT,
+  changed_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_order_history_order ON order_history(order_id, changed_at DESC);
