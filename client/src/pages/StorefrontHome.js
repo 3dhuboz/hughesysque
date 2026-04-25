@@ -629,14 +629,14 @@ const StorefrontHome = () => {
             <div className="flex gap-4 px-2">
               {tickerItems.map((img, i) => (
                 <div key={`t1-${i}`} className="relative w-64 h-64 shrink-0 rounded-xl overflow-hidden border border-white/10 group-hover:grayscale transition duration-500 hover:!grayscale-0 cursor-pointer">
-                  <img src={img} alt="Food" className="w-full h-full object-cover" onError={handleImageError} />
+                  <img src={img} alt="" loading="lazy" decoding="async" width="256" height="256" className="w-full h-full object-cover" onError={handleImageError} />
                 </div>
               ))}
             </div>
             <div className="flex gap-4 px-2">
               {tickerItems.map((img, i) => (
                 <div key={`t2-${i}`} className="relative w-64 h-64 shrink-0 rounded-xl overflow-hidden border border-white/10 group-hover:grayscale transition duration-500 hover:!grayscale-0 cursor-pointer">
-                  <img src={img} alt="Food" className="w-full h-full object-cover" onError={handleImageError} />
+                  <img src={img} alt="" loading="lazy" decoding="async" width="256" height="256" className="w-full h-full object-cover" onError={handleImageError} />
                 </div>
               ))}
             </div>

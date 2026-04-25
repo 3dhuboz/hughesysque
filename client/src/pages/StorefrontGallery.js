@@ -53,7 +53,7 @@ const FeedPost = ({ post }) => {
         </div>
       </div>
       <div className="relative w-full aspect-square bg-black cursor-pointer" onDoubleClick={handleLike}>
-        <img src={post.imageUrl} alt={post.caption} className="w-full h-full object-cover" />
+        <img src={post.imageUrl} alt={post.caption || `${post.userName} gallery post`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
         {likeAnim && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <Heart size={100} className="text-white fill-white drop-shadow-2xl opacity-80" style={{ animation: 'fadeIn 0.3s ease, fadeOut 0.5s ease 0.3s forwards' }} />

@@ -63,7 +63,7 @@ const ItemDetailsModal = ({ item, onClose, onAddToCart }) => {
           <X size={20} />
         </button>
         <div className="h-64 shrink-0 relative">
-          <img src={item.image || PLACEHOLDER_IMG} alt={item.name} className="w-full h-full object-cover" onError={handleImageError} />
+          <img src={item.image || PLACEHOLDER_IMG} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-cover" onError={handleImageError} />
           <div className="absolute inset-0 bg-gradient-to-t from-bbq-charcoal to-transparent"></div>
           <div className="absolute bottom-4 left-6 right-6">
             <h2 className="text-3xl font-display font-bold text-white leading-none drop-shadow-md">{item.name}</h2>
@@ -359,7 +359,7 @@ const StorefrontMenu = () => {
                       className={`group relative bg-[#1a1a1a] rounded-2xl overflow-hidden border transition-all duration-300 shadow-xl flex flex-col h-full cursor-pointer transform hover:-translate-y-1 ${item.isPack ? 'border-purple-500/30 hover:border-purple-500' : 'border-white/5 hover:border-bbq-red/50 hover:shadow-red-900/20'}`}>
                       <div className="w-full h-48 relative overflow-hidden shrink-0">
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent z-10" />
-                        <img src={item.image || PLACEHOLDER_IMG} alt={item.name} onError={handleImageError}
+                        <img src={item.image || PLACEHOLDER_IMG} alt={item.name} loading="lazy" decoding="async" onError={handleImageError}
                           className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
                         {item.isPack && (
                           <div className="absolute top-2 left-2 bg-purple-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg z-20">FAMILY PACK</div>
