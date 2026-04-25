@@ -1,4 +1,5 @@
 import { sendEmail } from '../_lib/sendEmail';
+import { verifyAuth, requireAuth } from '../_lib/auth';
 
 export const onRequest = async (context: any) => {
   const { request, env } = context;
@@ -6,10 +7,9 @@ export const onRequest = async (context: any) => {
 
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-  const secret = env.EMAIL_API_SECRET;
-  if (secret && request.headers.get('x-api-secret') !== secret) return json({ error: 'Unauthorized' }, 401);
-
   try {
+    requireAuth(await verifyAuth(request, env), 'ADMIN');
+
     const { settings, order, location, businessName } = await request.json();
     const name = businessName || 'Hughesys Que';
 
@@ -69,6 +69,6 @@ export const onRequest = async (context: any) => {
     return json({ success: true, provider: env.AWS_SES_ACCESS_KEY_ID ? 'ses' : 'smtp' });
   } catch (error: any) {
     console.error('Order ready email error:', error);
-    return json({ error: error.message }, 500);
+    return json({ error: error.message }, error.status || 500);
   }
 };

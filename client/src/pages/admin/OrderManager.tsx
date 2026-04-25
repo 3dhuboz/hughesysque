@@ -82,7 +82,10 @@ const normalizePhone = (raw: string): string => {
                 }),
                 fetch('/api/v1/sms/order-notification', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+                    },
                     body: JSON.stringify({ settings: settings.smsSettings, order: { ...order, status: 'Confirmed' } }),
                 })
             ]);
@@ -124,7 +127,10 @@ const normalizePhone = (raw: string): string => {
                   }),
                   fetch('/api/v1/sms/order-notification', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+                      },
                       body: JSON.stringify({ settings: settings.smsSettings, order: { ...order, status: 'Rejected' } }),
                   })
               ]);
@@ -590,14 +596,20 @@ const normalizePhone = (raw: string): string => {
               order.customerPhone && settings.smsSettings?.enabled
                   ? fetch('/api/v1/sms/cooking-started', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+                      },
                       body: JSON.stringify({ settings: settings.smsSettings, order: orderPayload, businessName })
                   }) : Promise.resolve(),
               // Email: cooking started
               order.customerEmail && settings.emailSettings?.enabled
                   ? fetch('/api/v1/email/cooking-started', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+                      },
                       body: JSON.stringify({ settings: settings.emailSettings, order: orderPayload, businessName })
                   }) : Promise.resolve()
           ]);
@@ -623,12 +635,18 @@ const normalizePhone = (raw: string): string => {
               await Promise.allSettled([
                   fetch('/api/v1/email/order-ready', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+                      },
                       body: JSON.stringify({ settings: settings.emailSettings, order: readyOrder, location, businessName })
                   }),
                   fetch('/api/v1/sms/order-ready', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+                      },
                       body: JSON.stringify({ settings: settings.smsSettings, order: readyOrder, location, businessName })
                   })
               ]);
@@ -651,7 +669,10 @@ const normalizePhone = (raw: string): string => {
               try {
                   await fetch('/api/v1/email/order-thankyou', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${localStorage.getItem('hq_admin_token') || ''}`,
+                      },
                       body: JSON.stringify({
                           settings: settings.emailSettings,
                           order: { id: order.id, customerName: order.customerName, customerEmail: order.customerEmail },
