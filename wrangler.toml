@@ -8,3 +8,11 @@ binding = "DB"
 database_name = "hughesys-que-db"
 database_id = "09db3efb-8bd5-4384-804b-775c37a697a9"
 migrations_dir = "migrations"
+
+# R2 bucket for admin-triggered D1 backups (POST /api/admin/backup).
+# One-time setup before uncommenting:
+#   wrangler r2 bucket create hughesys-que-backups
+# Then uncomment the block below and redeploy.
+# [[r2_buckets]]
+# binding = "BACKUPS"
+# bucket_name = "hughesys-que-backups"
