@@ -4,6 +4,7 @@
  * HMAC signature verification via Web Crypto API.
  */
 import { getDB, parseJson, rowToOrder } from '../_lib/db';
+import { creditLoyaltyIfNeeded } from '../_lib/loyalty';
 
 async function verifySignature(rawBody: string, signature: string, signatureKey: string, notificationUrl: string): Promise<boolean> {
   const combined = notificationUrl + rawBody;
@@ -59,20 +60,34 @@ export const onRequest = async (context: any) => {
     const squareOrderId = payment.order_id;
     console.log(`[Square Webhook] Payment COMPLETED for Square order: ${squareOrderId}`);
 
-    // Look up order in D1
+    // Look up order in D1 — match either the deposit checkout id
+    // (square_checkout_id) or the balance checkout id (balance_checkout_id).
+    // Catering orders that paid a 50% deposit have both columns set; the
+    // webhook needs to flip the order to Paid no matter which link the
+    // customer used.
     const db = getDB(env);
     const orderRow = await db.prepare(
-      'SELECT * FROM orders WHERE square_checkout_id = ? LIMIT 1'
-    ).bind(squareOrderId).first();
+      'SELECT * FROM orders WHERE square_checkout_id = ? OR balance_checkout_id = ? LIMIT 1'
+    ).bind(squareOrderId, squareOrderId).first();
 
     if (!orderRow) {
-      console.warn(`[Square Webhook] No matching order for square_checkout_id: ${squareOrderId}`);
+      console.warn(`[Square Webhook] No matching order for checkout id: ${squareOrderId}`);
       return json({ received: true, matched: false });
     }
 
     const order = rowToOrder(orderRow);
 
-    if (order.status !== 'Awaiting Payment') {
+    // Statuses that legitimately advance to Paid via webhook:
+    //   - 'Pending' — storefront-created order, customer paid the link
+    //     directly without admin clicking Approve (race condition the
+    //     pre-fix webhook silently no-op'd on; see audit Payments
+    //     Critical #4)
+    //   - 'Awaiting Payment' — admin pushed the order into this state
+    //     before issuing the link (legacy flow)
+    // Anything else (already Paid, Confirmed, Cooking, etc.) is left
+    // alone so a webhook replay doesn't re-trigger downstream effects.
+    const ADVANCEABLE: ReadonlySet<string> = new Set(['Pending', 'Awaiting Payment']);
+    if (!ADVANCEABLE.has(order.status)) {
       console.log(`[Square Webhook] Order ${order.id} status is '${order.status}', skipping.`);
       return json({ received: true, matched: true, skipped: true });
     }
@@ -82,6 +97,17 @@ export const onRequest = async (context: any) => {
       'UPDATE orders SET status = ?, payment_intent_id = ? WHERE id = ?'
     ).bind('Paid', payment.id, order.id).run();
     console.log(`[Square Webhook] Order ${order.id} updated to 'Paid'`);
+
+    // Credit catering loyalty (idempotent — see _lib/loyalty.ts). Don't
+    // let a loyalty failure abort the rest of the webhook flow.
+    try {
+      const loyalty = await creditLoyaltyIfNeeded(env, order.id);
+      if (loyalty.credited && loyalty.cateringCents) {
+        console.log(`[Square Webhook] order ${order.id} credited ${loyalty.cateringCents} cents to catering loyalty`);
+      }
+    } catch (e) {
+      console.error(`[Square Webhook] loyalty credit failed for ${order.id}:`, e);
+    }
 
     // Load settings for email/SMS confirmations
     const settingsRow: any = await db.prepare("SELECT data FROM settings WHERE key = 'general'").first();

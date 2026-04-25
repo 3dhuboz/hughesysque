@@ -1,5 +1,6 @@
 import { getDB, rowToOrder } from '../_lib/db';
 import { verifyAuth, requireAuth } from '../_lib/auth';
+import { creditLoyaltyIfNeeded } from '../_lib/loyalty';
 
 export const onRequest = async (context: any) => {
   const { request, env, params } = context;
@@ -16,7 +17,8 @@ export const onRequest = async (context: any) => {
       const map: Record<string, string> = {
         status: 'status', trackingNumber: 'tracking_number', courier: 'courier',
         collectionPin: 'collection_pin', pickupLocation: 'pickup_location',
-        squareCheckoutId: 'square_checkout_id', paymentIntentId: 'payment_intent_id',
+        squareCheckoutId: 'square_checkout_id', balanceCheckoutId: 'balance_checkout_id',
+        paymentIntentId: 'payment_intent_id',
         customerName: 'customer_name', customerEmail: 'customer_email', customerPhone: 'customer_phone',
         pickupTime: 'pickup_time', fulfillmentMethod: 'fulfillment_method',
         deliveryAddress: 'delivery_address', deliveryFee: 'delivery_fee',
@@ -36,6 +38,22 @@ export const onRequest = async (context: any) => {
       if (fields.length === 0) return json({ error: 'No fields to update' }, 400);
       values.push(params.id);
       await db.prepare(`UPDATE orders SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
+
+      // If admin just moved the order into a paid status, credit catering
+      // loyalty (idempotent + self-gating — see _lib/loyalty.ts).
+      if (data.status === 'Paid' || data.status === 'Completed') {
+        try {
+          const result = await creditLoyaltyIfNeeded(env, params.id);
+          if (result.credited && result.cateringCents) {
+            console.log(`[loyalty] order ${params.id} credited ${result.cateringCents} cents`);
+          }
+        } catch (e) {
+          // Don't fail the status update if loyalty bookkeeping errors —
+          // the next status flip will retry (loyalty_credited still 0).
+          console.error(`[loyalty] credit attempt failed for order ${params.id}:`, e);
+        }
+      }
+
       const row = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(params.id).first();
       if (!row) return json({ error: 'Not found' }, 404);
       return json(rowToOrder(row));

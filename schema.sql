@@ -61,7 +61,16 @@ CREATE TABLE IF NOT EXISTS orders (
   pickup_location TEXT,
   discount_applied INTEGER DEFAULT 0,
   payment_intent_id TEXT,
-  square_checkout_id TEXT
+  square_checkout_id TEXT,
+  -- Square checkout id for the BALANCE-due link on catering orders that paid
+  -- a 50% deposit. The deposit link's id stays in square_checkout_id; this
+  -- column tracks the second link so the webhook can mark either as paid.
+  balance_checkout_id TEXT,
+  -- Idempotency flag for loyalty crediting. Flipped to 1 the first time the
+  -- order moves to Paid/Completed and creditLoyaltyIfNeeded runs. Prevents
+  -- double-credit if status flips to Paid more than once (e.g. webhook
+  -- replay or admin re-clicking Mark Paid after a revert).
+  loyalty_credited INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS calendar_events (

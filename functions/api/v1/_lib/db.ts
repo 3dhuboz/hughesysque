@@ -68,6 +68,8 @@ export function rowToOrder(r: any) {
     discountApplied: !!r.discount_applied,
     paymentIntentId: r.payment_intent_id,
     squareCheckoutId: r.square_checkout_id,
+    balanceCheckoutId: r.balance_checkout_id,
+    loyaltyCredited: !!r.loyalty_credited,
   };
 }
 
