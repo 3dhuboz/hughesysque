@@ -219,34 +219,77 @@ const StorefrontOrder = () => {
     .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
 
   const selectedEvent = orderEvents.find(e => e.id === selectedDayId);
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  // Loyalty discount kicks in when the signed-in customer's cumulative
-  // catering spend is at or above settings.hostRewards.thresholdAmount.
-  // The eligibility flag (`user.hasCateringDiscount`) is set by AppContext
-  // from /customers/me. Percent is whatever the admin set on the banner so
-  // promise = applied amount.
+
+  // -- ORDER MATH ----------------------------------------------------------
+  //
+  // All arithmetic is done in INTEGER CENTS to avoid the floating-point drift
+  // a previous version had (e.g. 49.95 * 0.5 = 24.975 → displayed $24.98 but
+  // Square link rounded to $24.97). Convert to dollars only at render time
+  // via centsToDollars().
+  //
+  // Cart split: catering vs non-catering. The Host Rewards loyalty discount
+  // ONLY applies to the catering subtotal — the audit caught the previous
+  // form silently subsidising non-catering items in mixed carts. The 50%
+  // deposit is also catering-only by design (see commit b4fc99a). So:
+  //
+  //   cateringDue   = cateringSubtotal * (1 - discount%) * 50%
+  //   nonCateringDue = nonCateringSubtotal     (full price, no discount, no deposit)
+  //   amountDueNow   = cateringDue + nonCateringDue + shipping (if DELIVERY shipping-only)
+  //   balanceRemaining = catering balance (the other 50% after discount)
+  //
+  //   NOTE on GST: square-checkout.ts adds 10% GST by default on payment
+  //   links unless includeTax:false is passed. Storefront totals here do
+  //   NOT include GST. Until that's reconciled (audit High #6 — pending a
+  //   business decision on whether Macca is GST-registered), the admin
+  //   "Send Invoice" UI should set includeTax:false to keep the customer
+  //   paying the number we showed.
+  // ---------------------------------------------------------------------
+
+  const CATERING_CATEGORIES = ['Catering', 'Catering Packs'];
+  const isCateringLine = (i) => i.isCatering === true || CATERING_CATEGORIES.includes(i.category);
+  const toCents = (n) => Math.round(Number(n || 0) * 100);
+  const centsToDollars = (c) => c / 100;
+
+  let cateringCents = 0;
+  let nonCateringCents = 0;
+  for (const item of cart) {
+    const lineCents = toCents(item.price) * (item.quantity || 0);
+    if (isCateringLine(item)) cateringCents += lineCents;
+    else nonCateringCents += lineCents;
+  }
+
+  // Loyalty discount: applies to catering subtotal only. Eligibility flag
+  // (`user.hasCateringDiscount`) is set by AppContext from /customers/me.
+  // Percent comes from settings.hostRewards.discountPercent so the rewards
+  // banner promise = applied amount.
   const hasLoyaltyDiscount = user?.hasCateringDiscount === true;
   const loyaltyDiscountPercent = settings?.hostRewards?.discountPercent && settings.hostRewards.discountPercent > 0
     ? settings.hostRewards.discountPercent
     : 10;
-  const discountAmount = hasLoyaltyDiscount ? cartTotal * (loyaltyDiscountPercent / 100) : 0;
-  const totalBeforeShipping = cartTotal - discountAmount;
-  const finalTotal = fulfillment === 'DELIVERY' && isShippableOnly ? totalBeforeShipping + SHIPPING_COST : totalBeforeShipping;
+  const discountCents = hasLoyaltyDiscount
+    ? Math.round(cateringCents * (loyaltyDiscountPercent / 100))
+    : 0;
+  const cateringNetCents = cateringCents - discountCents;
 
-  // Deposit-vs-full split. ONLY items explicitly flagged as catering take
-  // a 50% deposit — function bookings billed through the catering page.
-  // Cook-day menu items pay in full at checkout, even when they happen to
-  // be packs (Tailgate Feast for Two etc) — those are still menu orders,
-  // not catering bookings.
-  // The `isPack` flag is shared between cook-day Family Packs and catering
-  // packages, so it's NOT the discriminator. Only `isCatering === true`
-  // (set by admin on catering-specific items) and the explicit Catering
-  // categories trigger the deposit path.
-  const CATERING_CATEGORIES = ['Catering', 'Catering Packs'];
-  const requiresDeposit = cart.some(i => i.isCatering === true || CATERING_CATEGORIES.includes(i.category));
+  const shippingCents = (fulfillment === 'DELIVERY' && isShippableOnly) ? toCents(SHIPPING_COST) : 0;
+
+  const requiresDeposit = cateringCents > 0;
   const DEPOSIT_PERCENT = 0.5;
-  const amountDueNow = requiresDeposit ? finalTotal * DEPOSIT_PERCENT : finalTotal;
-  const balanceRemaining = finalTotal - amountDueNow;
+  const cateringDueNowCents = requiresDeposit
+    ? Math.round(cateringNetCents * DEPOSIT_PERCENT)
+    : 0;
+  const cateringBalanceCents = cateringNetCents - cateringDueNowCents;
+
+  const amountDueNowCents = cateringDueNowCents + nonCateringCents + shippingCents;
+  const finalTotalCents = cateringNetCents + nonCateringCents + shippingCents;
+  const balanceRemainingCents = cateringBalanceCents;
+
+  // Render-friendly aliases — keep the existing JSX call sites working.
+  const cartTotal = centsToDollars(cateringCents + nonCateringCents);
+  const discountAmount = centsToDollars(discountCents);
+  const finalTotal = centsToDollars(finalTotalCents);
+  const amountDueNow = centsToDollars(amountDueNowCents);
+  const balanceRemaining = centsToDollars(balanceRemainingCents);
 
   const availableItems = menu.filter(item => {
     // Catering-only items belong on the /catering page, not pre-order pickup.
