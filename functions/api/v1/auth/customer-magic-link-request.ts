@@ -81,10 +81,13 @@ export const onRequestPost = async (context: any) => {
       .bind(token, submittedEmail, expiresAt)
       .run();
 
-    // Build the click-through URL. HashRouter is in use on the storefront so
-    // the path goes after the `#`. Origin comes from the request.
+    // Build the click-through URL. The storefront switched from HashRouter
+    // to BrowserRouter on 2026-04-26 (audit item #26), so the path is now
+    // a regular pathname — NOT prefixed with '#'. Old hash-style links
+    // sitting in inboxes get caught by the bootstrap redirect shim in
+    // client/index.html, but new emails go out in the new format.
     const origin = new URL(request.url).origin;
-    const link = `${origin}/#/auth/callback?token=${encodeURIComponent(token)}`;
+    const link = `${origin}/auth/callback?token=${encodeURIComponent(token)}`;
 
     const settings = await (async () => {
       const row = await db.prepare("SELECT data FROM settings WHERE key = 'general'").first();

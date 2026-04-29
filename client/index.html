@@ -24,6 +24,23 @@
   <meta name="twitter:description" content="BBQ catering and cook-day pre-orders in Gladstone, QLD. Order direct from Macca's smoker - pulled pork, brisket, ribs, packs and full catering trays." />
   <meta name="twitter:image" content="/logo.png" />
 
+  <!--
+    Legacy HashRouter URL shim. The site switched to BrowserRouter on
+    2026-04-26; before that, the magic-link sign-in email pointed at
+    `/#/auth/callback?token=...`. Any of those URLs still sitting in
+    customer inboxes (within the 15-minute TTL) would otherwise land on
+    `/` and never reach the verify route. This runs before React boots
+    so we redirect once and the rest of the app sees a clean URL.
+  -->
+  <script>
+    (function() {
+      var h = window.location.hash;
+      if (h && h.length > 1 && h.charAt(1) === '/') {
+        // "#/auth/callback?token=X" -> "/auth/callback?token=X"
+        window.location.replace(h.substring(1));
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">

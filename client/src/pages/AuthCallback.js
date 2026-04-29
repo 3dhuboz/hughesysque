@@ -4,9 +4,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 
 /**
- * Magic-link landing page. The sign-in email points at /#/auth/callback?token=...;
+ * Magic-link landing page. The sign-in email points at /auth/callback?token=...;
  * we read the token from the URL, exchange it for a customer session via
  * /auth/customer-magic-link-verify, store the session, and bounce to /rewards.
+ *
+ * (Pre-2026-04-26 emails used the HashRouter format /#/auth/callback?token=...;
+ * the bootstrap shim in client/index.html catches those and redirects to the
+ * new path before React boots. The token-from-hash fallback below is a
+ * belt-and-braces second line of defence.)
  *
  * Status states: VERIFYING → SUCCESS (auto-redirect) | ERROR (manual retry).
  *
