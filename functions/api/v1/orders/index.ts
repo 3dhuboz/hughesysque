@@ -1,5 +1,6 @@
-import { getDB, generateId, rowToOrder } from '../_lib/db';
+import { getDB, generateId, parseJson, rowToOrder } from '../_lib/db';
 import { verifyAuth, requireAuth } from '../_lib/auth';
+import { effectiveMealPeriods, isItemAvailableAt, periodsForTime, type MealPeriod } from '../_lib/mealPeriods';
 
 const VALID_TYPES = new Set(['TAKEAWAY', 'CATERING']);
 const VALID_STATUSES = new Set([
@@ -103,6 +104,67 @@ export const onRequest = async (context: any) => {
       if (validationErrors) {
         return json({ error: 'Validation failed', errors: validationErrors }, 400);
       }
+
+      // Meal-period guard. The storefront filters items out of the order
+      // page once a slot is chosen, but a stale tab or a hand-rolled POST
+      // could still submit a breakfast taco for a 6 PM pickup — which is
+      // exactly the bug Macca reported. Look up canonical menu rows so we
+      // don't trust the cart's snapshot of availability_periods.
+      //
+      // Skipped when pickupTime is missing or "Anytime" (shippable-only).
+      // Catering items never reach this endpoint; they live on /catering.
+      if (order.pickupTime && order.pickupTime !== 'Anytime' && Array.isArray(order.items) && order.items.length > 0) {
+        const ids = Array.from(new Set(
+          order.items
+            .map((line: any) => line?.item?.id || line?.item?._id)
+            .filter((x: any) => typeof x === 'string' && x.length > 0)
+        )) as string[];
+
+        if (ids.length > 0) {
+          const placeholders = ids.map(() => '?').join(',');
+          const { results: menuRows } = await db
+            .prepare(`SELECT id, name, availability_periods FROM menu_items WHERE id IN (${placeholders})`)
+            .bind(...ids)
+            .all();
+          const itemMap = new Map<string, { name: string; periods: string[] | undefined }>();
+          for (const row of menuRows as any[]) {
+            itemMap.set(row.id, {
+              name: row.name,
+              periods: parseJson(row.availability_periods, undefined as string[] | undefined),
+            });
+          }
+
+          const settingsRow = await db.prepare("SELECT data FROM settings WHERE key = 'general'").first();
+          const settings = settingsRow ? parseJson(settingsRow.data as string, {} as any) : {};
+          const periods = effectiveMealPeriods(settings.mealPeriods as MealPeriod[] | undefined);
+
+          const violations: { item: string; reason: string }[] = [];
+          for (const line of order.items as any[]) {
+            const id = line?.item?.id || line?.item?._id;
+            if (!id) continue;
+            const canonical = itemMap.get(id);
+            if (!canonical) continue; // unknown id — let it pass; not this guard's job
+            if (!isItemAvailableAt(canonical.periods, order.pickupTime, periods)) {
+              const allowed = (canonical.periods || [])
+                .map(pid => periods.find(p => p.id === pid)?.name || pid)
+                .join(', ');
+              violations.push({
+                item: canonical.name,
+                reason: `not sold at ${order.pickupTime} — available during: ${allowed || '(none)'}`,
+              });
+            }
+          }
+
+          if (violations.length > 0) {
+            const matching = periodsForTime(order.pickupTime, periods).map(p => p.name).join(', ') || 'no period';
+            return json({
+              error: `Some items aren't available at ${order.pickupTime} (${matching}). Please remove them or choose a different pickup time.`,
+              violations,
+            }, 400);
+          }
+        }
+      }
+
       const id = order.id || generateId();
       await db.prepare(`INSERT INTO orders (id, user_id, customer_name, customer_email, customer_phone, items, total, deposit_amount, status, cook_day, type, pickup_time, created_at, temperature, fulfillment_method, delivery_address, delivery_fee, collection_pin, pickup_location, discount_applied, payment_intent_id, square_checkout_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .bind(id, order.userId || '', order.customerName, order.customerEmail || null, order.customerPhone || null, JSON.stringify(order.items), order.total, order.depositAmount || null, order.status || 'Pending', order.cookDay, order.type, order.pickupTime || null, order.createdAt || new Date().toISOString(), order.temperature || 'HOT', order.fulfillmentMethod || 'PICKUP', order.deliveryAddress || null, order.deliveryFee || null, order.collectionPin || null, order.pickupLocation || null, order.discountApplied ? 1 : 0, order.paymentIntentId || null, order.squareCheckoutId || null).run();

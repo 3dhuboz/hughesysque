@@ -34,7 +34,11 @@ CREATE TABLE IF NOT EXISTS menu_items (
   pack_groups TEXT,
   available_for_catering INTEGER DEFAULT 0,
   catering_category TEXT,
-  moq INTEGER
+  moq INTEGER,
+  -- JSON array of meal-period ids (matches settings.mealPeriods[].id) that
+  -- this item is sold during. NULL/empty = always available regardless of
+  -- pickup time. Added 2026-05-07 (migrations/0003_menu_availability_periods.sql).
+  availability_periods TEXT
 );
 
 CREATE TABLE IF NOT EXISTS orders (

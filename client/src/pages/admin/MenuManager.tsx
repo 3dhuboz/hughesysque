@@ -3,10 +3,11 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { parseLocalDate } from '../../utils/dateUtils';
 import { useToast } from '../../components/Toast';
-import { Plus, Edit2, Calendar, Wand2, Loader2, Image as ImageIcon, Trash2, Package, CheckSquare, Square, ChevronDown, ChevronUp, HelpCircle, ChefHat, Info, RefreshCw, ExternalLink, X, Link as LinkIcon, Search } from 'lucide-react';
+import { Plus, Edit2, Calendar, Wand2, Loader2, Image as ImageIcon, Trash2, Package, CheckSquare, Square, ChevronDown, ChevronUp, HelpCircle, ChefHat, Info, RefreshCw, ExternalLink, X, Link as LinkIcon, Search, Clock } from 'lucide-react';
 import { MenuItem, PackGroup } from '../../types';
 import { generateMarketingImage } from '../../services/gemini';
 import { PLACEHOLDER_IMG } from '../../constants';
+import { DEFAULT_MEAL_PERIODS, effectiveMealPeriods } from '../../utils/mealPeriods';
 
 // Helper to compress base64 images
 const compressImage = (base64Str: string, maxWidth = 800, quality = 0.6) => {
@@ -286,7 +287,8 @@ const SquareCatalogInspector: React.FC<{ onClose: () => void }> = ({ onClose }) 
 };
 
 const MenuManager: React.FC = () => {
-  const { menu, addMenuItem, updateMenuItem, deleteMenuItem, calendarEvents } = useApp();
+  const { menu, addMenuItem, updateMenuItem, deleteMenuItem, calendarEvents, settings } = useApp();
+  const mealPeriods = effectiveMealPeriods((settings as any)?.mealPeriods);
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -842,6 +844,47 @@ const MenuManager: React.FC = () => {
              </p>
           </div>
 
+          {/* Meal-period gating — orthogonal to date availability. Tick which
+              periods this item is sold during; leave all unticked for "all day". */}
+          <div className="bg-black/20 p-3 rounded border border-gray-700">
+              <label className="block text-sm font-bold mb-1 flex items-center gap-2">
+                  <Clock size={14} className="text-bbq-gold"/> Meal Periods
+              </label>
+              <p className="text-[11px] text-gray-500 mb-3">
+                  Restrict this item to specific time windows. Customers can't
+                  order it for a pickup slot outside these periods. Leave all
+                  unticked to keep it available all day.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {mealPeriods.map(period => {
+                      const checked = (editItem.availabilityPeriods || []).includes(period.id);
+                      return (
+                          <label key={period.id} className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition ${checked ? 'bg-bbq-gold/10 border-bbq-gold text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'}`}>
+                              <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={e => {
+                                      const current = editItem.availabilityPeriods || [];
+                                      const next = e.target.checked
+                                          ? [...current, period.id]
+                                          : current.filter(id => id !== period.id);
+                                      setEditItem({ ...editItem, availabilityPeriods: next });
+                                  }}
+                                  className="rounded text-bbq-gold focus:ring-bbq-gold"
+                              />
+                              <span className="text-sm font-bold">{period.name}</span>
+                              <span className="text-[10px] text-gray-500 ml-auto">{period.startTime}–{period.endTime}</span>
+                          </label>
+                      );
+                  })}
+              </div>
+              {(!editItem.availabilityPeriods || editItem.availabilityPeriods.length === 0) && (
+                  <p className="text-[10px] text-green-400 mt-2 italic">
+                      Available all day (no period restrictions).
+                  </p>
+              )}
+          </div>
+
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-gray-400">Cancel</button>
             <button type="submit" className="px-4 py-2 bg-bbq-red rounded font-bold">Save Item</button>
@@ -888,6 +931,11 @@ const MenuManager: React.FC = () => {
                 )}
                 {item.availabilityType === 'everyday' && (
                     <div className="text-[10px] text-green-400 mt-1">Available Everyday</div>
+                )}
+                {item.availabilityPeriods && item.availabilityPeriods.length > 0 && (
+                    <div className="text-[10px] text-bbq-gold flex items-center gap-1 mt-1">
+                        <Clock size={10} /> {item.availabilityPeriods.map(pid => mealPeriods.find(p => p.id === pid)?.name || pid).join(', ')} only
+                    </div>
                 )}
               </div>
             </div>

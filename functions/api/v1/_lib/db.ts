@@ -39,6 +39,7 @@ export function rowToMenuItem(r: any) {
     availableForCatering: !!r.available_for_catering,
     cateringCategory: r.catering_category,
     moq: r.moq,
+    availabilityPeriods: parseJson(r.availability_periods, undefined),
   };
 }
 
