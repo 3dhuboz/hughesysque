@@ -51,6 +51,19 @@ export interface MenuItem {
   // Stocktake — null/undefined means "not tracked"; a number is the current on-hand count.
   // When stock hits 0 the item auto-marks unavailable for the day.
   stock?: number | null;
+  // Meal-period gating. Array of MealPeriod ids (see AppSettings.mealPeriods)
+  // this item is sold during. undefined/empty = always available regardless
+  // of pickup time. Storefront filters items out of the order page when the
+  // chosen pickup slot falls outside every configured period; orders POST
+  // rejects mismatches as a server-side guard.
+  availabilityPeriods?: string[];
+}
+
+export interface MealPeriod {
+  id: string;          // slug-like id, e.g. "breakfast" — referenced from MenuItem.availabilityPeriods
+  name: string;        // display name shown in admin + storefront badges, e.g. "Breakfast"
+  startTime: string;   // 24h HH:MM, inclusive — e.g. "06:00"
+  endTime: string;     // 24h HH:MM, exclusive — e.g. "10:30"
 }
 
 export interface CateringPackage {
@@ -312,6 +325,12 @@ export interface AppSettings {
   // a "coming soon" empty state until admin adds at least one tier.
   cocktailMenuTiers?: CocktailTier[];
   functionMenuTiers?: FunctionTier[];
+  // Meal periods (Breakfast / Lunch / Dinner). When at least one menu item
+  // is restricted via MenuItem.availabilityPeriods, items only show in the
+  // storefront order page if the chosen pickup time falls inside one of the
+  // periods listed on that item. Empty array = no gating anywhere; every
+  // item behaves as "always available" regardless of its `availabilityPeriods`.
+  mealPeriods?: MealPeriod[];
   // Email Settings
   emailSettings?: {
     enabled: boolean;

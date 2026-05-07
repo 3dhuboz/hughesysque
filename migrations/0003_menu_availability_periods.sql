@@ -1,0 +1,21 @@
+-- 0003_menu_availability_periods.sql
+--
+-- Per-item meal-period gating. When set, the menu item is only orderable when
+-- the customer's chosen pickup time slot falls inside one of the listed
+-- periods (Breakfast / Lunch / Dinner — defined globally in
+-- settings.mealPeriods). NULL or empty = no restriction (legacy behaviour).
+--
+-- Stored as JSON array of period ids: '["breakfast","lunch"]'. Server-side
+-- guard in functions/api/v1/orders POST rejects orders that mix an item with
+-- a pickup time outside its windows; the storefront filters items out of
+-- the order page once a slot is chosen.
+--
+-- Triggered by Macca: a customer ordered breakfast tacos for a dinner
+-- pickup slot because the data model had no time-of-day concept (only
+-- date-based availability_type 'everyday' / 'specific_date').
+--
+-- SQLite has no ADD COLUMN IF NOT EXISTS. wrangler tracks applied migrations
+-- in d1_migrations so this runs once. Fresh schema.sql deploys already
+-- include the column; mark this migration applied manually in that case.
+
+ALTER TABLE menu_items ADD COLUMN availability_periods TEXT;

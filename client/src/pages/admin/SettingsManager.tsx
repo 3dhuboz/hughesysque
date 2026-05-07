@@ -5,7 +5,8 @@ import { useToast } from '../../components/Toast';
 import { CreditCard, Save, CheckCircle, ExternalLink, Loader2, X, AlertCircle, Monitor, Facebook, ChevronDown, ChevronUp, HelpCircle, ArrowRight, Gift, Wand2, Database, Server, Wifi, Banknote, Power, Eye, EyeOff, LayoutTemplate, MessageSquare, Utensils, Smartphone, Shield, Plus, Trash2, Activity, RefreshCw, Lock, WifiOff, Edit2, RotateCcw, Terminal, AlertTriangle, Copy, FileCode, Home, Music, Megaphone, Truck, Settings, Image as ImageIcon, Upload, Info } from 'lucide-react';
 import { generateMarketingImage } from '../../services/gemini';
 import { updateSettings as apiUpdateSettings, seedDatabase, migrateFromFirestore } from '../../services/api';
-import { RewardPrize, AppSettings } from '../../types';
+import { RewardPrize, AppSettings, MealPeriod } from '../../types';
+import { DEFAULT_MEAL_PERIODS } from '../../utils/mealPeriods';
 
 declare global {
   interface Window {
@@ -926,6 +927,117 @@ const SettingsManager: React.FC<{ mode?: 'admin' | 'dev' }> = ({ mode = 'admin' 
                       />
                   </div>
               </div>
+          </div>
+      </section>
+
+      {/* --- MEAL PERIODS --- */}
+      <section className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
+          <h4 className="text-xl font-bold mb-2 flex items-center gap-2"><Utensils size={20} className="text-bbq-gold"/> Meal Periods</h4>
+          <p className="text-sm text-gray-400 mb-4">
+              Time-of-day windows for the menu. Items can be restricted to one or
+              more periods (set on each item in the Menu tab) so a customer
+              picking a 6 PM pickup slot can't order breakfast tacos.
+          </p>
+          <div className="bg-blue-950/30 border border-blue-800/40 text-blue-200 text-xs p-3 rounded mb-4 flex items-start gap-2">
+              <Info size={14} className="text-blue-400 shrink-0 mt-0.5"/>
+              <span>
+                  Items with no periods set stay available all day (current
+                  behaviour). Leave this list empty to fall back to sensible
+                  defaults — Breakfast, Lunch, Dinner.
+              </span>
+          </div>
+
+          <div className="space-y-2">
+              {(formData.mealPeriods && formData.mealPeriods.length > 0
+                  ? formData.mealPeriods
+                  : DEFAULT_MEAL_PERIODS
+              ).map((period, idx) => {
+                  const isCustom = !!(formData.mealPeriods && formData.mealPeriods.length > 0);
+                  return (
+                      <div key={`${period.id}-${idx}`} className="bg-black/30 border border-gray-700 rounded-lg p-3 flex flex-wrap items-center gap-3">
+                          <div className="flex-1 min-w-[140px]">
+                              <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Name</label>
+                              <input
+                                  value={period.name}
+                                  onChange={e => {
+                                      const next = (formData.mealPeriods || DEFAULT_MEAL_PERIODS).map((p, i) =>
+                                          i === idx ? { ...p, name: e.target.value } : p
+                                      );
+                                      setFormData({ ...formData, mealPeriods: next });
+                                  }}
+                                  placeholder="Breakfast"
+                                  className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm"
+                              />
+                          </div>
+                          <div className="w-28">
+                              <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Starts</label>
+                              <input
+                                  type="time"
+                                  value={period.startTime}
+                                  onChange={e => {
+                                      const next = (formData.mealPeriods || DEFAULT_MEAL_PERIODS).map((p, i) =>
+                                          i === idx ? { ...p, startTime: e.target.value } : p
+                                      );
+                                      setFormData({ ...formData, mealPeriods: next });
+                                  }}
+                                  className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm"
+                              />
+                          </div>
+                          <div className="w-28">
+                              <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Ends</label>
+                              <input
+                                  type="time"
+                                  value={period.endTime}
+                                  onChange={e => {
+                                      const next = (formData.mealPeriods || DEFAULT_MEAL_PERIODS).map((p, i) =>
+                                          i === idx ? { ...p, endTime: e.target.value } : p
+                                      );
+                                      setFormData({ ...formData, mealPeriods: next });
+                                  }}
+                                  className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white text-sm"
+                              />
+                          </div>
+                          <button
+                              type="button"
+                              onClick={() => {
+                                  const base = formData.mealPeriods && formData.mealPeriods.length > 0
+                                      ? formData.mealPeriods
+                                      : DEFAULT_MEAL_PERIODS;
+                                  setFormData({
+                                      ...formData,
+                                      mealPeriods: base.filter((_, i) => i !== idx),
+                                  });
+                              }}
+                              className="self-end p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/40 rounded transition"
+                              title={`Delete ${period.name}`}
+                          >
+                              <Trash2 size={16}/>
+                          </button>
+                          {!isCustom && (
+                              <span className="self-end text-[10px] text-gray-500 italic">default</span>
+                          )}
+                      </div>
+                  );
+              })}
+
+              <button
+                  type="button"
+                  onClick={() => {
+                      const base = formData.mealPeriods && formData.mealPeriods.length > 0
+                          ? formData.mealPeriods
+                          : DEFAULT_MEAL_PERIODS;
+                      const newPeriod: MealPeriod = {
+                          id: `period_${Date.now()}`,
+                          name: 'New period',
+                          startTime: '12:00',
+                          endTime: '14:00',
+                      };
+                      setFormData({ ...formData, mealPeriods: [...base, newPeriod] });
+                  }}
+                  className="w-full py-2 border border-dashed border-gray-600 rounded text-xs font-bold text-bbq-gold hover:bg-gray-800 transition flex items-center justify-center gap-1"
+              >
+                  <Plus size={14}/> Add period
+              </button>
           </div>
       </section>
 

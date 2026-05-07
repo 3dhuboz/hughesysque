@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStorefront } from '../context/AppContext';
 import { parseLocalDate } from '../utils/dateUtils';
+import { effectiveMealPeriods, isItemAvailableAt, nowAs24h, periodsForTime } from '../utils/mealPeriods';
 import SmartHeroImg from '../components/SmartHeroImg';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, Package, Users, Calendar, X, Plus, Minus, Check, Truck, Info, Clock, Utensils, AlertCircle } from 'lucide-react';
@@ -177,6 +178,19 @@ const StorefrontMenu = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [recentlyAdded, setRecentlyAdded] = useState(null);
 
+  // Wall-clock gate. Macca wants period-restricted items hidden when the
+  // current time is outside their windows — so a breakfast taco doesn't
+  // sit on the menu at 7 PM tempting customers. Tick every 60s so the
+  // boundary crossings (e.g. 10:30 → end of breakfast) don't need a reload.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const activePeriods = effectiveMealPeriods(settings?.mealPeriods);
+  const wallClock = nowAs24h(now);
+  const wallClockPeriods = periodsForTime(wallClock, activePeriods);
+
   const availableMenu = menu.filter(m => {
     // Catering-only items belong on the /catering page, not the normal menu.
     // These items are flagged one of three ways historically — so catch them all:
@@ -187,7 +201,11 @@ const StorefrontMenu = () => {
     if (m.isCatering) return false;
     if (m.category === 'Catering' || m.category === 'Catering Packs') return false;
     if (m.availableForCatering && m.cateringCategory) return false;
+    // Pantry/merch ships any time of day — wall-clock gate doesn't apply.
     if (['Rubs & Sauces', 'Merch'].includes(m.category)) return true;
+    // Wall-clock gate. Period-restricted items hide when "now" isn't in
+    // any of their periods. Items without restrictions ignore this check.
+    if (!isItemAvailableAt(m, wallClock, activePeriods)) return false;
     if (!selectedOrderDate) return true;
     if (m.availabilityType === 'everyday' || !m.availabilityType) return true;
     if (m.availabilityType === 'specific_date' && m.specificDate === selectedOrderDate) return true;
@@ -332,6 +350,18 @@ const StorefrontMenu = () => {
                 <p className="text-xs text-blue-300">Select a date above to order food. Pantry items can be ordered anytime.</p>
               </div>
             </div>
+          </div>
+        )}
+
+        {wallClockPeriods.length > 0 ? (
+          <div className="text-xs text-bbq-gold flex items-center gap-2 px-1">
+            <Clock size={12}/>
+            <span>Currently serving <strong>{wallClockPeriods.map(p => p.name).join(' / ')}</strong> menu — items outside this window are hidden.</span>
+          </div>
+        ) : (
+          <div className="text-xs text-gray-500 flex items-center gap-2 px-1">
+            <Clock size={12}/>
+            <span>Outside meal-period hours — only all-day items are showing right now.</span>
           </div>
         )}
 

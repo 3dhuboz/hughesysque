@@ -3,6 +3,7 @@ import { useStorefront } from '../context/AppContext';
 import { ShoppingBag, Trash2, CheckCircle, Clock, User, Mail, Phone, AlertCircle, ArrowRight, Truck, Check, Plus, Minus, Flame, Snowflake, X, Package, MapPin, CreditCard, Lock, Info, Ticket } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { parseLocalDate, toLocalDateStr } from '../utils/dateUtils';
+import { effectiveMealPeriods, isItemAvailableAt, nowAs24h, periodsForTime } from '../utils/mealPeriods';
 
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80';
 
@@ -98,7 +99,7 @@ const PackModal = ({ item, onClose, onConfirm }) => {
 };
 
 // --- MENU ITEM CARD ---
-const MenuItemCard = ({ item, onAdd }) => {
+const MenuItemCard = ({ item, onAdd, periodLabels }) => {
   const [qty, setQty] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
   const [showPackModal, setShowPackModal] = useState(false);
@@ -137,6 +138,11 @@ const MenuItemCard = ({ item, onAdd }) => {
           </div>
           {item.isPack && (
             <div className="absolute bottom-2 left-2 bg-purple-900/90 text-white text-xs font-bold px-2 py-1 rounded border border-purple-500 shadow-lg">FAMILY PACK</div>
+          )}
+          {periodLabels && periodLabels.length > 0 && (
+            <div className="absolute bottom-2 right-2 bg-bbq-gold/90 text-black text-[10px] font-bold px-2 py-1 rounded border border-bbq-gold shadow-lg">
+              {periodLabels.join(' / ').toUpperCase()}
+            </div>
           )}
         </div>
         <div className="p-4 flex flex-col flex-1">
@@ -291,6 +297,28 @@ const StorefrontOrder = () => {
   const amountDueNow = centsToDollars(amountDueNowCents);
   const balanceRemaining = centsToDollars(balanceRemainingCents);
 
+  // Meal-period gating — Macca wants BOTH gates active simultaneously:
+  //   1. Wall-clock now: hide breakfast items at 7 PM no matter what slot
+  //      the customer eventually picks (so a stale tab can't sneak through).
+  //   2. Chosen pickup slot: hide breakfast items if the customer picks a
+  //      6 PM slot (the original bug — breakfast taco at dinner pickup).
+  // An item is shown only when it passes BOTH checks. Items with no period
+  // restrictions are unaffected.
+  //
+  // The server reproduces the slot check in functions/api/v1/orders POST
+  // as a belt-and-braces guard.
+  const activePeriods = effectiveMealPeriods(settings?.mealPeriods);
+  const periodsAtPickup = pickupTime ? periodsForTime(pickupTime, activePeriods) : [];
+
+  // Tick the wall-clock every 60s so an item that crosses its boundary
+  // (e.g. breakfast ends at 10:30) disappears without needing a reload.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const wallClock = nowAs24h(now);
+
   const availableItems = menu.filter(item => {
     // Catering-only items belong on the /catering page, not pre-order pickup.
     // Mirrors the filter in StorefrontMenu.js — catch isCatering flag, the
@@ -299,10 +327,29 @@ const StorefrontOrder = () => {
     if (item.isCatering) return false;
     if (item.category === 'Catering' || item.category === 'Catering Packs') return false;
     if (item.availableForCatering && item.cateringCategory) return false;
-    if (item.availabilityType === 'everyday' || !item.availabilityType) return true;
-    if (item.availabilityType === 'specific_date' && selectedEvent && item.specificDate === selectedEvent.date) return true;
-    return false;
+    let dateOk = false;
+    if (item.availabilityType === 'everyday' || !item.availabilityType) dateOk = true;
+    else if (item.availabilityType === 'specific_date' && selectedEvent && item.specificDate === selectedEvent.date) dateOk = true;
+    if (!dateOk) return false;
+    // Wall-clock gate (always on for restricted items).
+    if (!isItemAvailableAt(item, wallClock, activePeriods)) return false;
+    // Slot gate (only when a slot is picked).
+    if (pickupTime && !isItemAvailableAt(item, pickupTime, activePeriods)) return false;
+    return true;
   });
+
+  // Cart entries that are no longer valid for the current state — fails
+  // either the slot gate (if a slot is picked) or the wall-clock gate.
+  // Surfaced as a warning above the cart so the customer can fix it
+  // themselves rather than getting a server 400 at submit time. Legacy
+  // unrestricted items are unaffected.
+  const isCartItemValid = (c) => {
+    if (c.isCatering || c.category === 'Catering' || c.category === 'Catering Packs') return true;
+    if (!isItemAvailableAt(c, wallClock, activePeriods)) return false;
+    if (pickupTime && !isItemAvailableAt(c, pickupTime, activePeriods)) return false;
+    return true;
+  };
+  const cartItemsOutsidePeriod = cart.filter(c => !isCartItemValid(c));
 
   const [timeSlots, setTimeSlots] = useState([]);
 
@@ -364,6 +411,12 @@ const StorefrontOrder = () => {
     if (!isShippableOnly) {
       if (!selectedDayId) { alert("Please select a pickup date!"); return; }
       if (!pickupTime) { alert("Please select a pickup time!"); return; }
+      if (cartItemsOutsidePeriod.length > 0) {
+        const names = cartItemsOutsidePeriod.map(i => i.name).join(', ');
+        const when = pickupTime ? `at ${pickupTime}` : 'right now';
+        alert(`These items aren't sold ${when}: ${names}.\n\nPlease remove them or choose a different pickup time.`);
+        return;
+      }
     } else {
       if (fulfillment === 'DELIVERY' && !deliveryAddress.trim()) { return alert("Please enter your shipping address."); }
     }
@@ -587,6 +640,36 @@ const StorefrontOrder = () => {
                       </button>
                     )) : <div className="col-span-full text-sm text-gray-500 italic">Select a date first.</div>}
                   </div>
+                  {pickupTime && periodsAtPickup.length > 0 && (
+                    <div className="mt-3 flex items-center gap-2 text-xs text-bbq-gold">
+                      <Clock size={12}/>
+                      <span>Showing items available during <strong>{periodsAtPickup.map(p => p.name).join(' / ')}</strong></span>
+                    </div>
+                  )}
+                  {pickupTime && periodsAtPickup.length === 0 && (
+                    <div className="mt-3 flex items-center gap-2 text-xs text-amber-400">
+                      <AlertCircle size={12}/>
+                      <span>{pickupTime} is outside the configured meal periods — only items with no time restriction will show.</span>
+                    </div>
+                  )}
+                  {cartItemsOutsidePeriod.length > 0 && (
+                    <div className="mt-3 bg-amber-950/30 border border-amber-700/50 rounded-lg p-3 text-xs text-amber-200 flex items-start gap-2">
+                      <AlertCircle size={14} className="text-amber-400 shrink-0 mt-0.5"/>
+                      <div>
+                        <p className="font-bold text-amber-100 mb-1">
+                          These items aren't sold {pickupTime ? `at ${pickupTime}` : 'right now'}:
+                        </p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                          {cartItemsOutsidePeriod.map(i => <li key={i._id || i.id}>{i.name}</li>)}
+                        </ul>
+                        <p className="mt-2 text-amber-300/80">
+                          {pickupTime
+                            ? 'Remove them or pick a different time slot to continue.'
+                            : 'Remove them to continue — they\'re outside the current meal-period window.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
@@ -606,9 +689,19 @@ const StorefrontOrder = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {(selectedEvent || isShippableOnly) ? (
               availableItems.length > 0 ? (
-                availableItems.map(item => (
-                  <MenuItemCard key={item._id || item.id} item={item} onAdd={(qty, packSelections, specialRequests) => handleAddToCart(item, qty, packSelections, specialRequests)} />
-                ))
+                availableItems.map(item => {
+                  const labels = (item.availabilityPeriods || [])
+                    .map(pid => activePeriods.find(p => p.id === pid)?.name)
+                    .filter(Boolean);
+                  return (
+                    <MenuItemCard
+                      key={item._id || item.id}
+                      item={item}
+                      periodLabels={labels}
+                      onAdd={(qty, packSelections, specialRequests) => handleAddToCart(item, qty, packSelections, specialRequests)}
+                    />
+                  );
+                })
               ) : (
                 <div className="col-span-2 text-center py-12 text-gray-500 italic border border-dashed border-gray-800 rounded-xl">No additional items available.</div>
               )
@@ -723,9 +816,17 @@ const StorefrontOrder = () => {
               </div>
 
               <div className="mt-6 space-y-3">
-                <button onClick={handlePlaceOrder} disabled={cart.length === 0}
+                <button onClick={handlePlaceOrder} disabled={cart.length === 0 || cartItemsOutsidePeriod.length > 0}
                   className="w-full bg-gradient-to-r from-bbq-red to-red-800 text-white py-4 rounded-lg font-bold hover:shadow-[0_0_20px_rgba(217,56,30,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm shadow-xl flex justify-center items-center gap-2">
-                  {isShippableOnly ? 'Submit Order Request' : (!selectedDayId ? 'Select a Date' : !pickupTime ? 'Select a Time' : 'Submit Order Request')}
+                  {isShippableOnly
+                    ? 'Submit Order Request'
+                    : !selectedDayId
+                      ? 'Select a Date'
+                      : !pickupTime
+                        ? 'Select a Time'
+                        : cartItemsOutsidePeriod.length > 0
+                          ? 'Resolve Time Conflicts'
+                          : 'Submit Order Request'}
                   <ArrowRight size={16}/>
                 </button>
                 <p className="text-[10px] text-gray-500 text-center flex items-center justify-center gap-1">
